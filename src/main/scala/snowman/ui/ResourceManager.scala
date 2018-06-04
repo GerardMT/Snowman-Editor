@@ -15,7 +15,7 @@ class ResourceManager(gamePath: String) {
     private val smallBall = ImageIO.read(new File(gamePath + "smallBall.png"))
     private val mediumBall = ImageIO.read(new File(gamePath + "mediumBall.png"))
     private val largeBall = ImageIO.read(new File(gamePath + "largeBall.png"))
-    private val mediumSmallBall = ImageIO.read(new File(gamePath + "largeBall.png"))
+    private val mediumSmallBall = ImageIO.read(new File(gamePath + "mediumSmallBall.png"))
     private val largeSmallBall = ImageIO.read(new File(gamePath + "largeSmallBall.png"))
     private val largeMediumBall = ImageIO.read(new File(gamePath + "largeMediumBall.png"))
     private val largeMediumSmallBall = ImageIO.read(new File(gamePath + "largeMediumSmallBall.png"))

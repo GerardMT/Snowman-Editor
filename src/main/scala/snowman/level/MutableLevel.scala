@@ -25,14 +25,11 @@ object MutableLevel {
         mutableLevel
     }
 
-    def load(f: File): MutableLevel = {
+    def load(s: String): MutableLevel = {
         val lines = ListBuffer.empty[String]
 
-        val br = new BufferedReader(new FileReader(f))
-        var line = br.readLine()
-        while (line != null) {
-            lines.append(line)
-            line = br.readLine()
+        for (l <- s.split("\n")) {
+            lines.append(l)
         }
 
         val length = lines.head.length
@@ -44,8 +41,9 @@ object MutableLevel {
 
         val mutableLevel = new MutableLevel(length, lines.length)
 
-        for (y <- lines.length - 1 to 0 by -1) {
-            for (x <- 0 until lines(y).length) {
+        var inverseY = lines.length - 1
+        for (y <- lines.indices) {
+            for (x <- 0 until length) {
                 val c = lines(y).charAt(x)
 
                 val o = try {
@@ -55,11 +53,30 @@ object MutableLevel {
                         throw LevelParserException("Illegal character \"" + c + "\" at (X,Y) = (" + x + "," + y + ")")
                 }
 
-                mutableLevel(Coordinate(x, y)) = o
+                mutableLevel(Coordinate(x, inverseY)) = o
             }
+            inverseY -= 1
         }
 
         mutableLevel
+    }
+
+    def load(f: File): MutableLevel = {
+        val levelString = new StringBuilder()
+
+        val br = new BufferedReader(new FileReader(f))
+        var line = br.readLine()
+        while (line != null) {
+            levelString.append(line)
+
+            line = br.readLine()
+
+            if (line == null) {
+                levelString.append("\n")
+            }
+        }
+
+        load(levelString.toString)
     }
 }
 
@@ -100,9 +117,12 @@ class MutableLevel private (val width: Int, val height: Int){
                 }
 
                 o match {
-                    case Snow | PlayerSnow =>
+                    case Snow =>
                         hasSnow = true
                     case Player =>
+                        somePlayerPosition = Some(p)
+                    case PlayerSnow =>
+                        hasSnow = true
                         somePlayerPosition = Some(p)
                     case SmallBall | MediumBall | LargeBall =>
                         balls.append(p)
@@ -119,6 +139,7 @@ class MutableLevel private (val width: Int, val height: Int){
                         balls.append(Position(c, LargeBall))
                         balls.append(Position(c, MediumBall))
                         balls.append(Position(c, SmallBall))
+                    case _ =>
                 }
             }
         }
@@ -151,7 +172,7 @@ class MutableLevel private (val width: Int, val height: Int){
             throw LevelParserException("Level has only " + balls.size + " balls. Has to be multiple of 3")
         }
 
-        new Level(width, height, size, hasSnow, playerPosition, balls.toList, sortedMap)
+        new Level(width, height, size, hasSnow, playerPosition, balls.toList, sortedMap, toString)
     }
 
     def save(file: File): Unit = {

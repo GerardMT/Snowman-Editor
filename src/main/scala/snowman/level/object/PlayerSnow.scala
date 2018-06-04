@@ -1,5 +1,5 @@
 package snowman.level.`object`
 
 case object PlayerSnow extends Object {
-    override def char: Char = 'q'
+    override def char: Char = 'p'
 }

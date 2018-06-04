@@ -10,6 +10,15 @@ class Picker(resourceManager: ResourceManager) extends BoxPanel(Orientation.Vert
 
     private var _currentPicker: Option[PickerObject] = None
 
+    border = EmptyBorder(10, 10, 10, 10)
+
+    contents += new Label("Picker")
+    contents += new GridPanel((snowman.level.`object`.Object.ALL_OBJECTS.length / 2.0f).ceil.toInt, 2) {
+        for (o <- snowman.level.`object`.Object.ALL_OBJECTS) {
+            contents += new PickerObject(o)
+        }
+    }
+
     def current: Option[snowman.level.`object`.Object] = {
         _currentPicker match {
             case Some(p) =>
@@ -27,15 +36,6 @@ class Picker(resourceManager: ResourceManager) extends BoxPanel(Orientation.Vert
         }
 
         _currentPicker = Some(pickerObject)
-    }
-
-
-    contents += new Label("Picker")
-    contents += new GridPanel(snowman.level.`object`.Object.ALL_OBJECTS.size - 1, 1) {
-
-        for (o <- snowman.level.`object`.Object.ALL_OBJECTS) {
-            contents += new PickerObject(o)
-        }
     }
 
     object PickerObject {
@@ -67,7 +67,7 @@ class Picker(resourceManager: ResourceManager) extends BoxPanel(Orientation.Vert
 
         override def paintComponent(g: Graphics2D): Unit = {
             super.paintComponent(g)
-            g.drawImage(resourceManager.getResource(o), 0, 0, null)
+            g.drawImage(resourceManager.getResource(o), 0, 0, size.width, size.height,null)
 
             if (selected) {
                 drawCenteredCircle(g, size.width / 2, size.height / 2, size.width / 2)
