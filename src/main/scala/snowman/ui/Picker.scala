@@ -13,13 +13,13 @@ class Picker(resourceManager: ResourceManager) extends BoxPanel(Orientation.Vert
     border = EmptyBorder(10, 10, 10, 10)
 
     contents += new Label("Picker")
-    contents += new GridPanel((snowman.level.`object`.Object.ALL_OBJECTS.length / 2.0f).ceil.toInt, 2) {
-        for (o <- snowman.level.`object`.Object.ALL_OBJECTS) {
+    contents += new GridPanel((snowman.level.objects.Object.ALL_OBJECTS.length / 2.0f).ceil.toInt, 2) {
+        for (o <- snowman.level.objects.Object.ALL_OBJECTS) {
             contents += new PickerObject(o)
         }
     }
 
-    def current: Option[snowman.level.`object`.Object] = {
+    def current: Option[snowman.level.objects.Object] = {
         _currentPicker match {
             case Some(p) =>
                 Some(p.o)
@@ -44,7 +44,7 @@ class Picker(resourceManager: ResourceManager) extends BoxPanel(Orientation.Vert
         val TILE_HEIGHT = 50
     }
 
-    class PickerObject(val o: level.`object`.Object) extends Panel {
+    class PickerObject(val o: level.objects.Object) extends Panel {
 
         private var selected = false
 

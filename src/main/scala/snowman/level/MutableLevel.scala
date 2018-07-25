@@ -3,7 +3,7 @@ package snowman.level
 import java.io.{BufferedReader, File, FileReader, FileWriter}
 
 import snowman.collection.SortedMap
-import snowman.level.`object`._
+import snowman.level.objects._
 
 import scala.collection.mutable.ListBuffer
 
@@ -47,7 +47,7 @@ object MutableLevel {
                 val c = lines(y).charAt(x)
 
                 val o = try {
-                    snowman.level.`object`.Object.createObject(c)
+                    snowman.level.objects.Object.createObject(c)
                 } catch {
                     case e: NoSuchElementException =>
                         throw LevelParserException("Illegal character \"" + c + "\" at (X,Y) = (" + x + "," + y + ")")
@@ -82,13 +82,13 @@ object MutableLevel {
 
 class MutableLevel private (val width: Int, val height: Int){
 
-    private val map = Array.ofDim[snowman.level.`object`.Object](width, height)
+    private val map = Array.ofDim[snowman.level.objects.Object](width, height)
 
-    def update(c: Coordinate, o: snowman.level.`object`.Object): Unit = {
+    def update(c: Coordinate, o: snowman.level.objects.Object): Unit = {
         map(c.x)(c.y) = o
     }
 
-    def apply(c: Coordinate): snowman.level.`object`.Object = {
+    def apply(c: Coordinate): snowman.level.objects.Object = {
         map(c.x)(c.y)
     }
 
@@ -111,7 +111,7 @@ class MutableLevel private (val width: Int, val height: Int){
                 sortedMap.put(c, p)
 
                 o match {
-                    case snowman.level.`object`.Empty =>
+                    case snowman.level.objects.Empty =>
                     case _ =>
                         size += 1
                 }

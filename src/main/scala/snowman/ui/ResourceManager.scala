@@ -4,7 +4,7 @@ import java.awt.Image
 import java.io.File
 
 import javax.imageio.ImageIO
-import snowman.level.`object`.{Empty, Grass, LargeBall, LargeMediumBall, LargeMediumSmallBall, LargeSmallBall, MediumBall, MediumSmallBall, Object, Player, PlayerSnow, SmallBall, Snow, Wall}
+import snowman.level.objects.{Empty, Grass, LargeBall, LargeMediumBall, LargeMediumSmallBall, LargeSmallBall, MediumBall, MediumSmallBall, Object, Player, PlayerSnow, SmallBall, Snow, Wall}
 
 class ResourceManager(gamePath: String) {
 

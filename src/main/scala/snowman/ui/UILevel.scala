@@ -4,7 +4,7 @@ import java.awt.Color
 import java.io.{File, FileWriter}
 
 import snowman.level.{Coordinate, Level, MutableLevel}
-import snowman.level.`object`.{Empty, Object}
+import snowman.level.objects.{Empty, Object}
 
 import scala.collection.mutable
 import scala.swing.Swing._
