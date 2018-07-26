@@ -7,9 +7,10 @@ import gmt.snowman.level.Level
 import gmt.planner.planner.Planner
 import gmt.planner.solver.Yices2Solver
 import gmt.planner.translator.SMTLib2
+import gmt.snowman.level.`object`._
 import gmt.ui.Settings
 
-class SnowmanSolver {
+object SnowmanSolver {
 
     def solveWithBasicEncoding(l: Level, encoding: EncoderSnowman): SnowmanSolverResult = {
         val solver = new Planner(Settings.read(new File("tmp")))
@@ -38,7 +39,69 @@ class SnowmanSolver {
         throw new NotImplementedError()
     }
 
-    def solvePddl(l: Level): SnowmanSolverResult = {
-        throw new NotImplementedError() // TODO
+    def solvePddl(level: Level): SnowmanSolverResult = {
+        var encoding = ""
+
+        val directoins = List("dir-right", "dir-left", "dir-up", "dir-down")
+
+        encoding += "(define (problem snowman-problem)\n"
+        encoding += "(:domain sowman-domain)\n"
+        encoding += "(:objects\n"
+        for (d <- directoins) {
+            encoding += "    " + d + " - direction\n"
+        }
+
+        for (i <- 0 to level.balls.size) {
+            encoding += "    ball-" + i + " - ball\n"
+        }
+
+        for (l <- level.map.filter(f => f.o != Wall)) {
+            encoding += "    loc-" + l.c.x + "-" + l.c.y + " - location\n"
+        }
+
+        encoding += ")\n"
+        encoding += "(:init\n"
+
+        for (l <- level.map.filter(f => f.o != Wall); t <- Level.cOffsets.zip(directoins) ) {
+            level.map.get(l.c + t._1) match {
+                case Some(l2) =>
+                    encoding += "    (next loc-" + l.c.x + "-" + l.c.y + " loc-" + l2.c.x + "-" + l2.c.y + " " + t._2 + ")\n"
+                case None =>
+            }
+        }
+
+        encoding += "    (character-at loc-" + level.player.c.x + "-" + level.player.c.y + ")\n"
+
+        for (l <-level.balls) {
+            encoding += "    (ball-at loc-" + l.c.x + "-" + l.c.y + ")\n"
+            encoding += "    (ball-size " + getBallSize(l.o) + ")\n"
+        }
+
+        for (l <- level.map.filter(f => f.o == Snow)) {
+            encoding += "    (snow loc-" + l.c.x + "-" + l.c.y + ")\n"
+        }
+
+        encoding += "(:goal (exist (?pos - position)\n"
+        encoding += "    (and\n"
+        for (i <- 0 to level.balls.size) {
+            encoding += "        (ball-at ball-" + i + ")\n"
+        }
+        encoding += "    )\n"
+        encoding += "))\n"
+
+        encoding += ")\n"
+
+        println(encoding)
+
+        SnowmanSolverResult(false, List()) // TODO
+    }
+
+    private def getBallSize(o: gmt.snowman.level.`object`.Object): String = o match {
+        case SmallBall =>
+            "small"
+        case MediumBall =>
+            "medium"
+        case LargeBall =>
+            "large"
     }
 }

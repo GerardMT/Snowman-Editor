@@ -4,8 +4,10 @@ import gmt.snowman.level.`object`._
 import gmt.snowman.level.{Coordinate, Level, Position}
 import gmt.planner.{operation, _}
 import gmt.planner.operation._
+import gmt.planner.solver.Assignment
 
 import scala.collection.mutable.ListBuffer
+import scala.swing.Action
 
 class EncoderReachability(l: Level) extends EncoderSnowman(l) {
 
@@ -446,4 +448,6 @@ class EncoderReachability(l: Level) extends EncoderSnowman(l) {
     }
 
     case class ActionCodification(expressions: Seq[Expression], actionsVariables: Seq[BooleanVariable])
+
+    override def decode(assigments: Seq[Assignment]): Seq[Action] = ???
 }

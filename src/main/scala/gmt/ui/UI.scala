@@ -5,6 +5,7 @@ import java.io.File
 
 import javax.swing.{Box => _, _}
 import gmt.snowman.level.{LevelParserException, MutableLevel}
+import gmt.snowman.solver.SnowmanSolver
 
 import scala.swing.GridBagPanel.Anchor
 import scala.swing.{Action, Dialog, FileChooser, GridBagPanel, MainFrame, Menu, MenuBar, MenuItem, ScrollPane, Separator, SimpleSwingApplication}
@@ -106,6 +107,9 @@ object UI extends SimpleSwingApplication {
                 contents += new MenuItem("Solve (SMT)")
                 contents += new MenuItem("Solve (SMT TP)")
                 contents += new MenuItem("Solve (SMT TP Reachability)")
+                contents += new MenuItem(Action("Solve (PDDL)") {
+                    SnowmanSolver.solvePddl(uiLevel.mutableLevel.toLevel)
+                })
             }
         }
 

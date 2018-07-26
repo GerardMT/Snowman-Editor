@@ -111,7 +111,7 @@ class Settings private (val gamePath: String, val savePath: String, val backupPa
         fileWriter.append(Settings.KEY_WORKING_PATH + Settings.SEPARATOR + workingPath + "\n")
         fileWriter.append(Settings.KEY_FIRST_RUN + Settings.SEPARATOR + firstRun + "\n")
         fileWriter.append(Settings.KEY_MAX_ACTIONS + Settings.SEPARATOR + maxActions + "\n")
-        fileWriter.append(Settings.KEY_START_ACTION + Settings.SEPARATOR + startAction + "\n")
+        fileWriter.append(Settings.KEY_START_ACTION + Settings.SEPARATOR + startAction + "\n") // TODO Remove start action, has to be a parapeter for calling the solver in the ui
         fileWriter.append(Settings.KEY_THREADS + Settings.SEPARATOR + threads)
 
         fileWriter.close()
