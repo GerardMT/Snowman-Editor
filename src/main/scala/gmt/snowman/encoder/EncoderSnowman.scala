@@ -1,10 +1,11 @@
 package gmt.snowman.encoder
 
+import gmt.planner.encoder.Encoder
 import gmt.snowman.level.`object`._
 import gmt.snowman.level.{Level, `object`}
-import gmt.planner.encoder.Encoder
 
-abstract class EncoderSnowman(l: Level) extends Encoder {
+
+abstract class EncoderSnowman(level: Level) extends Encoder {
 
     protected def getBallSize(o: `object`.Object): Int = o match {
         case SmallBall =>

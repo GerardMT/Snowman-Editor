@@ -1,14 +1,16 @@
 package gmt.ui
 
 import java.awt.{GraphicsEnvironment, Rectangle}
-import java.io.File
+import java.io.{File, FileWriter}
 
 import javax.swing.{Box => _, _}
 import gmt.snowman.level.{LevelParserException, MutableLevel}
+import gmt.snowman.pddl.EncoderPDDL
 import gmt.snowman.solver.SnowmanSolver
+import gmt.snowman.util.Files
 
 import scala.swing.GridBagPanel.Anchor
-import scala.swing.{Action, Dialog, FileChooser, GridBagPanel, MainFrame, Menu, MenuBar, MenuItem, ScrollPane, Separator, SimpleSwingApplication}
+import scala.swing.{Action, Dialog, FileChooser, GridBagPanel, MainFrame, Menu, MenuBar, MenuItem, Point, ScrollPane, Separator, SimpleSwingApplication}
 
 
 object UI extends SimpleSwingApplication {
@@ -69,16 +71,12 @@ object UI extends SimpleSwingApplication {
                     val response = fileChooser.showOpenDialog(null)
 
                     if (response == FileChooser.Result.Approve) {
-                        uiLevel.reload(MutableLevel.load(fileChooser.selectedFile))
+                        uiLevel.reload(MutableLevel.load(Files.openTextFile(fileChooser.selectedFile)))
                     }
                     resize()
                 })
                 contents += new MenuItem(Action("Save"){
-                    val response = fileChooser.showSaveDialog(null)
-
-                    if (response == FileChooser.Result.Approve) {
-                        uiLevel.mutableLevel.save(fileChooser.selectedFile)
-                    }
+                    savePickAndTextFile(uiLevel.mutableLevel.save)
                 })
                 contents += new Separator
                 contents += new Menu("Load") {
@@ -107,9 +105,32 @@ object UI extends SimpleSwingApplication {
                 contents += new MenuItem("Solve (SMT)")
                 contents += new MenuItem("Solve (SMT TP)")
                 contents += new MenuItem("Solve (SMT TP Reachability)")
-                contents += new MenuItem(Action("Solve (PDDL)") {
-                    SnowmanSolver.solvePddl(uiLevel.mutableLevel.toLevel)
-                })
+                contents += new Separator
+                contents += new Menu("PDDL Strips") {
+                    contents += new MenuItem(Action("Generate") {
+                        savePickAndTextFile(EncoderPDDL.encodeStrips(uiLevel.mutableLevel.toLevel))
+                    })
+                    contents += new MenuItem(Action("Solve") {
+                        SnowmanSolver.solvePDDLStrips(uiLevel.mutableLevel.toLevel)
+                    })
+                }
+                contents += new Menu("PDDL Object-fluents") {
+                    contents += new MenuItem(Action("Generate") {
+                        savePickAndTextFile(EncoderPDDL.encodeObjectFluents(uiLevel.mutableLevel.toLevel))
+                    })
+                    contents += new MenuItem(Action("Solve") {
+                        SnowmanSolver.solvePDDLObjectFluents(uiLevel.mutableLevel.toLevel)
+                    })
+                }
+                contents += new Menu("PDDL Numeric-fluents") {
+                    contents += new MenuItem(Action("Generate") {
+                        savePickAndTextFile(EncoderPDDL.encodeNumericFluents(uiLevel.mutableLevel.toLevel))
+                    })
+                    contents += new MenuItem(Action("Solve") {
+                        SnowmanSolver.solvePDDLNumericFluents(uiLevel.mutableLevel.toLevel)
+                    })
+                }
+
             }
         }
 
@@ -143,6 +164,14 @@ object UI extends SimpleSwingApplication {
             val height = Math.min(maxRectangle.height, peer.getSize.height)
 
             peer.setBounds(new Rectangle(maxRectangle.x, maxRectangle.y, width, height))
+        }
+    }
+
+    private def savePickAndTextFile(string: String): Unit = {
+        val response = fileChooser.showSaveDialog(null)
+
+        if (response == FileChooser.Result.Approve) {
+            Files.saveTextFile(fileChooser.selectedFile, string)
         }
     }
 }

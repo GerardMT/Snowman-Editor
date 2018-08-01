@@ -19,7 +19,7 @@ class Planner(settings: Settings) {
 
     def solve(encoder: Encoder, tranlator: Translator, solver: Solver): PlannerResult = {
         for (i <- 0 until settings.threads) {
-            threads.append(new Child(i, this, settings, new TimeStepSolver(tranlator, encoder, solver, settings.workingPath + i)))
+            threads.append(new Child(i, this, settings, new TimeStepSolver(encoder, tranlator, solver)))
         }
 
         threads.foreach(f => f.start())
@@ -27,7 +27,7 @@ class Planner(settings: Settings) {
 
         timeStepResult match {
             case Some(r) =>
-                PlannerResult(r.sat, r.timeSteps, r.assignments)
+                PlannerResult(r.sat, r.timeSteps, r.actions)
             case None =>
                 PlannerResult(sat = false, timeStep, List())
         }

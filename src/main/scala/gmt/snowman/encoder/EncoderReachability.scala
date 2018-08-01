@@ -1,5 +1,7 @@
 package gmt.snowman.encoder
 
+import gmt.planner.action.Action
+import gmt.planner.encoder.{EncoderResult, Encoding, EncodingData}
 import gmt.snowman.level.`object`._
 import gmt.snowman.level.{Coordinate, Level, Position}
 import gmt.planner.{operation, _}
@@ -7,11 +9,12 @@ import gmt.planner.operation._
 import gmt.planner.solver.Assignment
 
 import scala.collection.mutable.ListBuffer
-import scala.swing.Action
 
 class EncoderReachability(l: Level) extends EncoderSnowman(l) {
 
-    override def encode(timeSteps: Int): Encoding = {
+    override def decode(assignments: Seq[Assignment], encodingData: EncodingData): Seq[Action] = ???
+
+    override def encode(timeSteps: Int): EncoderResult = {
         val encoding = new Encoding
 
         val states = ListBuffer.empty[State]
@@ -122,7 +125,7 @@ class EncoderReachability(l: Level) extends EncoderSnowman(l) {
             c.tail.foreach(f => encoding.add(ClauseDeclaration(And(operation.Equals(f.x, c.head.x), operation.Equals(f.y, c.head.y)))))
         }
 
-        encoding
+        EncoderResult(encoding, null) // TODO
     }
 
     def codifyState(l: Level, s: State): Seq[Expression] = {
@@ -448,6 +451,4 @@ class EncoderReachability(l: Level) extends EncoderSnowman(l) {
     }
 
     case class ActionCodification(expressions: Seq[Expression], actionsVariables: Seq[BooleanVariable])
-
-    override def decode(assigments: Seq[Assignment]): Seq[Action] = ???
 }

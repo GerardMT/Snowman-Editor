@@ -1,13 +1,12 @@
 package gmt.planner.encoder
 
+import gmt.planner.action.Action
 import gmt.planner.solver.Assignment
-import gmt.snowman.encoder.Encoding
 
-import scala.swing.Action
 
 trait Encoder {
 
-    def encode(timeSteps: Int): Encoding
+    def encode(timeSteps: Int): EncoderResult
 
-    def decode(assigments: Seq[Assignment]): Seq[Action]
+    def decode(assignments: Seq[Assignment], encodingData: EncodingData): Seq[Action]
 }

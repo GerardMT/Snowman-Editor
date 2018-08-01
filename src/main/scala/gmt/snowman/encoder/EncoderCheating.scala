@@ -1,13 +1,13 @@
 package gmt.snowman.encoder
 
+import gmt.planner.action
+import gmt.planner.encoder.{EncoderResult, EncodingData}
 import gmt.planner.solver.Assignment
 import gmt.snowman.level.Level
 
-import scala.swing.Action
 
 class EncoderCheating(l: Level) extends EncoderSnowman(l) {
+    override def encode(timeSteps: Int): EncoderResult = ???
 
-    override def encode(timeSteps: Int): Encoding = ???
-
-    override def decode(assigments: Seq[Assignment]): Seq[Action] = ???
+    override def decode(assignments: Seq[Assignment], encodingData: EncodingData): Seq[action.Action] = ???
 }

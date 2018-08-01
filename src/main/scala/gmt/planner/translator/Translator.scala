@@ -1,6 +1,6 @@
 package gmt.planner.translator
 
-import gmt.snowman.encoder.Encoding
+import gmt.planner.encoder.Encoding
 
 trait Translator {
 

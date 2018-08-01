@@ -1,4 +1,4 @@
-package gmt.snowman.encoder
+package gmt.planner.encoder
 
 import gmt.planner.operation.{BooleanVariable, Expression, IntegerVariable, VariableDeclaration}
 

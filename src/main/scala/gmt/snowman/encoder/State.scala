@@ -1,5 +1,6 @@
 package gmt.snowman.encoder
 
+import gmt.planner.encoder.Encoding
 import gmt.planner.operation.{BooleanVariable, IntegerVariable, VariableDeclaration}
 import gmt.snowman.collection.SortedMap
 import gmt.snowman.level.`object`.{Snow, Wall}

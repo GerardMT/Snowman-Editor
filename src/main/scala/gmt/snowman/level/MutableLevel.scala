@@ -60,24 +60,6 @@ object MutableLevel {
 
         mutableLevel
     }
-
-    def load(f: File): MutableLevel = {
-        val levelString = new StringBuilder()
-
-        val br = new BufferedReader(new FileReader(f))
-        var line = br.readLine()
-        while (line != null) {
-            levelString.append(line)
-
-            line = br.readLine()
-
-            if (line == null) {
-                levelString.append("\n")
-            }
-        }
-
-        load(levelString.toString)
-    }
 }
 
 class MutableLevel private (val width: Int, val height: Int){
@@ -133,8 +115,8 @@ class MutableLevel private (val width: Int, val height: Int){
                         balls.append(Position(c, LargeBall))
                         balls.append(Position(c, SmallBall))
                     case LargeMediumBall =>
+                        balls.append(Position(c, LargeBall))
                         balls.append(Position(c, MediumBall))
-                        balls.append(Position(c, SmallBall))
                     case LargeMediumSmallBall =>
                         balls.append(Position(c, LargeBall))
                         balls.append(Position(c, MediumBall))
@@ -175,10 +157,8 @@ class MutableLevel private (val width: Int, val height: Int){
         new Level(width, height, size, hasSnow, playerPosition, balls.toList, sortedMap, toString)
     }
 
-    def save(file: File): Unit = {
-        val fileWriter = new FileWriter(file)
-        fileWriter.write(toString)
-        fileWriter.close()
+    def save: String = {
+        toString
     }
 
     override def toString: String = {
