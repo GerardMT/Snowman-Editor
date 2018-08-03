@@ -10,51 +10,51 @@ import gmt.planner.solver.Assignment
 
 import scala.collection.mutable.ListBuffer
 
-class EncoderReachability(l: Level) extends EncoderSnowman(l) {
+class EncoderReachability(level: Level) extends EncoderSnowman(level) {
 
     override def decode(assignments: Seq[Assignment], encodingData: EncodingData): Seq[Action] = ???
 
     override def encode(timeSteps: Int): EncoderResult = {
         val encoding = new Encoding
 
-        val states = ListBuffer.empty[State]
+        val states = ListBuffer.empty[StateSnowman]
 
-        val s0 = new State(l, 0)
+        val s0 = new StateSnowman(level, 0)
         s0.addVariables(encoding)
         states.append(s0)
 
-        encoding.addAll(codifyState(l, s0))
+        encoding.addAll(codifyState(level, s0))
 
-        encoding.addAll(codifyReachability(l, s0)) // TODO Compliation process
+        encoding.addAll(codifyReachability(level, s0)) // TODO Compliation process
 
         // S0 Occupied
         encoding.add(Comment("S0 Occupied"))
-        for (p <- l.map.iterator) {
+        for (p <- level.map.iterator) {
             if (p.o == Wall || gmt.snowman.level.`object`.Object.isBall(p.o)) {
                 // OX_Y_S0
-                encoding.add(ClauseDeclaration(s0.occupied(p.c).get))
+                encoding.add(ClauseDeclaration(s0.occupancy(p.c).get))
             } else {
                 // !OX_Y_S0
-                encoding.add(ClauseDeclaration(operation.Not(s0.occupied(p.c).get)))
+                encoding.add(ClauseDeclaration(operation.Not(s0.occupancy(p.c).get)))
             }
         }
 
         // S0 Player
         encoding.add(Comment("S0 Player"))
-        encoding.add(ClauseDeclaration(operation.Equals(s0.player.x, IntegerConstant(l.player.c.x))))
-        encoding.add(ClauseDeclaration(operation.Equals(s0.player.y, IntegerConstant(l.player.c.y))))
+        encoding.add(ClauseDeclaration(operation.Equals(s0.player.x, IntegerConstant(level.player.c.x))))
+        encoding.add(ClauseDeclaration(operation.Equals(s0.player.y, IntegerConstant(level.player.c.y))))
 
         // S0 Balls
         encoding.add(Comment("S0 Balls"))
-        for (b <- l.balls.indices) {
-            encoding.add(ClauseDeclaration(operation.Equals(s0.balls(b).x, IntegerConstant(l.balls(b).c.x))))
-            encoding.add(ClauseDeclaration(operation.Equals(s0.balls(b).y, IntegerConstant(l.balls(b).c.y))))
-            encoding.add(ClauseDeclaration(operation.Equals(s0.balls(b).size, IntegerConstant(getBallSize(l.balls(b).o)))))
+        for (b <- level.balls.indices) {
+            encoding.add(ClauseDeclaration(operation.Equals(s0.balls(b).x, IntegerConstant(level.balls(b).c.x))))
+            encoding.add(ClauseDeclaration(operation.Equals(s0.balls(b).y, IntegerConstant(level.balls(b).c.y))))
+            encoding.add(ClauseDeclaration(operation.Equals(s0.balls(b).size, IntegerConstant(getBallSize(level.balls(b).o)))))
         }
 
         // S0 Snow
         encoding.add(Comment("S0 Snow"))
-        for (p <- l.map.iterator) {
+        for (p <- level.map.iterator) {
             s0.snow(p.c) match {
                 case Some(v) =>
                     encoding.add(operation.ClauseDeclaration(v))
@@ -65,30 +65,30 @@ class EncoderReachability(l: Level) extends EncoderSnowman(l) {
         var sAnt = s0
 
         for (iS <- 1 until timeSteps + 1) {
-            val s =  new State(l, iS)
+            val s =  new StateSnowman(level, iS)
             states.append(s)
             s.addVariables(encoding)
 
-            encoding.addAll(codifyState(l, s))
-            encoding.addAll(codifyMiddleState(l, s))
+            encoding.addAll(codifyState(level, s))
+            encoding.addAll(codifyMiddleState(level, s))
 
             val actionsVariables = ListBuffer.empty[BooleanVariable]
 
             // Move Ball
             // Right
-            val actionsCodification0 = codifyBallAction("0", l, s, sAnt, Coordinate(+1, 0))
+            val actionsCodification0 = codifyBallAction("0", level, s, sAnt, Coordinate(+1, 0))
             encoding.addAll(actionsCodification0.expressions)
             actionsVariables.appendAll(actionsCodification0.actionsVariables)
             // Left
-            val actionsCodification1 = codifyBallAction("1", l, s, sAnt, Coordinate(-1, 0))
+            val actionsCodification1 = codifyBallAction("1", level, s, sAnt, Coordinate(-1, 0))
             encoding.addAll(actionsCodification1.expressions)
             actionsVariables.appendAll(actionsCodification1.actionsVariables)
             // Up
-            val actionsCodification2 = codifyBallAction("2", l, s, sAnt, Coordinate(0, +1))
+            val actionsCodification2 = codifyBallAction("2", level, s, sAnt, Coordinate(0, +1))
             encoding.addAll(actionsCodification2.expressions)
             actionsVariables.appendAll(actionsCodification2.actionsVariables)
             // Down
-            val actionsCodification3 = codifyBallAction("3", l, s, sAnt, Coordinate(0, -1))
+            val actionsCodification3 = codifyBallAction("3", level, s, sAnt, Coordinate(0, -1))
             encoding.addAll(actionsCodification3.expressions)
             actionsVariables.appendAll(actionsCodification3.actionsVariables)
 
@@ -119,7 +119,7 @@ class EncoderReachability(l: Level) extends EncoderSnowman(l) {
                 encoding.add(ClauseDeclaration(Equivalent(And(operation.Equals(c(1).x, c.head.x), operation.Equals(c(1).y, c.head.y), operation.Equals(c(2).x, c.head.x), operation.Equals(c(2).y, c.head.y)), v)))
             }
 
-            encoding.addAll(Operations.addEK(combinationsVariables, l.balls.size / 3, "EKC"))
+            encoding.addAll(Operations.addEK(combinationsVariables, level.balls.size / 3, "EKC"))
         } else {
             val c = combinations.head
             c.tail.foreach(f => encoding.add(ClauseDeclaration(And(operation.Equals(f.x, c.head.x), operation.Equals(f.y, c.head.y)))))
@@ -128,7 +128,7 @@ class EncoderReachability(l: Level) extends EncoderSnowman(l) {
         EncoderResult(encoding, null) // TODO
     }
 
-    def codifyState(l: Level, s: State): Seq[Expression] = {
+    def codifyState(l: Level, s: StateSnowman): Seq[Expression] = {
         val expressions = ListBuffer.empty[Expression]
 
         // TODO Per mes boles
@@ -154,7 +154,7 @@ class EncoderReachability(l: Level) extends EncoderSnowman(l) {
             i.o match {
                 case Wall =>
                     // OX_Y_
-                    expressions.append(operation.ClauseDeclaration(s.occupied(i.c).get))
+                    expressions.append(operation.ClauseDeclaration(s.occupancy(i.c).get))
                 case _ =>
             }
         }
@@ -162,7 +162,7 @@ class EncoderReachability(l: Level) extends EncoderSnowman(l) {
         expressions
     }
 
-    def codifyReachability(l: Level, s: State): Seq[Expression] = {
+    def codifyReachability(l: Level, s: StateSnowman): Seq[Expression] = {
         val expressions = ListBuffer.empty[Expression]
 
         expressions.append(Comment("Reachability"))
@@ -209,7 +209,7 @@ class EncoderReachability(l: Level) extends EncoderSnowman(l) {
         expressions
     }
 
-    def codifyMiddleState(l: Level, s : State): Seq[Expression] = {
+    def codifyMiddleState(l: Level, s : StateSnowman): Seq[Expression] = {
         val expressions = ListBuffer.empty[Expression]
 
         expressions.appendAll(codifyReachability(l, s)) // TODO Inline // TODO de ser l'estat enterior
@@ -224,13 +224,13 @@ class EncoderReachability(l: Level) extends EncoderSnowman(l) {
             }
 
             // (B0XS_ = x & B0YS_ = y) | (B1XS_ = x & B1YS_ = y) | (B2XS_ = x & B2YS_ = y) ... = <-> OXxYyS_
-            expressions.append(ClauseDeclaration(operation.Equivalent(Or(ors: _*), s.occupied(p.c).get)))
+            expressions.append(ClauseDeclaration(operation.Equivalent(Or(ors: _*), s.occupancy(p.c).get)))
         }
 
         expressions
     }
 
-    private def clauseSumOffset(cOffset: Coordinate, c: And): Clause = {
+    private def clauseSumOffset(cOffset: Coordinate, c: And): Clause = { // TODO Nou metode passr dos parametres
         c match {
             case And(Equals(x, vA), Equals(y, vB)) =>
                 val x1 = if (cOffset.x > 0) {
@@ -252,13 +252,13 @@ class EncoderReachability(l: Level) extends EncoderSnowman(l) {
         }
     }
 
-    private def codifyBallAction(name: String, l: Level, s: State, sAnt: State, cOffset: Coordinate): ActionCodification = {
+    private def codifyBallAction(name: String, l: Level, stateNext: StateSnowman, state: StateSnowman, cOffset: Coordinate): ActionCodification = {
         val expressions = ListBuffer.empty[Expression]
 
         val actionsVariables = ListBuffer.empty[BooleanVariable]
 
-        for (((sB, sAntB), iB) <- s.balls zip sAnt.balls zipWithIndex) {
-            val vA = BooleanVariable("A" + name +"B" + iB + "S" + sAnt.stateNumber + "S" + s.stateNumber)
+        for (((stateNextBall, stateBall), iB) <- stateNext.balls zip state.balls zipWithIndex) {
+            val vA = BooleanVariable("A" + name +"B" + iB + "S" + state.stateNumber + "S" + stateNext.stateNumber)
             actionsVariables.append(vA)
             expressions.append(VariableDeclaration(vA))
 
@@ -281,7 +281,7 @@ class EncoderReachability(l: Level) extends EncoderSnowman(l) {
                         } else {
                             IntegerConstant(p.c.y)
                         }
-                        orsInsideMapBall.append(And(operation.Equals(x, sAntB.x), operation.Equals(y, sAntB.y)))
+                        orsInsideMapBall.append(And(operation.Equals(x, stateBall.x), operation.Equals(y, stateBall.y)))
                     }
                 }
             }
@@ -289,60 +289,60 @@ class EncoderReachability(l: Level) extends EncoderSnowman(l) {
 
             // No ball on top
             val orsBallOnTop = ListBuffer.empty[Clause]
-            for (kB <- sAnt.balls) {
-                if (kB != sAntB) {
-                    orsBallOnTop.append(And(operation.Equals(sAntB.x, kB.x), operation.Equals(sAntB.y, kB.y), operation.Greater(sAntB.size, kB.size)))
+            for (kB <- state.balls) {
+                if (kB != stateBall) {
+                    orsBallOnTop.append(And(operation.Equals(stateBall.x, kB.x), operation.Equals(stateBall.y, kB.y), operation.Greater(stateBall.size, kB.size)))
                 }
             }
             val ballOnTop = Operations.simplify(Or(orsBallOnTop: _*))
 
 
-            val combinations = sAnt.balls.filter(f => f != sAntB).combinations(2).map(f => (f.head, f(1))).toList
+            val combinations = state.balls.filter(f => f != stateBall).combinations(2).map(f => (f.head, f(1))).toList
 
             // Two balls in front
             val orsTwoBallsInFront = ListBuffer.empty[Clause]
             for ((kB1, kB2) <- combinations) {
-                orsTwoBallsInFront.append(And(clauseSumOffset(cOffset, And(operation.Equals(sAntB.x, kB1.x), operation.Equals(sAntB.y, kB1.y))), clauseSumOffset(cOffset, And(operation.Equals(sAntB.x, kB2.x), operation.Equals(sAntB.y, kB2.y)))))
+                orsTwoBallsInFront.append(And(clauseSumOffset(cOffset, And(operation.Equals(stateBall.x, kB1.x), operation.Equals(stateBall.y, kB1.y))), clauseSumOffset(cOffset, And(operation.Equals(stateBall.x, kB2.x), operation.Equals(stateBall.y, kB2.y)))))
             }
             val twoBallsInFront = Operations.simplify(Or(orsTwoBallsInFront: _*))
 
             val orsTwoBallsInFrontWithSmall = ListBuffer.empty[Clause]
             for ((kB1, kB2) <- combinations) {
-                orsTwoBallsInFrontWithSmall.append(And(clauseSumOffset(cOffset, And(operation.Equals(sAntB.x, kB1.x), operation.Equals(sAntB.y, kB1.y))), clauseSumOffset(cOffset, And(operation.Equals(sAntB.x, kB2.x), operation.Equals(sAntB.y, kB2.y))), Or(operation.Equals(kB1.size, IntegerConstant(1)), operation.Equals(kB2.size, IntegerConstant(1)))))
+                orsTwoBallsInFrontWithSmall.append(And(clauseSumOffset(cOffset, And(operation.Equals(stateBall.x, kB1.x), operation.Equals(stateBall.y, kB1.y))), clauseSumOffset(cOffset, And(operation.Equals(stateBall.x, kB2.x), operation.Equals(stateBall.y, kB2.y))), Or(operation.Equals(kB1.size, IntegerConstant(1)), operation.Equals(kB2.size, IntegerConstant(1)))))
             }
             val twoBallsInFrontWithSmall = Operations.simplify(Or(orsTwoBallsInFrontWithSmall: _*))
 
             // Pre (ballInFront) & !(ballUnder) -> (ballInFrontBigger)
             // Ball in front
             val orsBallInFront = ListBuffer.empty[Clause]
-            for (kB <- sAnt.balls) {
-                if (kB != sAntB) {
-                    orsBallInFront.append(clauseSumOffset(cOffset, And(operation.Equals(sAntB.x, kB.x), operation.Equals(sAntB.y, kB.y))))
+            for (kB <- state.balls) {
+                if (kB != stateBall) {
+                    orsBallInFront.append(clauseSumOffset(cOffset, And(operation.Equals(stateBall.x, kB.x), operation.Equals(stateBall.y, kB.y))))
                 }
             }
             val ballInFront = Operations.simplify(Or(orsBallInFront: _*))
 
             // No ball under
             val orsBallUnder = ListBuffer.empty[Clause]
-            for (kB <- sAnt.balls) {
-                if (kB != sAntB) {
-                    orsBallUnder.append(And(operation.Equals(sAntB.x, kB.x), operation.Equals(sAntB.y, kB.y)))
+            for (kB <- state.balls) {
+                if (kB != stateBall) {
+                    orsBallUnder.append(And(operation.Equals(stateBall.x, kB.x), operation.Equals(stateBall.y, kB.y)))
                 }
             }
             val ballUnder = Operations.simplify(Or(orsBallUnder: _*))
 
             // Ball in front bigger
             val orsBallInFrontBigger = ListBuffer.empty[Clause]
-            for (kB <- sAnt.balls) {
-                if (kB != sAntB) {
-                    orsBallInFrontBigger.append(And(clauseSumOffset(cOffset, And(operation.Equals(sAntB.x, kB.x), operation.Equals(sAntB.y, kB.y))), operation.Smaller(sAntB.size, kB.size)))
+            for (kB <- state.balls) {
+                if (kB != stateBall) {
+                    orsBallInFrontBigger.append(And(clauseSumOffset(cOffset, And(operation.Equals(stateBall.x, kB.x), operation.Equals(stateBall.y, kB.y))), operation.Smaller(stateBall.size, kB.size)))
                 }
             }
             val ballInFrontBigger = Operations.simplify(Or(orsBallInFrontBigger: _*))
 
             // Equal other balls variables
             val equalBallsVariables = ListBuffer.empty[Clause]
-            for (((kSB, kSantB), kIB) <- s.balls zip sAnt.balls zipWithIndex) {
+            for (((kSB, kSantB), kIB) <- stateNext.balls zip state.balls zipWithIndex) {
                 if (kIB != iB) {
                     equalBallsVariables.append(operation.Equals(kSB.x, kSantB.x))
                     equalBallsVariables.append(operation.Equals(kSB.y, kSantB.y))
@@ -353,9 +353,9 @@ class EncoderReachability(l: Level) extends EncoderSnowman(l) {
             // Inside map player
             val orsInsideMapPlayer = ListBuffer.empty[Clause]
             for (p <- l.map.iterator) {
-                sAnt.occupied(p.c - cOffset) match {
+                state.occupancy(p.c - cOffset) match {
                     case Some(v) =>
-                        orsInsideMapPlayer.append(And(operation.Equals(sAntB.x, IntegerConstant(p.c.x)), operation.Equals(sAntB.y, IntegerConstant(p.c.y)), operation.Not(v)))
+                        orsInsideMapPlayer.append(And(operation.Equals(stateBall.x, IntegerConstant(p.c.x)), operation.Equals(stateBall.y, IntegerConstant(p.c.y)), operation.Not(v)))
                     case None =>
                 }
             }
@@ -364,9 +364,9 @@ class EncoderReachability(l: Level) extends EncoderSnowman(l) {
             // Reachable
             val orsReachable = ListBuffer.empty[Clause]
             for (p <- l.map.iterator) {
-                sAnt.reachableNodes(p.c - cOffset) match {
+                state.reachableNodes(p.c - cOffset) match {
                     case Some(v) =>
-                        orsReachable.append(operation.And(operation.Equals(sAntB.x, IntegerConstant(p.c.x)), operation.Equals(sAntB.y, IntegerConstant(p.c.y)), v))
+                        orsReachable.append(operation.And(operation.Equals(stateBall.x, IntegerConstant(p.c.x)), operation.Equals(stateBall.y, IntegerConstant(p.c.y)), v))
                     case None =>
                 }
             }
@@ -376,10 +376,10 @@ class EncoderReachability(l: Level) extends EncoderSnowman(l) {
             val equalSnowVariables = ListBuffer.empty[Clause]
             for (p <- l.map.iterator) {
                 val c = p.c + cOffset
-                sAnt.snow(c) match {
+                state.snow(c) match {
                     case Some(v) =>
-                        val sSnow = s.snow(c).get
-                        val a = operation.And(v, Not(operation.And(v, operation.Equals(sAntB.x, IntegerConstant(p.c.x)), operation.Equals(sAntB.y, IntegerConstant(p.c.y)))))
+                        val sSnow = stateNext.snow(c).get
+                        val a = operation.And(v, Not(operation.And(v, operation.Equals(stateBall.x, IntegerConstant(p.c.x)), operation.Equals(stateBall.y, IntegerConstant(p.c.y)))))
                         // Snow & !(Snow & Ball) <-> SnowNextState
                         equalSnowVariables.append(operation.Implies(a, sSnow))
                         equalSnowVariables.append(operation.Implies(sSnow, a))
@@ -387,7 +387,7 @@ class EncoderReachability(l: Level) extends EncoderSnowman(l) {
                 }
             }
 
-            val ballUnderVar = BooleanVariable("TVAR0A" + name + "B" + iB + "S" + s.stateNumber)
+            val ballUnderVar = BooleanVariable("TVAR0A" + name + "B" + iB + "S" + stateNext.stateNumber)
             expressions.append(Comment("Ball under"))
             expressions.append(VariableDeclaration(ballUnderVar))
             expressions.append(ClauseDeclaration(Implies(ballUnder, ballUnderVar)))
@@ -400,13 +400,13 @@ class EncoderReachability(l: Level) extends EncoderSnowman(l) {
                 Not(ballOnTop),
                 Not(And(ballInFront, ballUnderVar)),
                 Implies(And(ballInFront, Not(ballUnderVar)), ballInFrontBigger),
-                Implies(twoBallsInFront, operation.Equals(sAntB.size, IntegerConstant(1))), // TODO Optimitzar el bug 6 + 2. Fet a la documentacio, falta implementar
+                Implies(twoBallsInFront, operation.Equals(stateBall.size, IntegerConstant(1))), // TODO Optimitzar el bug 6 + 2. Fet a la documentacio, falta implementar
                 Not(twoBallsInFrontWithSmall))
 
             val andsEf = ListBuffer.empty[Clause]
-            andsEf.append(clauseSumOffset(cOffset, And(operation.Equals(sAntB.x, sB.x),operation.Equals(sAntB.y, sB.y))))
-            andsEf.append(Implies(Not(ballUnderVar), And(operation.Equals(s.player.x, sAntB.x), operation.Equals(s.player.y, sAntB.y))))
-            andsEf.append(Implies(ballUnderVar, clauseSumOffset(-cOffset, And(operation.Equals(sAntB.x, s.player.x), operation.Equals(sAntB.y, s.player.y)))))
+            andsEf.append(clauseSumOffset(cOffset, And(operation.Equals(stateBall.x, stateNextBall.x),operation.Equals(stateBall.y, stateNextBall.y))))
+            andsEf.append(Implies(Not(ballUnderVar), And(operation.Equals(stateNext.player.x, stateBall.x), operation.Equals(stateNext.player.y, stateBall.y))))
+            andsEf.append(Implies(ballUnderVar, clauseSumOffset(-cOffset, And(operation.Equals(stateBall.x, stateNext.player.x), operation.Equals(stateBall.y, stateNext.player.y)))))
             andsEf.appendAll(equalSnowVariables)
             andsEf.appendAll(equalBallsVariables)
 
@@ -414,26 +414,26 @@ class EncoderReachability(l: Level) extends EncoderSnowman(l) {
                 // There is snow
                 val orsTheresSnow = ListBuffer.empty[Clause]
                 for (p <- l.map.iterator) {
-                    sAnt.snow(p.c + cOffset) match {
+                    state.snow(p.c + cOffset) match {
                         case Some(v) =>
-                            orsTheresSnow.append(operation.And(operation.Equals(sAntB.x, IntegerConstant(p.c.x)), operation.Equals(sAntB.y, IntegerConstant(p.c.y)), v))
+                            orsTheresSnow.append(operation.And(operation.Equals(stateBall.x, IntegerConstant(p.c.x)), operation.Equals(stateBall.y, IntegerConstant(p.c.y)), v))
                         case None =>
                     }
                 }
                 val theresSnow = Operations.simplify(Or(orsTheresSnow: _*))
 
 
-                val theresSnowVar = BooleanVariable("TVAR1A" + name + "B" + iB + "S" + s.stateNumber)
+                val theresSnowVar = BooleanVariable("TVAR1A" + name + "B" + iB + "S" + stateNext.stateNumber)
                 expressions.append(Comment("There is snow"))
                 expressions.append(VariableDeclaration(theresSnowVar))
                 expressions.append(ClauseDeclaration(Implies(theresSnow, theresSnowVar)))
                 expressions.append(ClauseDeclaration(Implies(theresSnowVar, theresSnow)))
 
-                andsEf.append(Implies(And(theresSnowVar, operation.Equals(sAntB.size, IntegerConstant(1))), operation.Equals(sB.size, IntegerConstant(2))))
-                andsEf.append(Implies(And(theresSnowVar, operation.Equals(sAntB.size, IntegerConstant(2))), operation.Equals(sB.size, IntegerConstant(4))))
-                andsEf.append(Implies(Or(Not(theresSnowVar), operation.Equals(sAntB.size, IntegerConstant(4))), operation.Equals(sB.size, sAntB.size)))
+                andsEf.append(Implies(And(theresSnowVar, operation.Equals(stateBall.size, IntegerConstant(1))), operation.Equals(stateNextBall.size, IntegerConstant(2))))
+                andsEf.append(Implies(And(theresSnowVar, operation.Equals(stateBall.size, IntegerConstant(2))), operation.Equals(stateNextBall.size, IntegerConstant(4))))
+                andsEf.append(Implies(Or(Not(theresSnowVar), operation.Equals(stateBall.size, IntegerConstant(4))), operation.Equals(stateNextBall.size, stateBall.size)))
             } else {
-                andsEf.append(operation.Equals(sB.size, sAntB.size))
+                andsEf.append(operation.Equals(stateNextBall.size, stateBall.size))
             }
 
             val ef = And(andsEf: _*)
@@ -451,4 +451,33 @@ class EncoderReachability(l: Level) extends EncoderSnowman(l) {
     }
 
     case class ActionCodification(expressions: Seq[Expression], actionsVariables: Seq[BooleanVariable])
+
+    override def moveCharacterActions: Seq[Expression] = ???
+
+    override def createState(level: Level, index: Int): StateSnowman = ???
+
+    override def createBallAction(): (Clause, Clause, Seq[Expression]) = {
+        val otherBallUnderVar = otherBallUnder
+
+        val pre = And(noWallInFront,
+            noOtherBallsOver,
+            Not(And(otherBallInFront, otherBallUnderVar)),
+            otherBallsInFrontLarger,
+            characterPositionValid,
+            reachability)
+
+        val eff = And(moveBall,
+            Implies(Not(otherBallUnderVar), teleportCharacter),
+            Implies(otherBallUnderVar, equalCharacterVariables),
+            equalOtherBallsVariables,
+            updateSnowVariables)
+
+        val expressions = List(VariableDeclaration(otherBallUnderVar))
+
+        (pre, eff, expressions)
+    }
+
+    private def reachability(): Clause = ???
+
+    private def teleportCharacter(): Clause = ???
 }

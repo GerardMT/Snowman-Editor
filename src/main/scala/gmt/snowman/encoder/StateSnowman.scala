@@ -6,11 +6,17 @@ import gmt.snowman.collection.SortedMap
 import gmt.snowman.level.`object`.{Snow, Wall}
 import gmt.snowman.level.{Coordinate, Level}
 import gmt.planner.operation
+import gmt.snowman.encoder.StateSnowman.{Ball, Player}
 
 import scala.collection.immutable
 import scala.collection.mutable.ArrayBuffer
 
-class State(l: Level, val stateNumber: Int) {
+object StateSnowman {
+    case class Ball(x: IntegerVariable, y: IntegerVariable, size: IntegerVariable)
+    case class Player(x: IntegerVariable, y: IntegerVariable)
+}
+
+class StateSnowman(l: Level, val stateNumber: Int) {
 
     private val _reachableNodes = SortedMap.empty[Coordinate, BooleanVariable] // RN
     private val _reachableNodesAcyclicity = SortedMap.empty[Coordinate, IntegerVariable] // RA
@@ -69,7 +75,7 @@ class State(l: Level, val stateNumber: Int) {
 
     def reachableEdges(start: Coordinate, end: Coordinate): Option[BooleanVariable] = _reachableEdges.get(start, end)
 
-    def occupied(c: Coordinate): Option[BooleanVariable] = _occupied.get(c)
+    def occupancy(c: Coordinate): Option[BooleanVariable] = _occupied.get(c)
 
     def snow(c: Coordinate): Option[BooleanVariable] = _snow.get(c)
 
@@ -98,7 +104,4 @@ class State(l: Level, val stateNumber: Int) {
             p.add(operation.VariableDeclaration(v))
         }
     }
-
-    case class Ball(x: IntegerVariable, y: IntegerVariable, size: IntegerVariable)
-    case class Player(x: IntegerVariable, y: IntegerVariable)
 }

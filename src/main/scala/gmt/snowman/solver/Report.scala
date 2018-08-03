@@ -3,7 +3,7 @@ package gmt.snowman.solver
 import gmt.planner.operation._
 import gmt.planner.solver.Assignment
 import gmt.planner.solver.value.{ValueBoolean, ValueInteger}
-import gmt.snowman.encoder.State
+import gmt.snowman.encoder.StateSnowman
 import gmt.snowman.level.`object`.Wall
 import gmt.snowman.level.{Level, Position}
 
@@ -15,7 +15,7 @@ object Report {
     private val CHAR_UNDEFINED = '-'
     private val CHAR_UNKNOWN = '?'
 
-    def generateReport(level: Level, states: Seq[State], assignments: Seq[Assignment]): String = {
+    def generateReport(level: Level, states: Seq[StateSnowman], assignments: Seq[Assignment]): String = {
         val sb = new StringBuilder
 
         val assignmentsMap = assignments.map(f => (f.name, f)).toMap
@@ -58,7 +58,7 @@ object Report {
             val occupiedLines = ArrayBuffer.fill(level.height, level.width)(CHAR_UNDEFINED)
 
             for (p <- level.map.iterator) {
-                val c = assignmentsMap.get(s.occupied(p.c).get.name) match {
+                val c = assignmentsMap.get(s.occupancy(p.c).get.name) match {
                     case Some(Assignment(_, ValueBoolean(v))) =>
                         if (v) '1' else '0'
                     case None =>
@@ -95,7 +95,7 @@ object Report {
         sb.toString()
     }
 
-    private def generateMap(level: Level, state: State, assignmentsMap: Map[String, Assignment]): String =  {
+    private def generateMap(level: Level, state: StateSnowman, assignmentsMap: Map[String, Assignment]): String =  {
         val mapLines = ArrayBuffer.fill(level.height, level.width)(CHAR_UNDEFINED)
 
         // Walls

@@ -106,7 +106,7 @@ object UI extends SimpleSwingApplication {
                 contents += new MenuItem("Solve (SMT TP)")
                 contents += new MenuItem("Solve (SMT TP Reachability)")
                 contents += new Separator
-                contents += new Menu("PDDL Strips") {
+                contents += new Menu("PDDL Adl") {
                     contents += new MenuItem(Action("Generate") {
                         savePickAndTextFile(EncoderPDDL.encodeStrips(uiLevel.mutableLevel.toLevel))
                     })
