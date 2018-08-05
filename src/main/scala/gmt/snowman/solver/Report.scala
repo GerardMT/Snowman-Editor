@@ -5,7 +5,7 @@ import gmt.planner.solver.Assignment
 import gmt.planner.solver.value.{ValueBoolean, ValueInteger}
 import gmt.snowman.encoder.StateSnowman
 import gmt.snowman.level.`object`.Wall
-import gmt.snowman.level.{Level, Position}
+import gmt.snowman.level.{Level, Location}
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -101,7 +101,7 @@ object Report {
         // Walls
         for (p <- level.map.iterator) {
             p match {
-                case Position(c, Wall) =>
+                case Location(c, Wall) =>
                     mapLines(c.y)(c.x) = '#'
                 case _ =>
                     mapLines(p.c.y)(p.c.x) = '\''
@@ -130,8 +130,8 @@ object Report {
         }
 
         // Player
-        val pXA = assignmentsMap.get(state.player.x.name)
-        val pYA = assignmentsMap.get(state.player.y.name)
+        val pXA = assignmentsMap.get(state.character.x.name)
+        val pYA = assignmentsMap.get(state.character.y.name)
 
         if(pXA.isDefined && pYA.isDefined) {
             val pX = pXA.get match { case Assignment(_, ValueInteger(v)) => v }

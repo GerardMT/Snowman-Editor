@@ -23,7 +23,7 @@ object EncoderPDDL {
         encoding += "    )\n"
         encoding += "    (:init\n"
 
-        for (l <- level.map.filter(f => f.o != Wall); (o, d) <- Level.cOffsets.zip(directions) ) {
+        for (l <- level.map.filter(f => f.o != Wall); (o, d) <- Level.OFFSETS.zip(directions) ) {
             level.map.get(l.c + o) match {
                 case Some(l2) =>
                     if (l2.o != Wall) {
@@ -67,7 +67,7 @@ object EncoderPDDL {
         encoding += "    )\n"
         encoding += "    (:init\n"
 
-        for (l <- level.map.filter(f => f.o != Wall); (o, d) <- Level.cOffsets.zip(directions) ) {
+        for (l <- level.map.filter(f => f.o != Wall); (o, d) <- Level.OFFSETS.zip(directions) ) {
             level.map.get(l.c + o) match {
                 case Some(l2) =>
                     if (l2.o != Wall) {

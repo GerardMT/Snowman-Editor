@@ -1,37 +1,38 @@
 package gmt.snowman.encoder
 
 import gmt.planner.action
-import gmt.planner.encoder.{EncoderResult, EncodingData}
+import gmt.planner.encoder.{Encoding, EncodingData}
 import gmt.planner.operation._
 import gmt.planner.solver.Assignment
-import gmt.snowman.level.Level
+import gmt.snowman.level.{Coordinate, Level}
+
+import scala.collection.mutable.ListBuffer
 
 
 class EncoderCheating(l: Level) extends EncoderSnowman(l) {
 
-    override def encode(timeSteps: Int): EncoderResult = ???
+    override def createState(level: Level, timeStep: Int): StateSnowman = new StateSnowman(level, timeStep) // TODO
 
-    override def decode(assignments: Seq[Assignment], encodingData: EncodingData): Seq[action.Action] = ???
+    override def createBallAction(actionName: String, state: StateSnowman, stateActionBall: StateSnowman.Ball, stateNext: StateSnowman, stateNextActionBall: StateSnowman.Ball, offset: Coordinate): (Clause, Clause, Seq[Expression]) = {
+        val (updateBallSizeClause, expressions) = updateBallSize(actionName, state, stateActionBall, stateNextActionBall)
 
-    override def createBallAction(): (Clause, Clause, Seq[Expression]) = {
-        val otherBallUnderVar = otherBallUnder
+        val pre = And(noWallInFront(state, stateActionBall),
+            noOtherBallsOver(state, stateActionBall),
+            Not(And(otherBallInFront(state, stateActionBall, offset), otherBallUnder(state, stateActionBall))),
+            otherBallsInFrontLarger(state, stateActionBall, offset),
+            characterPositionValid(state))
 
-        val pre = And(noWallInFront,
-            noOtherBallsOver,
-            Not(And(otherBallInFront, otherBallUnder)),
-            otherBallsInFrontLarger,
-            characterPositionValid)
-
-        val eff = And(moveBall,
-            equalOtherBallsVariables,
-            updateSnowVariables)
-
-        val expressions = List(VariableDeclaration(otherBallUnderVar))
+        val eff = And(moveBall(stateActionBall, stateNextActionBall, offset),
+            equalOtherBallsVariables(state, stateActionBall, stateNext, stateNextActionBall),
+            updateBallSizeClause,
+            updateSnowVariables(state, stateNext))
 
         (pre, eff, expressions)
     }
 
-    override def moveCharacterActions: Seq[Expression] = ???
+    override def codifyReachability(state: StateSnowman, encoing: Encoding): Unit = {}
 
-    override def createState(level: Level, index: Int): StateSnowman = ???
+    override protected def codifyCharacterAction(name: String, state: StateSnowman, stateNext: StateSnowman, offset: Coordinate, encoding: Encoding, actionVariables: ListBuffer[BooleanVariable]): Unit = {}
+
+    override def decode(assignments: Seq[Assignment], encodingData: EncodingData): Seq[action.Action] = ???
 }

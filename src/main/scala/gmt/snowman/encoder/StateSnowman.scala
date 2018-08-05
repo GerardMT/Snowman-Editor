@@ -6,17 +6,17 @@ import gmt.snowman.collection.SortedMap
 import gmt.snowman.level.`object`.{Snow, Wall}
 import gmt.snowman.level.{Coordinate, Level}
 import gmt.planner.operation
-import gmt.snowman.encoder.StateSnowman.{Ball, Player}
+import gmt.snowman.encoder.StateSnowman.{Ball, Character}
 
 import scala.collection.immutable
 import scala.collection.mutable.ArrayBuffer
 
 object StateSnowman {
     case class Ball(x: IntegerVariable, y: IntegerVariable, size: IntegerVariable)
-    case class Player(x: IntegerVariable, y: IntegerVariable)
+    case class Character(x: IntegerVariable, y: IntegerVariable)
 }
 
-class StateSnowman(l: Level, val stateNumber: Int) {
+class StateSnowman(l: Level, val timeStep: Int) {
 
     private val _reachableNodes = SortedMap.empty[Coordinate, BooleanVariable] // RN
     private val _reachableNodesAcyclicity = SortedMap.empty[Coordinate, IntegerVariable] // RA
@@ -26,7 +26,7 @@ class StateSnowman(l: Level, val stateNumber: Int) {
 
     private var _balls = Vector.empty[Ball]
 
-    private val _player = Player(IntegerVariable("PXS" + stateNumber), IntegerVariable("PYS" + stateNumber))
+    private val _character = Character(IntegerVariable("PXS" + timeStep), IntegerVariable("PYS" + timeStep))
 
     private val _snow = SortedMap.empty[Coordinate, BooleanVariable] // S
 
@@ -36,36 +36,36 @@ class StateSnowman(l: Level, val stateNumber: Int) {
         p.o match {
             case Wall =>
             case _ =>
-                _reachableNodes.put(p.c, BooleanVariable("RNX" + p.c.x + "Y" + p.c.y + "S" + stateNumber))
-                _reachableNodesAcyclicity.put(p.c, IntegerVariable("RAX" + p.c.x + "Y" + p.c.y + "S" + stateNumber))
+                _reachableNodes.put(p.c, BooleanVariable("RNX" + p.c.x + "Y" + p.c.y + "S" + timeStep))
+                _reachableNodesAcyclicity.put(p.c, IntegerVariable("RAX" + p.c.x + "Y" + p.c.y + "S" + timeStep))
 
-                for (cOffset <- Level.cOffsets) {
+                for (cOffset <- Level.OFFSETS) {
                     val end = p.c + cOffset
                     if (l.map.contains(end)) {
-                        _reachableEdges.put((p.c, end), BooleanVariable("RAX" + p.c.x + "Y" + p.c.y + "TX" + end.x + "Y" + end.y  + "S" + stateNumber))
+                        _reachableEdges.put((p.c, end), BooleanVariable("RAX" + p.c.x + "Y" + p.c.y + "TX" + end.x + "Y" + end.y  + "S" + timeStep))
                     }
                 }
         }
         p.o match {
             case Snow =>
-                _snow.put(p.c, BooleanVariable("SX" + p.c.x + "Y" + p.c.y + "S" + stateNumber))
+                _snow.put(p.c, BooleanVariable("SX" + p.c.x + "Y" + p.c.y + "S" + timeStep))
             case _ =>
         }
-        _occupied.put(p.c, BooleanVariable("OX" + p.c.x + "Y" + p.c.y + "S" + stateNumber))
+        _occupied.put(p.c, BooleanVariable("OX" + p.c.x + "Y" + p.c.y + "S" + timeStep))
     }
 
     private val tmpBalls: ArrayBuffer[Ball] = ArrayBuffer.empty[Ball]
 
     for(i <- l.balls.indices) {
-        val x = IntegerVariable("B" + i + "XS" + stateNumber)
-        val y = IntegerVariable("B" + i + "YS" + stateNumber)
-        val t = IntegerVariable("B" + i + "TS" + stateNumber)
+        val x = IntegerVariable("B" + i + "XS" + timeStep)
+        val y = IntegerVariable("B" + i + "YS" + timeStep)
+        val t = IntegerVariable("B" + i + "TS" + timeStep)
         tmpBalls.append(Ball(x, y, t))
     }
 
     _balls = tmpBalls.toVector
 
-    def player: Player = _player
+    def character: Character = _character
 
     def balls: immutable.Seq[Ball] = _balls
 
@@ -80,8 +80,8 @@ class StateSnowman(l: Level, val stateNumber: Int) {
     def snow(c: Coordinate): Option[BooleanVariable] = _snow.get(c)
 
     def addVariables(p: Encoding): Unit = {
-        p.add(VariableDeclaration(player.x))
-        p.add(operation.VariableDeclaration(player.y))
+        p.add(VariableDeclaration(character.x))
+        p.add(operation.VariableDeclaration(character.y))
 
         for (b <- _balls) {
             p.add(operation.VariableDeclaration(b.x))

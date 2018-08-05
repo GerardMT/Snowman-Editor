@@ -78,17 +78,17 @@ class MutableLevel private (val width: Int, val height: Int){
         var size = 0
         var hasSnow = false
 
-        var somePlayerPosition: Option[Position] = None
-        val balls = ListBuffer.empty[Position]
+        var somePlayerPosition: Option[Location] = None
+        val balls = ListBuffer.empty[Location]
 
-        val sortedMap = SortedMap.empty[Coordinate, Position]
+        val sortedMap = SortedMap.empty[Coordinate, Location]
 
         for (x <- 0 until width) {
             for (y <- 0 until height) {
                 val c = Coordinate(x, y)
 
                 val o = map(x)(y)
-                val p = Position(c, o)
+                val p = Location(c, o)
 
                 sortedMap.put(c, p)
 
@@ -109,18 +109,18 @@ class MutableLevel private (val width: Int, val height: Int){
                     case SmallBall | MediumBall | LargeBall =>
                         balls.append(p)
                     case MediumSmallBall =>
-                        balls.append(Position(c, MediumBall))
-                        balls.append(Position(c, SmallBall))
+                        balls.append(Location(c, MediumBall))
+                        balls.append(Location(c, SmallBall))
                     case LargeSmallBall =>
-                        balls.append(Position(c, LargeBall))
-                        balls.append(Position(c, SmallBall))
+                        balls.append(Location(c, LargeBall))
+                        balls.append(Location(c, SmallBall))
                     case LargeMediumBall =>
-                        balls.append(Position(c, LargeBall))
-                        balls.append(Position(c, MediumBall))
+                        balls.append(Location(c, LargeBall))
+                        balls.append(Location(c, MediumBall))
                     case LargeMediumSmallBall =>
-                        balls.append(Position(c, LargeBall))
-                        balls.append(Position(c, MediumBall))
-                        balls.append(Position(c, SmallBall))
+                        balls.append(Location(c, LargeBall))
+                        balls.append(Location(c, MediumBall))
+                        balls.append(Location(c, SmallBall))
                     case _ =>
                 }
             }
