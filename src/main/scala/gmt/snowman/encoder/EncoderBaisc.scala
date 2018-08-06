@@ -8,12 +8,11 @@ import gmt.snowman.level.{Coordinate, Level}
 
 import scala.collection.mutable.ListBuffer
 
+class EncoderBaisc(level: Level) extends EncoderBase[StateBasic](level) {
 
-class EncoderBaisc(level: Level) extends EncoderSnowman(level) {
+    override def createState(level: Level, timeStep: Int): StateBasic = StateBasic(level, timeStep)
 
-    override def createState(level: Level, timeStep: Int): StateSnowman = new StateSnowman(level, timeStep) // TODO Other state
-
-    override def createBallAction(actionName: String, state: StateSnowman, stateActionBall: StateSnowman.Ball, stateNext: StateSnowman, stateNextActionBall: StateSnowman.Ball, offset: Coordinate): (Clause, Clause, Seq[Expression]) = {
+    override def createBallAction(actionName: String, state: StateBasic, stateActionBall: StateBase.Ball, stateNext: StateBasic, stateNextActionBall: StateBase.Ball, offset: Coordinate): (Clause, Clause, Seq[Expression]) = {
         val otherBallUnderVar = BooleanVariable(actionName + "_OBU")
 
         val (updateBallSizeClause, updateBallSizeExpressions) = updateBallSize(actionName, state, stateActionBall, stateNextActionBall)
@@ -29,7 +28,7 @@ class EncoderBaisc(level: Level) extends EncoderSnowman(level) {
             Implies(otherBallUnderVar, equalCharacterVariables(state, stateNext)),
             equalOtherBallsVariables(state, stateActionBall, stateNext, stateNextActionBall),
             updateBallSizeClause,
-            updateSnowVariables(state, stateNext))
+            updateSnowVariables(state, stateNext, offset))
 
         val expressions = List(VariableDeclaration(otherBallUnderVar),
             ClauseDeclaration(Equivalent(otherBallUnderVar, otherBallUnder(state, stateActionBall)))) ++
@@ -38,9 +37,9 @@ class EncoderBaisc(level: Level) extends EncoderSnowman(level) {
         (pre, eff, expressions)
     }
 
-    override def codifyReachability(state: StateSnowman, encoing: Encoding): Unit = {}
+    override def codifyReachability(state: StateBasic, encoing: Encoding): Unit = {}
 
-    override def codifyCharacterAction(name: String, state: StateSnowman, stateNext: StateSnowman, offset: Coordinate, encoding: Encoding, actionVariables: ListBuffer[BooleanVariable]): Unit = {
+    override def codifyCharacterAction(name: String, state: StateBasic, stateNext: StateBasic, offset: Coordinate, encoding: Encoding, actionVariables: ListBuffer[BooleanVariable]): Unit = {
         val actionVariable = BooleanVariable(name + "_S" + state.timeStep + "S" + stateNext.timeStep)
         actionVariables.append(actionVariable)
 
@@ -54,11 +53,11 @@ class EncoderBaisc(level: Level) extends EncoderSnowman(level) {
 
     override def decode(assignments: Seq[Assignment], encodingData: EncodingData): Seq[Action] = ???
 
-    private def characterNextToBall(state: StateSnowman, stateActionBll: StateSnowman.Ball, offset: Coordinate): Clause = {
+    private def characterNextToBall(state: StateBase, stateActionBll: StateBase.Ball, offset: Coordinate): Clause = {
         applyOffsetClause(stateActionBll.x, stateActionBll.x, state.character.x, state.character.y, -offset, and)
     }
 
-    private def moveCharacter(state: StateSnowman, stateNext: StateSnowman, offset: Coordinate): Clause = {
+    private def moveCharacter(state: StateBase, stateNext: StateBase, offset: Coordinate): Clause = {
         applyOffsetClause(state.character.x, state.character.y, stateNext.character.x, stateNext.character.y, offset, and)
     }
 }

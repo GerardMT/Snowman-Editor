@@ -1,16 +1,16 @@
 package gmt.ui
 
 import java.awt.{GraphicsEnvironment, Rectangle}
-import java.io.{File, FileWriter}
+import java.io.File
 
-import javax.swing.{Box => _, _}
 import gmt.snowman.level.{LevelParserException, MutableLevel}
 import gmt.snowman.pddl.EncoderPDDL
 import gmt.snowman.solver.SnowmanSolver
 import gmt.snowman.util.Files
+import javax.swing.{Box => _, _}
 
 import scala.swing.GridBagPanel.Anchor
-import scala.swing.{Action, Dialog, FileChooser, GridBagPanel, MainFrame, Menu, MenuBar, MenuItem, Point, ScrollPane, Separator, SimpleSwingApplication}
+import scala.swing.{Action, Dialog, FileChooser, GridBagPanel, MainFrame, Menu, MenuBar, MenuItem, ScrollPane, Separator, SimpleSwingApplication}
 
 
 object UI extends SimpleSwingApplication {
@@ -52,7 +52,7 @@ object UI extends SimpleSwingApplication {
                     myPanel.add(new JLabel("height:"))
                     myPanel.add(heightField)
 
-                    val result = JOptionPane.showConfirmDialog(null, myPanel, "Map size", JOptionPane.OK_CANCEL_OPTION)
+                    JOptionPane.showConfirmDialog(null, myPanel, "Map size", JOptionPane.OK_CANCEL_OPTION)
 
                     try {
                         val width = widthField.getText.toInt
@@ -61,7 +61,7 @@ object UI extends SimpleSwingApplication {
                         uiLevel.reload(MutableLevel.default(width, heith))
                         resize()
                     } catch {
-                        case e: NumberFormatException =>
+                        case _: NumberFormatException =>
                             Dialog.showMessage(null, "Number must be an integer")
                     }
 
@@ -102,11 +102,32 @@ object UI extends SimpleSwingApplication {
                 })
             }
             contents += new Menu("Solver") {
-                contents += new MenuItem("Solve (SMT)")
-                contents += new MenuItem("Solve (SMT TP)")
-                contents += new MenuItem("Solve (SMT TP Reachability)")
+                contents += new MenuItem(Action("SMT Basic Encoding") {
+                    contents += new MenuItem(Action("Generate") {
+                        // TODO
+                    })
+                    contents += new MenuItem(Action("Solve") {
+                        SnowmanSolver.solveWithBasicEncoding(uiLevel.mutableLevel.toLevel)
+                    })
+                })
+                contents += new MenuItem(Action("SMT Cheating Encoding") {
+                    contents += new MenuItem(Action("Generate") {
+                        // TODO
+                    })
+                    contents += new MenuItem(Action("Solve") {
+                        SnowmanSolver.solveWithCheatingEncoding(uiLevel.mutableLevel.toLevel)
+                    })
+                })
+                contents += new MenuItem(Action("SMT Reachability Encoding") {
+                    contents += new MenuItem(Action("Generate") {
+                        // TODO
+                    })
+                    contents += new MenuItem(Action("Solve") {
+                        SnowmanSolver.solveWithReachabilityEncoding(uiLevel.mutableLevel.toLevel)
+                    })
+                })
                 contents += new Separator
-                contents += new Menu("PDDL Adl") {
+                contents += new Menu("PDDL adl") {
                     contents += new MenuItem(Action("Generate") {
                         savePickAndTextFile(EncoderPDDL.encodeStrips(uiLevel.mutableLevel.toLevel))
                     })
@@ -114,7 +135,7 @@ object UI extends SimpleSwingApplication {
                         SnowmanSolver.solvePDDLStrips(uiLevel.mutableLevel.toLevel)
                     })
                 }
-                contents += new Menu("PDDL Object-fluents") {
+                contents += new Menu("PDDL object-fluents") {
                     contents += new MenuItem(Action("Generate") {
                         savePickAndTextFile(EncoderPDDL.encodeObjectFluents(uiLevel.mutableLevel.toLevel))
                     })
@@ -122,7 +143,7 @@ object UI extends SimpleSwingApplication {
                         SnowmanSolver.solvePDDLObjectFluents(uiLevel.mutableLevel.toLevel)
                     })
                 }
-                contents += new Menu("PDDL Numeric-fluents") {
+                contents += new Menu("PDDL numeric-fluents") {
                     contents += new MenuItem(Action("Generate") {
                         savePickAndTextFile(EncoderPDDL.encodeNumericFluents(uiLevel.mutableLevel.toLevel))
                     })

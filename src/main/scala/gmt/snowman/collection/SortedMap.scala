@@ -8,19 +8,19 @@ object SortedMap {
     def empty[K, V]: SortedMap[K, V] = new SortedMap[K, V]
 }
 
-class SortedMap[K, V] extends Iterable[V] {
+class SortedMap[K, V] extends Iterable[(K, V)] {
 
     private val _map = mutable.Map.empty[K, V]
-    private val _list = ListBuffer.empty[V]
+    private val _list = ListBuffer.empty[(K, V)]
 
     def put(key: K, value: V): Option[V] = {
         _map.put(key, value) match {
             case s @ Some(v) =>
                 removeValueFromList(v)
-                _list.append(value)
+                _list.append((key, value))
                 s
             case None =>
-                _list.append(value)
+                _list.append((key, value))
                 None
         }
     }
@@ -59,6 +59,8 @@ class SortedMap[K, V] extends Iterable[V] {
         }
     }
 
-    override def iterator: Iterator[V] = _list.iterator
+    override def iterator: Iterator[(K, V)] = _list.iterator
+
+    def values: Iterator[V] = _list.iterator.map(f => f._2)
 }
 

@@ -23,7 +23,7 @@ object EncoderPDDL {
         encoding += "    )\n"
         encoding += "    (:init\n"
 
-        for (l <- level.map.filter(f => f.o != Wall); (o, d) <- Level.OFFSETS.zip(directions) ) {
+        for (l <- level.map.values.filter(f => f.o != Wall); (o, d) <- Level.OFFSETS.zip(directions) ) {
             level.map.get(l.c + o) match {
                 case Some(l2) =>
                     if (l2.o != Wall) {
@@ -67,7 +67,7 @@ object EncoderPDDL {
         encoding += "    )\n"
         encoding += "    (:init\n"
 
-        for (l <- level.map.filter(f => f.o != Wall); (o, d) <- Level.OFFSETS.zip(directions) ) {
+        for (l <- level.map.values.filter(f => f.o != Wall); (o, d) <- Level.OFFSETS.zip(directions) ) {
             level.map.get(l.c + o) match {
                 case Some(l2) =>
                     if (l2.o != Wall) {
@@ -113,7 +113,7 @@ object EncoderPDDL {
     private def encodeObjectsLocations(level: Level): String ={
         var encoding = ""
 
-        for (l <- level.map.filter(f => f.o != Wall)) {
+        for (l <- level.map.values.filter(f => f.o != Wall)) {
             encoding += "        loc-" + l.c.x + "-" + l.c.y + " - location\n"
         }
 
@@ -123,7 +123,7 @@ object EncoderPDDL {
     private def encodeInitOccupancy(level: Level): String = {
         var encoding = ""
 
-        for (l <- level.map.filter(f => Object.isBall(f.o))) {
+        for (l <- level.map.values.filter(f => Object.isBall(f.o))) {
             encoding += "        (occupancy loc-" + l.c.x + "-" + l.c.y + ")\n"
         }
 
@@ -133,7 +133,7 @@ object EncoderPDDL {
     private def encodeInitSnow(level: Level): String = {
         var encoding = ""
 
-        for (l <- level.map.filter(f => f.o == Snow)) {
+        for (l <- level.map.values.filter(f => f.o == Snow)) {
             encoding += "        (snow loc-" + l.c.x + "-" + l.c.y + ")\n"
         }
 

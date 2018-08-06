@@ -8,13 +8,14 @@ object Object {
         ALL_OBJECTS.find(f => f.char == c.toLower).get
     }
 
-    def isBall(o: gmt.snowman.level.`object`.Object): Boolean =  {
-        o match {
-            case SmallBall | MediumBall | LargeBall | MediumSmallBall | LargeSmallBall | LargeMediumBall | LargeMediumSmallBall =>
-                true
-            case _ =>
-                false
-        }
+    def isBall(o: gmt.snowman.level.`object`.Object): Boolean = o match {
+        case SmallBall | MediumBall | LargeBall | MediumSmallBall | LargeSmallBall | LargeMediumBall | LargeMediumSmallBall => true
+        case _ => false
+    }
+
+    def isSnow(o: Object): Boolean = o match {
+        case Snow | PlayerSnow => true
+        case _ => false
     }
 }
 

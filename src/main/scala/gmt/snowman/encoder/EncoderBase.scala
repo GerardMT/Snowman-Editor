@@ -8,13 +8,12 @@ import gmt.snowman.level.{Coordinate, Level, `object`}
 
 import scala.collection.mutable.ListBuffer
 
-
-abstract class EncoderSnowman(level: Level) extends Encoder {
+abstract class EncoderBase[A <: StateBase](level: Level) extends Encoder {
 
     override def encode(timeSteps: Int): EncoderResult = {
         val encoding = new Encoding
 
-        val states = ListBuffer.empty[StateSnowman]
+        val states = ListBuffer.empty[A]
 
         val state0 = createState(level, 0)
         state0.addVariables(encoding)
@@ -34,16 +33,16 @@ abstract class EncoderSnowman(level: Level) extends Encoder {
         }
 
         encoding.add(Comment("S0 Snow"))
-        for (s <- level.map.filter(f => f.o == Snow || f.o == PlayerSnow).map(f => state0.snow(f.c))) {
-            encoding.add(ClauseDeclaration(s.get))
+        for (s <- state0.snow.values) {
+            encoding.add(ClauseDeclaration(s))
         }
 
         encoding.add(Comment("S0 Occupancy"))
-        for (l <- level.map) {
+        for (l <- level.map.values) {
             if (l.o == Wall || Object.isBall(l.o)) {
-                encoding.add(ClauseDeclaration(state0.occupancy(l.c).get))
+                encoding.add(ClauseDeclaration(state0.occupancy.get(l.c).get))
             } else {
-                encoding.add(ClauseDeclaration(Not(state0.occupancy(l.c).get)))
+                encoding.add(ClauseDeclaration(Not(state0.occupancy.get(l.c).get)))
             }
         }
 
@@ -54,16 +53,16 @@ abstract class EncoderSnowman(level: Level) extends Encoder {
         var state = state0
 
         for (timeStep <- 1 until timeSteps + 1) {
-            val stateNext =  new StateSnowman(level, timeStep)
+            val stateNext =  createState(level, timeStep)
             stateNext.addVariables(encoding)
             states.append(stateNext)
 
             encoding.add(Comment("Occupancy"))
-            for (l <- level.map.iterator.filterNot(f => f.o == Wall)) {
+            for (l <- level.map.values.filterNot(f => f.o == Wall)) {
                 val ors = for (b <- stateNext.balls) yield {
                     And(Equals(b.x, IntegerConstant(l.c.x)), Equals(b.y, IntegerConstant(l.c.y))) // TODO OPTIMITZAR Es pot optimitzar? Pq només es mou la bola que fa l'acció, no cal fer un conjunt d'ors
                 }
-                encoding.add(ClauseDeclaration(Equivalent(Or(ors: _*), stateNext.occupancy(l.c).get)))
+                encoding.add(ClauseDeclaration(Equivalent(Or(ors: _*), stateNext.occupancy.get(l.c).get)))
             }
 
             // TODO OCCUPANCY VARIABLES UPDATE WALLS
@@ -134,76 +133,76 @@ abstract class EncoderSnowman(level: Level) extends Encoder {
         EncoderResult(encoding, null) // TODO
     }
 
-    protected def createState(level: Level, index: Int): StateSnowman
+    protected def createState(level: Level, index: Int): A
 
-    protected def codifyReachability(state: StateSnowman, encoing: Encoding)
+    protected def codifyReachability(state: A, encoing: Encoding)
 
-    protected def codifyCharacterAction(actionName: String, state: StateSnowman, stateNext: StateSnowman, offset: Coordinate, encoding: Encoding, actionVariables: ListBuffer[BooleanVariable])
+    protected def codifyCharacterAction(actionName: String, state: A, stateNext: A, offset: Coordinate, encoding: Encoding, actionVariables: ListBuffer[BooleanVariable])
 
-    protected def createBallAction(actoinName: String, state: StateSnowman, stateActionBall: StateSnowman.Ball, stateNext: StateSnowman, stateNextActionBall: StateSnowman.Ball, offset: Coordinate): (Clause, Clause, Seq[Expression])
+    protected def createBallAction(actoinName: String, state: A, stateActionBall: StateBase.Ball, stateNext: A, stateNextActionBall: StateBase.Ball, offset: Coordinate): (Clause, Clause, Seq[Expression])
 
-    protected def noWallInFront(state: StateSnowman, stateActionBall: StateSnowman.Ball): Clause = { // TODO OPTIMITZACIO Es podria fer per coordenades
-        And((for (l <- level.map.filter(f => f.o == Wall)) yield {
+    protected def noWallInFront(state: StateBase, stateActionBall: StateBase.Ball): Clause = { // TODO OPTIMITZACIO Es podria fer per coordenades
+        And((for (l <- level.map.values.filter(f => f.o == Wall)) yield {
             Or(Not(Equals(stateActionBall.x, IntegerConstant(l.c.x))), Not(Equals(stateActionBall.y, IntegerConstant(l.c.y))))
         }).toSeq : _*) // TODO Fer alternativa inGrass
     }
 
-    protected def noOtherBallsOver(state: StateSnowman, stateActionBall: StateSnowman.Ball): Clause = {
+    protected def noOtherBallsOver(state: StateBase, stateActionBall: StateBase.Ball): Clause = {
         And((for (b <- state.balls.filter(f => f != stateActionBall)) yield {
             Or(Not(Equals(stateActionBall.x, b.x)), Not(Equals(stateActionBall.y, b.y)), Smaller(stateActionBall.size, b.size))
         }): _*)
     }
 
-    protected def otherBallUnder(state: StateSnowman, stateActionBall: StateSnowman.Ball): Clause = {
+    protected def otherBallUnder(state: StateBase, stateActionBall: StateBase.Ball): Clause = {
         Or((for (b <- state.balls.filter(f => f != stateActionBall)) yield {
             And(Equals(stateActionBall.x, b.x), Equals(stateActionBall.y, b.y), Smaller(stateActionBall.size, b.size))
         }): _*)
     }
 
-    protected def otherBallInFront(state: StateSnowman, stateActionBall: StateSnowman.Ball, offset: Coordinate): Clause = {
+    protected def otherBallInFront(state: StateBase, stateActionBall: StateBase.Ball, offset: Coordinate): Clause = {
         Or((for (b <- state.balls.filter(f => f != stateActionBall)) yield {
             applyOffsetClause(stateActionBall.x, stateActionBall.y, b.x, b.y, offset, and)
         }) : _*)
     }
 
-    protected def otherBallsInFrontLarger(state: StateSnowman, stateActionBall: StateSnowman.Ball, offset: Coordinate): Clause = {
+    protected def otherBallsInFrontLarger(state: StateBase, stateActionBall: StateBase.Ball, offset: Coordinate): Clause = {
         And((for (b <- state.balls.filter(f => f != stateActionBall)) yield {
             Or(applyOffsetClause(stateActionBall.x, stateActionBall.y, b.x, b.y, offset, or), Smaller(stateActionBall.size, b.size))
         }) : _*)
     }
 
-    protected def moveBall(stateActionBall: StateSnowman.Ball, stateNextActionBall: StateSnowman.Ball, offset: Coordinate): Clause = {
+    protected def moveBall(stateActionBall: StateBase.Ball, stateNextActionBall: StateBase.Ball, offset: Coordinate): Clause = {
         applyOffsetClause(stateActionBall.x, stateActionBall.y, stateNextActionBall.x, stateNextActionBall.y, offset, and)
     }
 
-    protected def equalCharacterVariables(state: StateSnowman, stateNext: StateSnowman): Clause = {
+    protected def equalCharacterVariables(state: StateBase, stateNext: StateBase): Clause = {
         And(Equals(state.character.x, stateNext.character.x), Equals(state.character.y, stateNext.character.y))
     }
 
-    protected def equalOtherBallsVariables(state: StateSnowman, stateActionBall: StateSnowman.Ball, stateNext: StateSnowman, stateNextActionBall: StateSnowman.Ball): Clause = {
+    protected def equalOtherBallsVariables(state: StateBase, stateActionBall: StateBase.Ball, stateNext: StateBase, stateNextActionBall: StateBase.Ball): Clause = {
         And((for ((stateB, stateNextB) <- state.balls.filter(f => f != stateActionBall).zip(stateNext.balls.filter(f => f != stateNextActionBall))) yield {
             And(Equals(stateB.x, stateNextB.x), Equals(stateB.y, stateNextB.y), Equals(stateB.size, stateNextB.size))
         }): _*)
     }
 
-    protected def updateSnowVariables(state: StateSnowman, stateNext: StateSnowman): Clause = {
-        And((for ((l, s) <- level.map.zip(level.map.map(f => state.snow(f.c))).filter(f => f._2.isDefined).map(f => (f._1, f._2.get))) yield {
-            Equivalent(And(s, Not(And(Equals(state.character.x, IntegerConstant(l.c.x)), Equals(state.character.y, IntegerConstant(l.c.y))))), s)
+    protected def updateSnowVariables(state: StateBase, stateNext: StateBase, offset: Coordinate): Clause = {
+        And((for ((c, s) <- state.snow) yield {
+            Equivalent(And(s, Not(And(Equals(state.character.x, IntegerConstant(c.x)), Equals(state.character.y, IntegerConstant(c.y))))), stateNext.snow.get(c + offset).get)
         }).toSeq: _*)
     }
 
-    protected def characterPositionValid(state: StateSnowman): Clause = {
-        Or((for ((l, o) <- level.map.zip(level.map.map(f => state.occupancy(f.c))).filter(f => f._2.isDefined).map(f => (f._1, f._2.get))) yield {
-            And(Equals(state.character.x, IntegerConstant(l.c.x)), Equals(state.character.y, IntegerConstant(l.c.y)), Not(o))
+    protected def characterPositionValid(state: StateBase): Clause = {
+        Or((for ((c, o) <- state.occupancy) yield {
+            And(Equals(state.character.x, IntegerConstant(c.x)), Equals(state.character.y, IntegerConstant(c.y)), Not(o))
         }).toSeq: _*)
     }
 
-    protected def updateBallSize(actionName: String, state: StateSnowman, stateActionBall: StateSnowman.Ball, stateNextActionBall: StateSnowman.Ball): (Clause, Seq[Expression]) = {
+    protected def updateBallSize(actionName: String, state: StateBase, stateActionBall: StateBase.Ball, stateNextActionBall: StateBase.Ball): (Clause, Seq[Expression]) = {
         if (level.hasSnow) {
             val expressions = ListBuffer.empty[Expression]
 
-            val theresSnow = Operations.simplify(Or((for ((l, s) <- level.map.zip(level.map.map(f => state.snow(f.c))).filter(f => f._2.isDefined).map(f => (f._1, f._2.get))) yield {
-                    And(operation.Equals(stateActionBall.x, IntegerConstant(l.c.x)), operation.Equals(stateActionBall.y, IntegerConstant(l.c.y)), s)
+            val theresSnow = Operations.simplify(Or((for ((c, s) <- state.snow) yield {
+                    And(operation.Equals(stateActionBall.x, IntegerConstant(c.x)), operation.Equals(stateActionBall.y, IntegerConstant(c.y)), s)
             }).toSeq: _*))
 
             val theresSnowVar = BooleanVariable(actionName + "_TS")

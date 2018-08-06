@@ -128,7 +128,7 @@ class MutableLevel private (val width: Int, val height: Int){
 
         val toRemove = ListBuffer.empty[Coordinate]
 
-        for (p <- sortedMap) {
+        for (p <- sortedMap.values) {
             val right= sortedMap.get(p.c + Coordinate(+1, 0))
             val left = sortedMap.get(p.c + Coordinate(-1, 0))
             val up = sortedMap.get(p.c + Coordinate(0, +1))

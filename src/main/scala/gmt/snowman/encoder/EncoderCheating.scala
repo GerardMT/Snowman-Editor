@@ -8,12 +8,11 @@ import gmt.snowman.level.{Coordinate, Level}
 
 import scala.collection.mutable.ListBuffer
 
+class EncoderCheating(l: Level) extends EncoderBase[StateCheating](l) {
 
-class EncoderCheating(l: Level) extends EncoderSnowman(l) {
+    override def createState(level: Level, timeStep: Int): StateCheating = StateCheating(level, timeStep)
 
-    override def createState(level: Level, timeStep: Int): StateSnowman = new StateSnowman(level, timeStep) // TODO
-
-    override def createBallAction(actionName: String, state: StateSnowman, stateActionBall: StateSnowman.Ball, stateNext: StateSnowman, stateNextActionBall: StateSnowman.Ball, offset: Coordinate): (Clause, Clause, Seq[Expression]) = {
+    override def createBallAction(actionName: String, state: StateCheating, stateActionBall: StateBase.Ball, stateNext: StateCheating, stateNextActionBall: StateBase.Ball, offset: Coordinate): (Clause, Clause, Seq[Expression]) = {
         val (updateBallSizeClause, expressions) = updateBallSize(actionName, state, stateActionBall, stateNextActionBall)
 
         val pre = And(noWallInFront(state, stateActionBall),
@@ -25,14 +24,15 @@ class EncoderCheating(l: Level) extends EncoderSnowman(l) {
         val eff = And(moveBall(stateActionBall, stateNextActionBall, offset),
             equalOtherBallsVariables(state, stateActionBall, stateNext, stateNextActionBall),
             updateBallSizeClause,
-            updateSnowVariables(state, stateNext))
+            updateSnowVariables(state, stateNext, offset))
 
         (pre, eff, expressions)
     }
 
-    override def codifyReachability(state: StateSnowman, encoing: Encoding): Unit = {}
+    override def codifyReachability(state: StateCheating, encoing: Encoding): Unit = {
+    }
 
-    override protected def codifyCharacterAction(name: String, state: StateSnowman, stateNext: StateSnowman, offset: Coordinate, encoding: Encoding, actionVariables: ListBuffer[BooleanVariable]): Unit = {}
+    override protected def codifyCharacterAction(name: String, state: StateCheating, stateNext: StateCheating, offset: Coordinate, encoding: Encoding, actionVariables: ListBuffer[BooleanVariable]): Unit = {}
 
     override def decode(assignments: Seq[Assignment], encodingData: EncodingData): Seq[action.Action] = ???
 }
