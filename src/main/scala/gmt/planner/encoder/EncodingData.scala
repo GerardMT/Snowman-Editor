@@ -1,5 +1,3 @@
 package gmt.planner.encoder
 
-trait EncodingData {
-
-}
+trait EncodingData

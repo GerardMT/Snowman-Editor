@@ -22,8 +22,8 @@ object StateBase {
         val occupancy =  SortedMap.empty[Coordinate, BooleanVariable]
         val snow = SortedMap.empty[Coordinate, BooleanVariable]
 
-        for (l <- level.map.values.filter(f => f.o != Wall)) {
-            occupancy.put(l.c, BooleanVariable("OX" + l.c.x + "Y" + l.c.y + "S" + timeStep))
+        for (l <- level.map.values) {
+            occupancy.put(l.c, BooleanVariable("O_X" + l.c.x + "Y" + l.c.y + "S" + timeStep))
         }
 
         for (l <- level.map.values.filter(f => Object.isSnow(f.o))) {
@@ -31,10 +31,10 @@ object StateBase {
         }
 
         for(i <- level.balls.indices) {
-            balls.append(Ball(IntegerVariable("B" + i + "X_S" + timeStep), IntegerVariable("B" + i + "Y_S" + timeStep), IntegerVariable("B" + i + "T_S" + timeStep)))
+            balls.append(Ball(IntegerVariable("B" + i + "_X_S" + timeStep), IntegerVariable("B" + i + "Y_S" + timeStep), IntegerVariable("B" + i + "T_S" + timeStep)))
         }
 
-        val character = Character(IntegerVariable("CX_S" + timeStep), IntegerVariable("CY_S" + timeStep))
+        val character = Character(IntegerVariable("C_X_S" + timeStep), IntegerVariable("CY_S" + timeStep))
 
         new StateBase(timeStep, character, balls.toList, snow, occupancy)
     }

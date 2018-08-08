@@ -1,25 +1,25 @@
 package gmt.planner.planner
 
-import gmt.planner.encoder.Encoder
+import gmt.planner.action.Action
+import gmt.planner.encoder.{Encoder, EncodingData}
 import gmt.planner.solver.Solver
 import gmt.planner.timestep.{TimeStepResult, TimeStepSolver}
 import gmt.planner.translator.Translator
-import gmt.ui.Settings
 
 import scala.collection.mutable.ListBuffer
 
 
-class Planner(settings: Settings) {
+class Planner[A <: Action, B <: EncodingData](val nThreads: Int, val maxActions: Int) {
 
-    private var timeStep = settings.startAction
+    private var timeStep = 1
 
-    private val threads = ListBuffer.empty[Child]
+    private val threads = ListBuffer.empty[Child[A, B]]
 
-    private var timeStepResult: Option[TimeStepResult] = None
+    private var timeStepResult: Option[TimeStepResult[A]] = None
 
-    def solve(encoder: Encoder, tranlator: Translator, solver: Solver): PlannerResult = {
-        for (i <- 0 until settings.threads) {
-            threads.append(new Child(i, this, settings, new TimeStepSolver(encoder, tranlator, solver)))
+    def solve(encoder: Encoder[A, B], tranlator: Translator, solver: Solver): PlannerResult[A] = {
+        for (i <- 0 until nThreads) {
+            threads.append(new Child[A, B](i, this, new TimeStepSolver[A, B](encoder, tranlator, solver)))
         }
 
         threads.foreach(f => f.start())
@@ -27,9 +27,9 @@ class Planner(settings: Settings) {
 
         timeStepResult match {
             case Some(r) =>
-                PlannerResult(r.sat, r.timeSteps, r.actions)
+                PlannerResult[A](r.sat, r.timeSteps, r.actions)
             case None =>
-                PlannerResult(sat = false, timeStep, List())
+                PlannerResult[A](sat = false, timeStep, List())
         }
     }
 
@@ -41,7 +41,7 @@ class Planner(settings: Settings) {
         previusTimeStep
     }
 
-    def solutionFound(child: Child): Unit = synchronized {
+    def solutionFound(child: Child[A, B]): Unit = synchronized {
         for (t <- threads) {
             if (t != child) {
                 if (t.timeStep > child.timeStep) {

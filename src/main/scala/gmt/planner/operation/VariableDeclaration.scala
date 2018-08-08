@@ -2,7 +2,7 @@ package gmt.planner.operation
 
 case class VariableDeclaration(v: Clause) extends Expression {
 
-    if (!v.isInstanceOf[BooleanVariable] || !v.isInstanceOf[IntegerVariable]) {
+    if (!v.isInstanceOf[BooleanVariable] && !v.isInstanceOf[IntegerVariable]) {
         throw InvalidClauseException(toString)
     }
 

@@ -2,7 +2,7 @@ package gmt.planner.operation
 
 case class ClauseDeclaration(c: Clause) extends Expression {
 
-    if (!Operations.isReturnLogical(c)) {
+    if (!Operations.isReturnBoolean(c)) {
         throw InvalidClauseException(toString)
     }
 

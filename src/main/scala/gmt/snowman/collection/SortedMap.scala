@@ -16,7 +16,7 @@ class SortedMap[K, V] extends Iterable[(K, V)] {
     def put(key: K, value: V): Option[V] = {
         _map.put(key, value) match {
             case s @ Some(v) =>
-                removeValueFromList(v)
+                removeValueFromList((key, v))
                 _list.append((key, value))
                 s
             case None =>
@@ -32,7 +32,7 @@ class SortedMap[K, V] extends Iterable[(K, V)] {
     def remove(key: K): Option[V] = {
         _map.remove(key) match {
             case s @ Some(v) =>
-                removeValueFromList(v)
+                removeValueFromList((key, v))
                 s
             case None =>
                 None
@@ -40,14 +40,14 @@ class SortedMap[K, V] extends Iterable[(K, V)] {
 
     }
 
-    private def removeValueFromList(v: V): Unit ={
+    private def removeValueFromList(pair: (K, V)): Unit ={
         var removed = false
         val it = _list.iterator
 
         var i = 0
 
         while (!removed && it.hasNext) {
-            if (it.next() == v) {
+            if (it.next() == pair) {
                 removed = true
             } else {
                 i += 1

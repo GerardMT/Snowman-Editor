@@ -1,9 +1,8 @@
 package gmt.snowman.level
 
-import java.io.{BufferedReader, File, FileReader, FileWriter}
-
 import gmt.snowman.collection.SortedMap
 import gmt.snowman.level.`object`._
+import gmt.snowman.validator.{PlayableLevel, TwoDimSeq}
 
 import scala.collection.mutable.ListBuffer
 
@@ -78,7 +77,7 @@ class MutableLevel private (val width: Int, val height: Int){
         var size = 0
         var hasSnow = false
 
-        var somePlayerPosition: Option[Location] = None
+        var someCharacterLocatoin: Option[Location] = None
         val balls = ListBuffer.empty[Location]
 
         val sortedMap = SortedMap.empty[Coordinate, Location]
@@ -101,11 +100,11 @@ class MutableLevel private (val width: Int, val height: Int){
                 o match {
                     case Snow =>
                         hasSnow = true
-                    case Player =>
-                        somePlayerPosition = Some(p)
-                    case PlayerSnow =>
+                    case Character =>
+                        someCharacterLocatoin = Some(p)
+                    case CharacterSnow =>
                         hasSnow = true
-                        somePlayerPosition = Some(p)
+                        someCharacterLocatoin = Some(p)
                     case SmallBall | MediumBall | LargeBall =>
                         balls.append(p)
                     case MediumSmallBall =>
@@ -143,18 +142,18 @@ class MutableLevel private (val width: Int, val height: Int){
             sortedMap.remove(f)
         })
 
-        val playerPosition = somePlayerPosition match {
+        val characterLocation = someCharacterLocatoin match {
             case Some(p) =>
                 p
             case None =>
-                throw LevelParserException("Level must have a player")
+                throw LevelParserException("Level must have a character")
         }
 
         if (balls.size % 3 != 0) {
             throw LevelParserException("Level has only " + balls.size + " balls. Has to be multiple of 3")
         }
 
-        new Level(width, height, size, hasSnow, playerPosition, balls.toList, sortedMap, toString)
+        new Level(width, height, size, hasSnow, characterLocation, balls.toList, sortedMap, toString)
     }
 
     def save: String = {

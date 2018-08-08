@@ -32,6 +32,7 @@ class Yices2Solver(solverBinaryPath: String) extends Solver {
             case "unsat" =>
                 false
             case _ =>
+                lines.foreach(f => System.err.println(f))
                 throw new InvalidParameterException
         }
 

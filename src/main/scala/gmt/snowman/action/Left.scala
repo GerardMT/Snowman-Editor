@@ -1,7 +1,9 @@
 package gmt.snowman.action
+import gmt.snowman.level.Coordinate
 
-import gmt.planner.action.Action
+case object Left extends SnowmanAction {
 
-case object Left extends Action {
+    override val shift: Coordinate = Coordinate(-1, 0)
 
+    override def toString: String = "left"
 }

@@ -4,7 +4,7 @@ import java.awt.Image
 import java.io.File
 
 import javax.imageio.ImageIO
-import gmt.snowman.level.`object`.{Empty, Grass, LargeBall, LargeMediumBall, LargeMediumSmallBall, LargeSmallBall, MediumBall, MediumSmallBall, Object, Player, PlayerSnow, SmallBall, Snow, Wall}
+import gmt.snowman.level.`object`.{Empty, Grass, LargeBall, LargeMediumBall, LargeMediumSmallBall, LargeSmallBall, MediumBall, MediumSmallBall, Object, Character, CharacterSnow, SmallBall, Snow, Wall}
 
 class ResourceManager(gamePath: String) {
 
@@ -19,8 +19,8 @@ class ResourceManager(gamePath: String) {
     private val largeSmallBall = ImageIO.read(new File(gamePath + "largeSmallBall.png"))
     private val largeMediumBall = ImageIO.read(new File(gamePath + "largeMediumBall.png"))
     private val largeMediumSmallBall = ImageIO.read(new File(gamePath + "largeMediumSmallBall.png"))
-    private val player = ImageIO.read(new File(gamePath + "player.png"))
-    private val playerSnow = ImageIO.read(new File(gamePath + "playerSnow.png"))
+    private val character = ImageIO.read(new File(gamePath + "character.png"))
+    private val characterSnow = ImageIO.read(new File(gamePath + "characterSnow.png"))
 
     def getResource(o: Object): Image = {
         o match {
@@ -46,10 +46,10 @@ class ResourceManager(gamePath: String) {
                 largeMediumBall
             case LargeMediumSmallBall =>
                 largeMediumSmallBall
-            case Player =>
-                player
-            case PlayerSnow =>
-                playerSnow
+            case Character =>
+                character
+            case CharacterSnow =>
+                characterSnow
         }
     }
 }

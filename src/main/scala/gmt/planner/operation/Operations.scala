@@ -12,8 +12,8 @@ object Operations {
             false
     }
 
-    def isReturnLogical(c: Clause): Boolean = c match {
-        case BooleanVariable(_) | BooleanConstant(_) | And(_) | Or(_) | Not(_) | Implies(_,_) | Equivalent(_,_) | Equals(_,_) | Smaller(_,_) | Greater(_,_) =>
+    def isReturnBoolean(c: Clause): Boolean = c match {
+        case BooleanVariable(_) | BooleanConstant(_) | And(_*) | Or(_*) | Not(_) | Implies(_,_) | Equivalent(_,_) | Equals(_,_) | Smaller(_,_) | Greater(_,_) =>
             true
         case _=>
             false
@@ -88,42 +88,10 @@ object Operations {
 
     def simplify(c: Clause): Clause = {
         c match {
-            case Not(c1) =>
-                Not(simplify(c1))
-            case And() =>
-                throw new IllegalStateException
-            case And(c1) =>
-                simplify(c1)
-            case And(c1, c2 @ _*) =>
-                And(simplify(c1) +: c2.map(f => simplify(f)): _*)
-            case Or() =>
-                throw new IllegalStateException
-            case Or(c1) =>
-                simplify(c1)
-            case Or(c1, c2 @ _*) =>
-                Or(simplify(c1) +: c2.map(f => simplify(f)): _*)
-            case Implies(c1, c2) =>
-                Implies(simplify(c1), simplify(c2))
-            case Equivalent(c1, c2) =>
-                Equivalent(simplify(c1), simplify(c2))
-            case l @ BooleanVariable(_) =>
-                l
-            case l @ BooleanConstant(_) =>
-                l
-            case Equals(c1, c2) =>
-                Equals(simplify(c1), simplify(c2))
-            case Add(c1, c2) =>
-                Add(simplify(c1), simplify(c2))
-            case Sub(c1, c2) =>
-                Sub(simplify(c1), simplify(c2))
-            case Smaller(c1, c2) =>
-                Smaller(simplify(c1), simplify(c2))
-            case Greater(c1, c2) =>
-                Greater(simplify(c1), simplify(c2))
-            case a @ IntegerVariable(_) =>
-                a
-            case a @ IntegerConstant(_) =>
-                a
+            case And(c1) => c1
+            case c @ And(_,_) => c
+            case Or(c1) => c1
+            case c @ Or(_,_) => c
         }
     }
 }

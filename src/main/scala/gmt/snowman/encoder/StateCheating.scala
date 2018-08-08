@@ -15,7 +15,7 @@ object StateCheating {
 }
 
 class StateCheating private (override val timeStep: Int,
-                    override val character: StateBase.Character,
+                    override val character: StateBase.Character, // TODO REMOVE FOLLOW DOCUMENTATION
                     override val balls: immutable.Seq[Ball],
                     override val snow: SortedMap[Coordinate, BooleanVariable],
                     override val occupancy: SortedMap[Coordinate, BooleanVariable])

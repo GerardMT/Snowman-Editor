@@ -9,4 +9,6 @@ case class Coordinate(x: Int, y: Int) {
     def unary_- = Coordinate(-x, -y)
 
     def ==(that: Coordinate): Boolean = x == that.x && y == that.y
+
+    def euclidianDistance(that: Coordinate): Double = Math.sqrt(Math.pow(that.x - x, 2) +  Math.pow(that.y - y, 2))
 }

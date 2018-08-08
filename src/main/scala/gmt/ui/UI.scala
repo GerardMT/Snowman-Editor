@@ -5,7 +5,7 @@ import java.io.File
 
 import gmt.snowman.level.{LevelParserException, MutableLevel}
 import gmt.snowman.pddl.EncoderPDDL
-import gmt.snowman.solver.SnowmanSolver
+import gmt.snowman.solver.{SnowmanSolver, SnowmanSolverResult}
 import gmt.snowman.util.Files
 import javax.swing.{Box => _, _}
 
@@ -102,30 +102,30 @@ object UI extends SimpleSwingApplication {
                 })
             }
             contents += new Menu("Solver") {
-                contents += new MenuItem(Action("SMT Basic Encoding") {
+                contents += new Menu("SMT Basic Encoding") {
                     contents += new MenuItem(Action("Generate") {
                         // TODO
                     })
                     contents += new MenuItem(Action("Solve") {
-                        SnowmanSolver.solveWithBasicEncoding(uiLevel.mutableLevel.toLevel)
+                        showResult(SnowmanSolver.solveWithBasicEncoding(settings, uiLevel.mutableLevel.toLevel))
                     })
-                })
-                contents += new MenuItem(Action("SMT Cheating Encoding") {
+                }
+                contents += new Menu("SMT Cheating Encoding") {
                     contents += new MenuItem(Action("Generate") {
                         // TODO
                     })
                     contents += new MenuItem(Action("Solve") {
-                        SnowmanSolver.solveWithCheatingEncoding(uiLevel.mutableLevel.toLevel)
+                        showResult(SnowmanSolver.solveWithCheatingEncoding(settings, uiLevel.mutableLevel.toLevel))
                     })
-                })
-                contents += new MenuItem(Action("SMT Reachability Encoding") {
+                }
+                contents += new Menu("SMT Reachability Encoding") {
                     contents += new MenuItem(Action("Generate") {
                         // TODO
                     })
                     contents += new MenuItem(Action("Solve") {
-                        SnowmanSolver.solveWithReachabilityEncoding(uiLevel.mutableLevel.toLevel)
+                        showResult(SnowmanSolver.solveWithReachabilityEncoding(settings, uiLevel.mutableLevel.toLevel))
                     })
-                })
+                }
                 contents += new Separator
                 contents += new Menu("PDDL adl") {
                     contents += new MenuItem(Action("Generate") {
@@ -186,6 +186,13 @@ object UI extends SimpleSwingApplication {
 
             peer.setBounds(new Rectangle(maxRectangle.x, maxRectangle.y, width, height))
         }
+    }
+
+    private def showResult(snowmanSolverResult: SnowmanSolverResult): Unit = { // TODO UI
+        println("Solved:" + snowmanSolverResult.solved)
+        println("Valid: " + snowmanSolverResult.valid)
+        println("Actions:")
+        snowmanSolverResult.actions.foreach(f => println(f.toString))
     }
 
     private def savePickAndTextFile(string: String): Unit = {

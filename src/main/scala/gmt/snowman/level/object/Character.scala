@@ -1,5 +1,6 @@
 package gmt.snowman.level.`object`
 
-case object Player extends Object {
+case object Character extends Object {
+
     override def char: Char = 'q'
 }

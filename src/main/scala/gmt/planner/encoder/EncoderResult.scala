@@ -1,3 +1,3 @@
 package gmt.planner.encoder
 
-case class EncoderResult(encoding: Encoding, encodingData: EncodingData)
+case class EncoderResult[A <: EncodingData](encoding: Encoding, encodingData: A)

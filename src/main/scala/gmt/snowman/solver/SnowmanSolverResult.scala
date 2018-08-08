@@ -1,6 +1,6 @@
 package gmt.snowman.solver
 
-import gmt.planner.action.Action
+import gmt.snowman.action.SnowmanAction
 
-case class SnowmanSolverResult(solved: Boolean, actions: Seq[Action])
+case class SnowmanSolverResult(solved: Boolean, valid: Boolean, actions: Seq[SnowmanAction])
 

@@ -2,9 +2,9 @@ package gmt.planner.operation
 
 case class Not(c: Clause) extends Clause {
 
-    if (!Operations.isReturnLogical(c)) {
+    if (!Operations.isReturnBoolean(c)) {
         throw InvalidClauseException(toString)
     }
 
-    override def toString: String = "Add(" + c + ")"
+    override def toString: String = "Not(" + c + ")"
 }

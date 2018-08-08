@@ -1,6 +1,6 @@
 package gmt.snowman.level.`object`
 
 case object LargeBall extends Object {
-    override def char: Char = '4'
 
+    override def char: Char = '4'
 }

@@ -146,7 +146,7 @@ class Game(settings: Settings) {
         levelsFileWriter.write(level.toString)
         levelsFileWriter.close()
 
-        val y = level.height - level.player.c.y - 1
+        val y = level.height - level.character.c.y - 1
 
         val progressFileWriter = new FileWriter(progressFile)
         progressFileWriter.write("{")
@@ -159,10 +159,10 @@ class Game(settings: Settings) {
         progressFileWriter.write("\t\"levels\": {\n")
         progressFileWriter.write("\t\t\"0\": {\n")
         progressFileWriter.write("\t\t\t\"hasCompletedWithoutReentering\": false,\n")
-        progressFileWriter.write("\t\t\t\"resetX\": " + level.player.c.x + ",\n")
+        progressFileWriter.write("\t\t\t\"resetX\": " + level.character.c.x + ",\n")
         progressFileWriter.write("\t\t\t\"entities\": {\n")
         progressFileWriter.write("\t\t\t\t\"1\": {\n")
-        progressFileWriter.write("\t\t\t\t\t\"x\": " + level.player.c.x + ",\n")
+        progressFileWriter.write("\t\t\t\t\t\"x\": " + level.character.c.x + ",\n")
         progressFileWriter.write("\t\t\t\t\t\"type\": \"player\",\n")
         progressFileWriter.write("\t\t\t\t\t\"y\": " + y + "\n")
         progressFileWriter.write("\t\t\t\t}\n")

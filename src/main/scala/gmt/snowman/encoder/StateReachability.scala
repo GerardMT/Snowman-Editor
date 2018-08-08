@@ -3,6 +3,7 @@ package gmt.snowman.encoder
 import gmt.planner.encoder.Encoding
 import gmt.planner.operation
 import gmt.planner.operation.{BooleanVariable, IntegerVariable}
+import gmt.snowman.action.SnowmanAction
 import gmt.snowman.collection.SortedMap
 import gmt.snowman.encoder.StateBase.Ball
 import gmt.snowman.level.`object`.Wall
@@ -21,8 +22,8 @@ object StateReachability {
             reachabilityNodes.put(l.c, BooleanVariable("RN_X" + l.c.x + "Y" + l.c.y + "_S" + timeStep))
             reachabilityWeights.put(l.c, IntegerVariable("RW_X" + l.c.x + "Y" + l.c.y + "_S" + timeStep))
 
-            for (cOffset <- Level.OFFSETS) {
-                val end = l.c + cOffset
+            for (shift <- SnowmanAction.ACTIONS.map(f => f.shift)) {
+                val end = l.c + shift
                 if (level.map.contains(end)) {
                     reachabilityEdges.put((l.c, end), BooleanVariable("RAX" + l.c.x + "Y" + l.c.y + "TX" + end.x + "Y" + end.y  + "S" + timeStep))
                 }

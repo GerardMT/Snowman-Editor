@@ -1,5 +1,6 @@
 package gmt.snowman.pddl
 
+import gmt.snowman.action.SnowmanAction
 import gmt.snowman.level.Level
 import gmt.snowman.level.`object`._
 
@@ -23,7 +24,7 @@ object EncoderPDDL {
         encoding += "    )\n"
         encoding += "    (:init\n"
 
-        for (l <- level.map.values.filter(f => f.o != Wall); (o, d) <- Level.OFFSETS.zip(directions) ) {
+        for (l <- level.map.values.filter(f => f.o != Wall); (o, d) <- SnowmanAction.ACTIONS.map(f => f.shift).zip(directions) ) {
             level.map.get(l.c + o) match {
                 case Some(l2) =>
                     if (l2.o != Wall) {
@@ -33,7 +34,7 @@ object EncoderPDDL {
             }
         }
 
-        encoding += "        (character-at loc-" + level.player.c.x + "-" + level.player.c.y + ")\n"
+        encoding += "        (character-at loc-" + level.character.c.x + "-" + level.character.c.y + ")\n"
 
         for ((l, i) <- level.balls.zipWithIndex) {
             encoding += "        (ball-at ball-" + i + " loc-" + l.c.x + "-" + l.c.y + ")\n"
@@ -67,7 +68,7 @@ object EncoderPDDL {
         encoding += "    )\n"
         encoding += "    (:init\n"
 
-        for (l <- level.map.values.filter(f => f.o != Wall); (o, d) <- Level.OFFSETS.zip(directions) ) {
+        for (l <- level.map.values.filter(f => f.o != Wall); (o, d) <- SnowmanAction.ACTIONS.map(f => f.shift).zip(directions) ) {
             level.map.get(l.c + o) match {
                 case Some(l2) =>
                     if (l2.o != Wall) {
@@ -77,7 +78,7 @@ object EncoderPDDL {
             }
         }
 
-        encoding += "        (= (character-at) loc-" + level.player.c.x + "-" + level.player.c.y + ")\n"
+        encoding += "        (= (character-at) loc-" + level.character.c.x + "-" + level.character.c.y + ")\n"
 
         for ((l, i) <- level.balls.zipWithIndex) {
             encoding += "        (= (ball-at) ball-" + i + " loc-" + l.c.x + "-" + l.c.y + ")\n"
