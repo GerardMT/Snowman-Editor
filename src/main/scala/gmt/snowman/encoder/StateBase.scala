@@ -13,8 +13,8 @@ import scala.collection.mutable.ListBuffer
 
 object StateBase {
 
-    abstract class Location(val x: IntegerVariable, val y: IntegerVariable)
-    case class Ball(override val x: IntegerVariable, override  val y: IntegerVariable, size: IntegerVariable) extends Location(x, y)
+    abstract class CoordinateVariables(val x: IntegerVariable, val y: IntegerVariable)
+    case class Ball(override val x: IntegerVariable, override  val y: IntegerVariable, size: IntegerVariable) extends CoordinateVariables(x, y)
 
     def apply(level: Level, timeStep: Int): StateBase = {
         val balls = ListBuffer.empty[Ball]

@@ -61,6 +61,8 @@ class SortedMap[K, V] extends Iterable[(K, V)] {
 
     override def iterator: Iterator[(K, V)] = _list.iterator
 
+    def keys: Iterator[K] = _list.iterator.map(f => f._1)
+
     def values: Iterator[V] = _list.iterator.map(f => f._2)
 }
 

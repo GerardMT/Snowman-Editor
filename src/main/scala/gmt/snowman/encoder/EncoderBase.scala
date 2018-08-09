@@ -4,8 +4,9 @@ import gmt.planner.encoder.{Encoder, EncoderResult, Encoding}
 import gmt.planner.operation
 import gmt.planner.operation._
 import gmt.planner.solver.Assignment
-import gmt.planner.solver.value.{ValueBoolean, ValueInteger}
+import gmt.planner.solver.value.{Value, ValueBoolean, ValueInteger}
 import gmt.snowman.action.SnowmanAction
+import gmt.snowman.encoder.StateBase.{Ball, CoordinateVariables}
 import gmt.snowman.level.`object`._
 import gmt.snowman.level.{Coordinate, Level, `object`}
 
@@ -196,13 +197,13 @@ abstract class EncoderBase[A <: StateBase, B <: SnowmanAction](val level: Level)
     }
 
     protected def updateSnowVariables(state: StateBase, stateActionBall: StateBase.Ball, stateNext: StateBase, shift: Coordinate): Clause = {
-        Operations.simplify(And((for ((c, s) <- falttenTuple(level.map.values.map(f => (f.c, state.snow.get(f.c + shift))))) yield {
+        Operations.simplify(And((for ((c, s) <- falttenTuple(level.map.keys.map(f => (f, state.snow.get(f + shift))))) yield {
             Equivalent(And(s, Not(And(Equals(stateActionBall.x, IntegerConstant(c.x)), Equals(stateActionBall.y, IntegerConstant(c.y))))), stateNext.snow.get(c + shift).get)
         }).toSeq: _*))
     }
 
     protected def characterLocatoinTeleportValid[T <: StateBase](state: T, stateActionBall: StateBase.Ball, shift: Coordinate): Clause = {
-        Or((for ((c, o) <- falttenTuple(level.map.values.map(f => (f.c, state.occupancy.get(f.c - shift))))) yield {
+        Or((for ((c, o) <- falttenTuple(level.map.keys.map(f => (f, state.occupancy.get(f - shift))))) yield {
             And(Equals(stateActionBall.x, IntegerConstant(c.x)), Equals(stateActionBall.y, IntegerConstant(c.y)), Not(o))
         }).toSeq: _*)
     }
@@ -211,7 +212,7 @@ abstract class EncoderBase[A <: StateBase, B <: SnowmanAction](val level: Level)
         if (level.hasSnow) {
             val expressions = ListBuffer.empty[Expression]
 
-            val theresSnow = Operations.simplify(Or((for ((c, s) <- falttenTuple(level.map.values.map(f => (f.c, state.snow.get(f.c + shift))))) yield {
+            val theresSnow = Operations.simplify(Or((for ((c, s) <- falttenTuple(level.map.keys.map(f => (f, state.snow.get(f + shift))))) yield {
                     And(operation.Equals(stateActionBall.x, IntegerConstant(c.x)), operation.Equals(stateActionBall.y, IntegerConstant(c.y)), s)
             }).toSeq: _*))
 
@@ -277,83 +278,96 @@ abstract class EncoderBase[A <: StateBase, B <: SnowmanAction](val level: Level)
         }).toSeq: _*)
     }
 
-    def decodeTeleport(assignments: Seq[Assignment], encodingData: SnowmanEncodingData): immutable.Seq[SnowmanAction] = {
+    protected def decodeTeleport(assignments: Seq[Assignment], encodingData: SnowmanEncodingData): immutable.Seq[SnowmanAction] = {
         val assignmentsMap = assignments.map(f => (f.name, f.value)).toMap
 
+
+        val actionsBall = ListBuffer.empty[SnowmanAction]
         val actions = ListBuffer.empty[SnowmanAction]
 
-        var startCoordinate = encodingData.level.character.c
+        var characterLocation = encodingData.level.character.c
+
         var state = encodingData.state0
         for (stateData <- encodingData.statesData) {
+            val stateNext = stateData.stateNext
+            val actionData = stateData.actionsData.find(f => assignmentsMap(f.actionVariable.name).asInstanceOf[ValueBoolean].v).get
 
-            val iterator = stateData.actionsData.iterator
-            var found = false
+            val ballCoordinate = coordinateFromCoordinateVariables(state.balls(actionData.ballActionIndex), assignmentsMap)
 
-            while (iterator.hasNext && !found) {
-                val actionData = iterator.next()
+            var preActionCoordinate = ballCoordinate - actionData.action.shift
 
-                if (assignmentsMap(actionData.actionVariable.name).asInstanceOf[ValueBoolean].v) {
-                    found = true
+            val assigmentsReport = assignments.map(f => (f.name, f)).toMap
+            println("STATE")
+            print(Report.generateMap(level, state, assigmentsReport))
+            println("STTATE NEXT")
+            print(Report.generateMap(level, stateNext, assigmentsReport))
 
-                    val ball = stateData.stateNext.balls(actionData.ballActionIndex)
 
-                    val ballCoordinateNext = Coordinate(assignmentsMap(ball.x.name).asInstanceOf[ValueInteger].v, assignmentsMap(ball.y.name).asInstanceOf[ValueInteger].v)
-                    val ballCoordinate = ballCoordinateNext - actionData.action.shift
-                    val characterCoordinate =  ballCoordinate - actionData.action.shift
+            println("Path Start: " +  characterLocation)
+            println("Path End: " + preActionCoordinate)
 
-                    val ballsIterator = state.balls.patch(actionData.ballActionIndex, Nil, 1).iterator
+            if (characterLocation.manhattanDistance(preActionCoordinate) > 1) {
+                val allNodes = () => level.map.keys.toList
+                val neighboursRelaxed  = (c: Coordinate) => SnowmanAction.ACTIONS.map(f => c + f.shift).filter(f => {val l = level.map.get(f); l.isDefined && Object.isPlayableArea(l.get.o)})
+                val neighbours = (c: Coordinate) => neighboursRelaxed(c).filter(f => !assignmentsMap(state.occupancy.get(f).get.name).asInstanceOf[ValueBoolean].v)
+                val heuristic = (start: Coordinate, goal: Coordinate) => start.euclidianDistance(goal).toFloat
 
-                    var ballFound = false
-                    while (!ballFound && ballsIterator.hasNext) {
-                        val findBall = ballsIterator.next
-                        val findBallCoordinate = Coordinate(assignmentsMap(findBall.x.name).asInstanceOf[ValueInteger].v, assignmentsMap(findBall.y.name).asInstanceOf[ValueInteger].v)
+                var path = aStar(characterLocation, preActionCoordinate, allNodes, neighbours, heuristic)
+                if (path.isEmpty) {
+                    path = aStar(characterLocation, preActionCoordinate, allNodes, neighboursRelaxed, heuristic)
 
-                        ballFound = findBallCoordinate == ballCoordinate
-                    }
-
-                    val newCharacterCoordinate = if (ballFound) {
-                        characterCoordinate
-                    } else {
-                        ballCoordinate
-                    }
-
-                    val isOccupied = (c: Coordinate) => assignmentsMap(state.occupancy.get(c).get.name).asInstanceOf[ValueBoolean].v
-
-                    if (startCoordinate.manhattanDistance(characterCoordinate) > 1) {
-                        val a = aStar(startCoordinate, characterCoordinate, level, isOccupied)
-                        a.foreach(f => println(f.getClass.getCanonicalName))
-                        actions.appendAll(a)
-                    }
-
-                    actions.append(actionData.action)
-
-                    startCoordinate = newCharacterCoordinate
+                    println("Omitting occupancy for balls")
                 }
+
+                val pathActions = pathToActions(path)
+                pathActions.foreach(f => println("    Path: " + f))
+
+                actions.appendAll(pathActions)
             }
 
-            state = stateData.stateNext
+            actions.append(actionData.action)
+            println("Action: " + actionData.action + "\n")
+
+            val existOtherBallUnder = state.balls.patch(actionData.ballActionIndex, Nil, 1).exists(f => coordinateFromCoordinateVariables(f, assignmentsMap) == ballCoordinate)
+
+            characterLocation  = if (existOtherBallUnder) {
+                preActionCoordinate
+            } else {
+                ballCoordinate
+            }
+
+            state = stateNext
         }
 
         actions.toList
     }
 
-    protected def aStar(start: Coordinate, goal: Coordinate, level: Level, isOccupied: Coordinate => Boolean): immutable.Seq[SnowmanAction] = {
-        val closedSet = mutable.Set.empty[Coordinate]
+    private def coordinateFromCoordinateVariables(coordinateVariables: CoordinateVariables, assignmentsMap: immutable.Map[String, Value]): Coordinate = {
+        Coordinate(assignmentsMap(coordinateVariables.x.name).asInstanceOf[ValueInteger].v, assignmentsMap(coordinateVariables.y.name).asInstanceOf[ValueInteger].v)
+    }
 
-        val openSet = mutable.Set.empty[Coordinate]
+    private def pathToActions(path: immutable.Seq[Coordinate]): List[SnowmanAction] = {
+        val reverse = path.reverse
+        reverse.zip(reverse.tail).map(f => SnowmanAction.ACTIONS.find(f2 => f2.shift == (f._2 - f._1)).get).toList
+    }
+
+    protected def aStar[A](start: A, goal: A, allNodes: () => List[A], neighbours: A => List[A], heuristic: (A, A) => Float): immutable.Seq[A] = {
+        val closedSet = mutable.Set.empty[A]
+
+        val openSet = mutable.Set.empty[A]
         openSet += start
 
-        val cameFrom = mutable.Map.empty[Coordinate, Coordinate]
+        val cameFrom = mutable.Map.empty[A, A]
 
-        val gScore = mutable.Map.empty[Coordinate, Float]
-        for (l <- level.map.values) {
-            gScore(l.c) = Float.PositiveInfinity
+        val gScore = mutable.Map.empty[A, Float]
+        for (n <- allNodes()) {
+            gScore(n) = Float.PositiveInfinity
         }
         gScore(start) = 0.0f
 
-        val fScore = mutable.Map.empty[Coordinate, Float]
-        for (l <- level.map.values) {
-            fScore(l.c) = Float.PositiveInfinity
+        val fScore = mutable.Map.empty[A, Float]
+        for (n <- allNodes()) {
+            fScore(n) = Float.PositiveInfinity
         }
         fScore(start) = heuristic(start, goal)
 
@@ -366,7 +380,7 @@ abstract class EncoderBase[A <: StateBase, B <: SnowmanAction](val level: Level)
             openSet -= current
             closedSet += current
 
-            for (neighbor <- SnowmanAction.ACTIONS.map(f => f.shift + current).flatMap(f => level.map.get(f)).filter(f => Object.isPlayableArea(f.o) && !isOccupied(f.c)).map(f => f.c)) {
+            for (neighbor <- neighbours(current)) {
                 if (!closedSet(neighbor)) {
                     val tentative_gScore = gScore(current) + 1
 
@@ -383,12 +397,10 @@ abstract class EncoderBase[A <: StateBase, B <: SnowmanAction](val level: Level)
             }
         }
 
-        reconstrucPath(cameFrom, goal)
+        List()
     }
 
-    private def heuristic(start: Coordinate, goal: Coordinate): Float = start.euclidianDistance(goal).toFloat
-
-    private def reconstrucPath(cameFrom: mutable.Map[Coordinate, Coordinate], start: Coordinate): immutable.Seq[SnowmanAction] = {
+    private def reconstrucPath[A](cameFrom: mutable.Map[A, A], start: A): immutable.Seq[A] = {
         val totalPath = ListBuffer(start)
 
         var current = start
@@ -397,9 +409,8 @@ abstract class EncoderBase[A <: StateBase, B <: SnowmanAction](val level: Level)
             totalPath.append(current)
         }
 
-        val reverse = totalPath.reverse
-        reverse.zip(reverse.tail).map(f => SnowmanAction.ACTIONS.find(f2 => f2.shift == (f._2 - f._1)).get).toList
+        totalPath.toList
     }
 
-    def falttenTuple[T,U](l: Iterator[(T, Option[U])]): Iterator[(T, U)] = l.filter(f => f._2.isDefined).map(f => (f._1, f._2.get))
+    protected def falttenTuple[T,U](l: Iterator[(T, Option[U])]): Iterator[(T, U)] = l.filter(f => f._2.isDefined).map(f => (f._1, f._2.get))
 }

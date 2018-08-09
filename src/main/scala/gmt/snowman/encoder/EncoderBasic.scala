@@ -106,7 +106,7 @@ case class EncoderBasic(override val level: Level) extends EncoderBase[StateBasi
     }
 
     private def characterLocatoinValid(state: StateBasic, shift: Coordinate): Clause = {
-        Or((for ((c, o) <- falttenTuple(level.map.values.map(f => (f.c, state.occupancy.get(f.c + shift))))) yield {
+        Or((for ((c, o) <- falttenTuple(level.map.keys.map(f => (f, state.occupancy.get(f + shift))))) yield {
             And(Equals(state.character.x, IntegerConstant(c.x)), Equals(state.character.y, IntegerConstant(c.y)), Not(o))
         }).toSeq: _*)
     }

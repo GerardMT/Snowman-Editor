@@ -93,7 +93,7 @@ object Report {
         sb.toString()
     }
 
-    private def generateMap(level: Level, state: StateBase, assignmentsMap: Map[String, Assignment]): String =  {
+    def generateMap(level: Level, state: StateBase, assignmentsMap: Map[String, Assignment]): String =  {
         val mapLines = ArrayBuffer.fill(level.height, level.width)(CHAR_UNDEFINED)
 
         // Walls
