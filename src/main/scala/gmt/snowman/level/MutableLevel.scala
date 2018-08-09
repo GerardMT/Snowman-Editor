@@ -1,12 +1,15 @@
 package gmt.snowman.level
 
 import gmt.snowman.collection.SortedMap
+import gmt.snowman.level.MutableLevel.Info
 import gmt.snowman.level.`object`._
-import gmt.snowman.validator.{PlayableLevel, TwoDimSeq}
 
+import scala.collection.{immutable, mutable}
 import scala.collection.mutable.ListBuffer
 
 object MutableLevel {
+
+    case class Info(size: Int, width: Int, height: Int, playableArea: Int, balls: Int, objects: immutable.Map[Object, Int])
 
     def default(width: Int, height: Int): MutableLevel = {
         val mutableLevel = new MutableLevel(width, height)
@@ -48,7 +51,7 @@ object MutableLevel {
                 val o = try {
                     gmt.snowman.level.`object`.Object.createObject(c)
                 } catch {
-                    case e: NoSuchElementException =>
+                    case _: NoSuchElementException =>
                         throw LevelParserException("Illegal character \"" + c + "\" at (X,Y) = (" + x + "," + y + ")")
                 }
 
@@ -107,19 +110,8 @@ class MutableLevel private (val width: Int, val height: Int){
                         someCharacterLocatoin = Some(p)
                     case SmallBall | MediumBall | LargeBall =>
                         balls.append(p)
-                    case MediumSmallBall =>
-                        balls.append(Location(c, MediumBall))
-                        balls.append(Location(c, SmallBall))
-                    case LargeSmallBall =>
-                        balls.append(Location(c, LargeBall))
-                        balls.append(Location(c, SmallBall))
-                    case LargeMediumBall =>
-                        balls.append(Location(c, LargeBall))
-                        balls.append(Location(c, MediumBall))
-                    case LargeMediumSmallBall =>
-                        balls.append(Location(c, LargeBall))
-                        balls.append(Location(c, MediumBall))
-                        balls.append(Location(c, SmallBall))
+                    case MediumSmallBall | LargeSmallBall | LargeMediumBall | LargeMediumSmallBall =>
+                        Object.unpackBalls(o).foreach(f => balls.append(Location(c, f)))
                     case _ =>
                 }
             }
@@ -142,18 +134,26 @@ class MutableLevel private (val width: Int, val height: Int){
             sortedMap.remove(f)
         })
 
-        val characterLocation = someCharacterLocatoin match {
-            case Some(p) =>
-                p
-            case None =>
-                throw LevelParserException("Level must have a character")
+        Level(width, height, size, hasSnow, someCharacterLocatoin.get, balls.toList, sortedMap, toString)
+    }
+
+    def validate: (Boolean, Boolean) = {
+        var balls = 0
+        var character = 0
+
+        for (x <- 0 until width) {
+            for (y <- 0 until height) {
+                map(x)(y) match {
+                    case Character | CharacterSnow =>
+                        character += 1
+                    case o @ (SmallBall | MediumBall | LargeBall | MediumSmallBall | LargeSmallBall | LargeMediumBall | LargeMediumSmallBall) =>
+                        balls += Object.unpackBalls(o).size
+                    case _ =>
+                }
+            }
         }
 
-        if (balls.size % 3 != 0) {
-            throw LevelParserException("Level has only " + balls.size + " balls. Has to be multiple of 3")
-        }
-
-        new Level(width, height, size, hasSnow, characterLocation, balls.toList, sortedMap, toString)
+        (character == 1, balls % 3 == 0 && balls != 0)
     }
 
     def save: String = {
@@ -171,5 +171,33 @@ class MutableLevel private (val width: Int, val height: Int){
         }
 
         stringBuilder.toString()
+    }
+
+    def info: Info = {
+        var playableArea = 0
+        var balls = 0
+        val objects = mutable.Map.empty[Object, Int]
+
+        for (x <- 0 until width) {
+            for (y <- 0 until height) {
+                val o = map(x)(y)
+
+                if (objects.get(o).isEmpty) {
+                    objects(o) = 1
+                } else {
+                    objects(o) += 1
+                }
+
+                if (Object.isPlayableArea(o)) {
+                    playableArea += 1
+                }
+
+                if(Object.isBall(o)) {
+                    balls += Object.unpackBalls(o).size
+                }
+            }
+        }
+
+        Info(width * height, width, height, playableArea, balls, objects.toMap)
     }
 }

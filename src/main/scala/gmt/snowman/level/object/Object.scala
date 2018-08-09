@@ -23,6 +23,23 @@ object Object {
         case _ => false
     }
 
+    def unpackBalls(ball: Object): List[Object] = ball match {
+        case SmallBall =>
+            List(SmallBall)
+        case MediumBall =>
+            List(MediumBall)
+        case LargeBall =>
+            List(LargeBall)
+        case MediumSmallBall =>
+            List(MediumBall, SmallBall)
+        case LargeSmallBall =>
+            List(LargeBall, SmallBall)
+        case LargeMediumBall =>
+            List(LargeBall, MediumBall)
+        case LargeMediumSmallBall =>
+            List(LargeBall, MediumBall, SmallBall)
+    }
+
     def pushBall(bottom: Object, top: Object): Object = POP_PUSH_REALTIONS.find(f => f._1 == (bottom, top)).get._2
 
     def popBall(ball: Object): (Object, Object) = POP_PUSH_REALTIONS.find(f => f._2 == ball).get._1
@@ -31,6 +48,11 @@ object Object {
         case SmallBall => MediumBall
         case MediumBall => LargeBall
         case LargeBall => LargeBall
+    }
+
+    def isPlayableArea(o: Object): Boolean = o match {
+        case Empty | Wall => false
+        case _ => true
     }
 }
 

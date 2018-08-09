@@ -7,13 +7,13 @@ object Validator {
 
     def validate(level: Level, actions: Seq[SnowmanAction]): (Boolean, Int) = {
 
-        val playableLevel = Some(level.toPlayableLevel)
+        var playableLevel: Option[PlayableLevel] = Some(level.toPlayableLevel)
         val actionsIterator = actions.iterator
 
         var action = 0
 
         while (playableLevel.isDefined && actionsIterator.hasNext) {
-            playableLevel.get(actionsIterator.next())
+            playableLevel = playableLevel.get.apply(actionsIterator.next())
             action += 1
         }
 

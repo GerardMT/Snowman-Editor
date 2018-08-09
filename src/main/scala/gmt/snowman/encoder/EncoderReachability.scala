@@ -13,11 +13,11 @@ import scala.collection.mutable.ListBuffer
 
 case class EncoderReachability(override val level: Level) extends EncoderBase[StateReachability, SnowmanAction](level) {
 
-    protected def createEncodingData: SnowmanEncodingData = ???
-
     override def createState(level: Level, timeStep: Int): StateReachability = StateReachability(level, timeStep)
 
-    override protected def codifyReachability(state: StateReachability, encoing: Encoding): Unit = {
+    override protected def encodeCharacterState0(state0: StateReachability, encoding: Encoding): Unit = {}
+
+    override protected def encodeReachability(state: StateReachability, encoing: Encoding): Unit = {
         encoing.add(Comment("Reachability"))
         for (p <- level.map.values.filterNot(f => f.o == Wall)) {
             val or = Or((for (b <- level.balls.indices) yield {
@@ -50,13 +50,13 @@ case class EncoderReachability(override val level: Level) extends EncoderBase[St
     override def createBallAction(actionName: String, state: StateReachability, stateActionBall: StateBase.Ball, stateNext: StateReachability, stateNextActionBall: StateBase.Ball, shift: Coordinate): (Clause, Clause, Seq[Expression]) = {
         val otherBallUnderVar = BooleanVariable("S" + state.timeStep + "OBU")
 
-        val (updateBallSizeClause, updateBallSizeExpressions) = updateBallSize(actionName, state, stateActionBall, stateNextActionBall)
+        val (updateBallSizeClause, updateBallSizeExpressions) = updateBallSize(actionName, state, stateActionBall, stateNextActionBall, shift)
 
         val pre = And(noWallInFront(state, stateActionBall),
             noOtherBallsOver(state, stateActionBall),
             Not(And(otherBallInFront(state, stateActionBall, shift), otherBallUnderVar)),
             otherBallsInFrontLarger(state, stateActionBall, shift),
-            characterLocatoinValid(state, shift),
+            characterLocatoinTeleportValid(state, stateActionBall, shift),
             reachability(state, stateActionBall, shift))
 
       val constantEff = ListBuffer(moveBall(stateActionBall, stateNextActionBall, shift),
@@ -66,7 +66,7 @@ case class EncoderReachability(override val level: Level) extends EncoderBase[St
             updateBallSizeClause)
 
         if (level.hasSnow) {
-            constantEff.append(updateSnowVariables(state, stateNext, shift))
+            constantEff.append(updateSnowVariables(state, stateActionBall, stateNext, shift))
         }
 
         val eff = And(constantEff.toList: _*)
@@ -78,7 +78,7 @@ case class EncoderReachability(override val level: Level) extends EncoderBase[St
         (pre, eff, expressions)
     }
 
-    override protected def codifyCharacterAction(actionName: String, state: StateReachability, stateNext: StateReachability, action: SnowmanAction, encoding: Encoding, actionVariables: mutable.Buffer[BooleanVariable], actionsState: mutable.Buffer[SnowmanEncodingData.ActionData]): Unit = {}
+    override protected def encodeCharacterAction(actionName: String, state: StateReachability, stateNext: StateReachability, action: SnowmanAction, encoding: Encoding, actionVariables: mutable.Buffer[BooleanVariable], actionsState: mutable.Buffer[SnowmanEncodingData.ActionData]): Unit = {}
 
     override def decode(assignments: Seq[Assignment], encodingData: SnowmanEncodingData): immutable.Seq[SnowmanAction] = decodeTeleport(assignments, encodingData)
 
@@ -88,7 +88,7 @@ case class EncoderReachability(override val level: Level) extends EncoderBase[St
         }).toSeq: _*)
     }
 
-    private def teleportCharacter(stateActionBall: StateBase.Ball, stateNext: StateBase): Clause = {
+    private def teleportCharacter[T <: StateBase with CharacterInterface](stateActionBall: StateBase.Ball, stateNext: T): Clause = {
         And(Equals(stateNext.character.x, stateActionBall.x), Equals(stateNext.character.y, stateActionBall.y))
     }
 }

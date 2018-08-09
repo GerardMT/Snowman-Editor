@@ -89,9 +89,9 @@ object Operations {
     def simplify(c: Clause): Clause = {
         c match {
             case And(c1) => c1
-            case c @ And(_,_) => c
+            case c @ And(_,_ @ _*) => c
             case Or(c1) => c1
-            case c @ Or(_,_) => c
+            case c @ Or(_,_ @ _*) => c
         }
     }
 }

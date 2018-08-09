@@ -2,9 +2,9 @@ package gmt.snowman.encoder
 
 import gmt.planner.encoder.Encoding
 import gmt.planner.operation
-import gmt.planner.operation.{BooleanVariable, IntegerVariable, VariableDeclaration}
+import gmt.planner.operation.{BooleanVariable, IntegerVariable}
 import gmt.snowman.collection.SortedMap
-import gmt.snowman.encoder.StateBase.{Ball, Character}
+import gmt.snowman.encoder.StateBase.Ball
 import gmt.snowman.level.`object`._
 import gmt.snowman.level.{Coordinate, Level}
 
@@ -15,7 +15,6 @@ object StateBase {
 
     abstract class Location(val x: IntegerVariable, val y: IntegerVariable)
     case class Ball(override val x: IntegerVariable, override  val y: IntegerVariable, size: IntegerVariable) extends Location(x, y)
-    case class Character(override val x: IntegerVariable, override  val y: IntegerVariable) extends Location(x, y)
 
     def apply(level: Level, timeStep: Int): StateBase = {
         val balls = ListBuffer.empty[Ball]
@@ -34,22 +33,16 @@ object StateBase {
             balls.append(Ball(IntegerVariable("B" + i + "_X_S" + timeStep), IntegerVariable("B" + i + "Y_S" + timeStep), IntegerVariable("B" + i + "T_S" + timeStep)))
         }
 
-        val character = Character(IntegerVariable("C_X_S" + timeStep), IntegerVariable("CY_S" + timeStep))
-
-        new StateBase(timeStep, character, balls.toList, snow, occupancy)
+        new StateBase(timeStep, balls.toList, snow, occupancy)
     }
 }
 
 class StateBase (val timeStep: Int,
-                 val character: Character,
                  val balls: immutable.Seq[Ball],
                  val snow: SortedMap[Coordinate, BooleanVariable],
-                 val occupancy: SortedMap[Coordinate, BooleanVariable]) {
+                 val occupancy: SortedMap[Coordinate, BooleanVariable]) extends VariableAdder {
 
-    def addVariables(encoding: Encoding): Unit = {
-        encoding.add(VariableDeclaration(character.x))
-        encoding.add(operation.VariableDeclaration(character.y))
-
+    override def addVariables(encoding: Encoding): Unit = {
         for (b <- balls) {
             encoding.add(operation.VariableDeclaration(b.x))
             encoding.add(operation.VariableDeclaration(b.y))

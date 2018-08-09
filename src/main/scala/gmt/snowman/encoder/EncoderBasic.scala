@@ -1,9 +1,9 @@
 package gmt.snowman.encoder
 
-import gmt.planner.encoder.{Encoding, EncodingData}
+import gmt.planner.encoder.Encoding
 import gmt.planner.operation._
 import gmt.planner.solver.Assignment
-import gmt.planner.solver.value.{ValueBoolean, ValueInteger}
+import gmt.planner.solver.value.ValueBoolean
 import gmt.snowman.action.SnowmanAction
 import gmt.snowman.level.{Coordinate, Level}
 
@@ -14,10 +14,15 @@ case class EncoderBasic(override val level: Level) extends EncoderBase[StateBasi
 
     override def createState(level: Level, timeStep: Int): StateBasic = StateBasic(level, timeStep)
 
+    override protected def encodeCharacterState0(state0: StateBasic, encoding: Encoding): Unit = {
+        encoding.add(ClauseDeclaration(Equals(state0.character.x, IntegerConstant(level.character.c.x))))
+        encoding.add(ClauseDeclaration(Equals(state0.character.y, IntegerConstant(level.character.c.y))))
+    }
+
     override def createBallAction(actionName: String, state: StateBasic, stateActionBall: StateBase.Ball, stateNext: StateBasic, stateNextActionBall: StateBase.Ball, shift: Coordinate): (Clause, Clause, Seq[Expression]) = {
         val otherBallUnderVar = BooleanVariable(actionName + "_OBU")
 
-        val (updateBallSizeClause, updateBallSizeExpressions) = updateBallSize(actionName, state, stateActionBall, stateNextActionBall)
+        val (updateBallSizeClause, updateBallSizeExpressions) = updateBallSize(actionName, state, stateActionBall, stateNextActionBall, shift)
 
         val pre = And(characterNextToBall(state, stateActionBall, shift),
             noWallInFront(state, stateActionBall),
@@ -32,7 +37,7 @@ case class EncoderBasic(override val level: Level) extends EncoderBase[StateBasi
             updateBallSizeClause)
 
         if (level.hasSnow) {
-            constantEff.append(updateSnowVariables(state, stateNext, shift))
+            constantEff.append(updateSnowVariables(state, stateActionBall, stateNext, shift))
         }
 
         val eff = And(constantEff.toList: _*)
@@ -44,9 +49,9 @@ case class EncoderBasic(override val level: Level) extends EncoderBase[StateBasi
         (pre, eff, expressions)
     }
 
-    override def codifyReachability(state: StateBasic, encoing: Encoding): Unit = {}
+    override def encodeReachability(state: StateBasic, encoing: Encoding): Unit = {}
 
-    override protected def codifyCharacterAction(actionName: String, state: StateBasic, stateNext: StateBasic, action: SnowmanAction, encoding: Encoding, actionVariables: mutable.Buffer[BooleanVariable], actionsData: mutable.Buffer[SnowmanEncodingData.ActionData]): Unit = {
+    override protected def encodeCharacterAction(actionName: String, state: StateBasic, stateNext: StateBasic, action: SnowmanAction, encoding: Encoding, actionVariables: mutable.Buffer[BooleanVariable], actionsData: mutable.Buffer[SnowmanEncodingData.ActionData]): Unit = {
         val actionVariable = BooleanVariable(actionName + "_S" + state.timeStep + "S" + stateNext.timeStep)
         encoding.add(VariableDeclaration(actionVariable))
         actionVariables.append(actionVariable)
@@ -100,11 +105,17 @@ case class EncoderBasic(override val level: Level) extends EncoderBase[StateBasi
         actions.toList
     }
 
-    private def characterNextToBall(state: StateBase, stateActionBll: StateBase.Ball, shift: Coordinate): Clause = {
+    private def characterLocatoinValid(state: StateBasic, shift: Coordinate): Clause = {
+        Or((for ((c, o) <- falttenTuple(level.map.values.map(f => (f.c, state.occupancy.get(f.c + shift))))) yield {
+            And(Equals(state.character.x, IntegerConstant(c.x)), Equals(state.character.y, IntegerConstant(c.y)), Not(o))
+        }).toSeq: _*)
+    }
+
+    private def characterNextToBall[A <: StateBase with  CharacterInterface](state: A, stateActionBll: StateBase.Ball, shift: Coordinate): Clause = {
         applyShiftClause(stateActionBll.x, stateActionBll.y, state.character.x, state.character.y, -shift, and)
     }
 
-    private def moveCharacter(state: StateBase, stateNext: StateBase, shift: Coordinate): Clause = {
+    private def moveCharacter[A <: StateBase with  CharacterInterface](state: A, stateNext: A, shift: Coordinate): Clause = {
         applyShiftClause(state.character.x, state.character.y, stateNext.character.x, stateNext.character.y, shift, and)
     }
 

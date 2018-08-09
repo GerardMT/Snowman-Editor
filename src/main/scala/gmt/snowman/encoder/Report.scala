@@ -4,6 +4,7 @@ import gmt.planner.solver.Assignment
 import gmt.planner.solver.value.{ValueBoolean, ValueInteger}
 import gmt.snowman.level.Level
 import gmt.snowman.level.`object`.Wall
+import gmt.snowman.encoder.CharacterInterface
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -127,19 +128,24 @@ object Report {
         }
 
         // Player
-        val pXA = assignmentsMap.get(state.character.x.name)
-        val pYA = assignmentsMap.get(state.character.y.name)
+        state match {
+            case c: CharacterInterface =>
+                val pXA = assignmentsMap.get(c.character.x.name)
+                val pYA = assignmentsMap.get(c.character.y.name)
 
-        if(pXA.isDefined && pYA.isDefined) {
-            val pX = pXA.get match { case Assignment(_, ValueInteger(v)) => v }
-            val pY = pYA.get match { case Assignment(_, ValueInteger(v)) => v }
+                if(pXA.isDefined && pYA.isDefined) {
+                    val pX = pXA.get match { case Assignment(_, ValueInteger(v)) => v }
+                    val pY = pYA.get match { case Assignment(_, ValueInteger(v)) => v }
 
-            if (mapLines(pY)(pX) == '.') {
-                mapLines(pY)(pX) = 'q'
-            } else {
-                mapLines(pY)(pX) = 'p'
-            }
+                    if (mapLines(pY)(pX) == '.') {
+                        mapLines(pY)(pX) = 'q'
+                    } else {
+                        mapLines(pY)(pX) = 'p'
+                    }
+                }
+            case _ =>
         }
+
 
         // Balls
         for (b <- state.balls) {

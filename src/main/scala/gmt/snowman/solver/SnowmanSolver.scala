@@ -1,8 +1,6 @@
 package gmt.snowman.solver
 
-import java.io.File
-
-import gmt.planner.encoder.{Encoder, EncodingData}
+import gmt.planner.encoder.Encoder
 import gmt.planner.planner.Planner
 import gmt.planner.solver.Yices2Solver
 import gmt.planner.translator.SMTLib2
@@ -15,15 +13,31 @@ import gmt.ui.Settings
 
 object SnowmanSolver {
 
-    def solveWithBasicEncoding(settings: Settings, level: Level): SnowmanSolverResult = {
+    def encodeBasicEncoding(level: Level, timeSteps: Int): String = {
+        encodeSMTLIB2(EncoderBasic(level), timeSteps)
+    }
+
+    def encodeCheatingEncoding(level: Level, timeSteps: Int): String = {
+        encodeSMTLIB2(EncoderBasic(level), timeSteps)
+    }
+
+    def encodeReachabilityEncoding(level: Level, timeSteps: Int): String = {
+        encodeSMTLIB2(EncoderBasic(level), timeSteps)
+    }
+
+    private def encodeSMTLIB2(encoder: Encoder[_, _], timeSteps: Int): String = {
+        SMTLib2.translate(encoder.encode(timeSteps).encoding)
+    }
+
+    def solveBasicEncoding(settings: Settings, level: Level): SnowmanSolverResult = {
         solveSMTYics2(settings, level, EncoderBasic(level))
     }
 
-    def solveWithCheatingEncoding(settings: Settings, level: Level): SnowmanSolverResult = {
+    def solveCheatingEncoding(settings: Settings, level: Level): SnowmanSolverResult = {
         solveSMTYics2(settings, level, EncoderCheating(level))
     }
 
-    def solveWithReachabilityEncoding(settings: Settings, level: Level): SnowmanSolverResult = {
+    def solveReachabilityEncoding(settings: Settings, level: Level): SnowmanSolverResult = {
         solveSMTYics2(settings: Settings, level, EncoderReachability(level))
     }
 

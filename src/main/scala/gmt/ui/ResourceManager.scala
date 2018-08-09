@@ -1,26 +1,26 @@
 package gmt.ui
 
 import java.awt.Image
-import java.io.File
 
+import gmt.snowman.level.`object`.{Character, CharacterSnow, Empty, Grass, LargeBall, LargeMediumBall, LargeMediumSmallBall, LargeSmallBall, MediumBall, MediumSmallBall, Object, SmallBall, Snow, Wall}
 import javax.imageio.ImageIO
-import gmt.snowman.level.`object`.{Empty, Grass, LargeBall, LargeMediumBall, LargeMediumSmallBall, LargeSmallBall, MediumBall, MediumSmallBall, Object, Character, CharacterSnow, SmallBall, Snow, Wall}
 
-class ResourceManager(gamePath: String) {
 
-    private val empty = ImageIO.read(new File(gamePath + "empty.png"))
-    private val wall = ImageIO.read(new File(gamePath + "wall.png"))
-    private val grass = ImageIO.read(new File(gamePath + "grass.png"))
-    private val snow = ImageIO.read(new File(gamePath + "snow.png"))
-    private val smallBall = ImageIO.read(new File(gamePath + "smallBall.png"))
-    private val mediumBall = ImageIO.read(new File(gamePath + "mediumBall.png"))
-    private val largeBall = ImageIO.read(new File(gamePath + "largeBall.png"))
-    private val mediumSmallBall = ImageIO.read(new File(gamePath + "mediumSmallBall.png"))
-    private val largeSmallBall = ImageIO.read(new File(gamePath + "largeSmallBall.png"))
-    private val largeMediumBall = ImageIO.read(new File(gamePath + "largeMediumBall.png"))
-    private val largeMediumSmallBall = ImageIO.read(new File(gamePath + "largeMediumSmallBall.png"))
-    private val character = ImageIO.read(new File(gamePath + "character.png"))
-    private val characterSnow = ImageIO.read(new File(gamePath + "characterSnow.png"))
+class ResourceManager {
+    
+    private val empty = ImageIO.read(getClass.getResource("/empty.png"))
+    private val wall = ImageIO.read(getClass.getResource("/wall.png"))
+    private val grass = ImageIO.read(getClass.getResource("/grass.png"))
+    private val snow = ImageIO.read(getClass.getResource("/snow.png"))
+    private val smallBall = ImageIO.read(getClass.getResource("/smallBall.png"))
+    private val mediumBall = ImageIO.read(getClass.getResource("/mediumBall.png"))
+    private val largeBall = ImageIO.read(getClass.getResource("/largeBall.png"))
+    private val mediumSmallBall = ImageIO.read(getClass.getResource("/mediumSmallBall.png"))
+    private val largeSmallBall = ImageIO.read(getClass.getResource("/largeSmallBall.png"))
+    private val largeMediumBall = ImageIO.read(getClass.getResource("/largeMediumBall.png"))
+    private val largeMediumSmallBall = ImageIO.read(getClass.getResource("/largeMediumSmallBall.png"))
+    private val character = ImageIO.read(getClass.getResource("/character.png"))
+    private val characterSnow = ImageIO.read(getClass.getResource("/characterSnow.png"))
 
     def getResource(o: Object): Image = {
         o match {

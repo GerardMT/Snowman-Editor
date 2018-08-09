@@ -12,7 +12,7 @@ object EncoderPDDL {
         val directions = List("dir-right", "dir-left", "dir-up", "dir-down")
 
         encoding += "(define (problem snowman-problem)\n"
-        encoding += "    (:domain snowman-strips)\n"
+        encoding += "    (:domain snowman-adl)\n"
         encoding += "    (:objects\n"
         for (d <- directions) {
             encoding += "        " + d + " - direction\n"
