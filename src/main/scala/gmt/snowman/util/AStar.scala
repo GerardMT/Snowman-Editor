@@ -28,7 +28,7 @@ object AStar {
         while (openSet.nonEmpty) {
             var current = fScore.filter(f => openSet(f._1)).toList.minBy(_._2)._1
             if (current == goal) {
-                return reconstrucPath(cameFrom, current)
+                return reconstructPath(cameFrom, current)
             }
 
             openSet -= current
@@ -54,7 +54,7 @@ object AStar {
         List()
     }
 
-    private def reconstrucPath[A](cameFrom: mutable.Map[A, A], start: A): immutable.Seq[A] = {
+    private def reconstructPath[A](cameFrom: mutable.Map[A, A], start: A): immutable.Seq[A] = {
         val totalPath = ListBuffer(start)
 
         var current = start

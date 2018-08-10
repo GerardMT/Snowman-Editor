@@ -2,7 +2,7 @@ package gmt.snowman.pddl
 
 import gmt.snowman.action.SnowmanAction
 import gmt.snowman.level.Level
-import gmt.snowman.level.`object`._
+import gmt.snowman.game.`object`._
 
 object EncoderPDDL {
 
@@ -152,7 +152,7 @@ object EncoderPDDL {
            |""".stripMargin
     }
 
-    def getBallSize(o: gmt.snowman.level.`object`.Object): String = o match {
+    def getBallSize(o: gmt.snowman.game.`object`.Object): String = o match {
         case SmallBall =>
             "small"
         case MediumBall =>

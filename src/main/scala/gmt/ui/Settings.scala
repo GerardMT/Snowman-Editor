@@ -16,7 +16,7 @@ object Settings {
         val configFile = try {
             Source.fromFile(file.getPath)
         } catch {
-            case e: Exception =>
+            case _: Exception =>
                 throw SettingsParseException("File \"" + file.getPath + "\" not found")
         }
 

@@ -5,8 +5,10 @@ import java.awt.{GraphicsEnvironment, Rectangle}
 import java.beans.PropertyChangeListener
 import java.io.File
 
+import gmt.planner.timestep.TimeStepResult
+import gmt.snowman.encoder.DecodingData
 import gmt.snowman.level.MutableLevel
-import gmt.snowman.level.`object`.Wall
+import gmt.snowman.game.`object`.Wall
 import gmt.snowman.pddl.EncoderPDDL
 import gmt.snowman.solver.{SnowmanSolver, SnowmanSolverResult}
 import gmt.snowman.util.Files
@@ -120,6 +122,7 @@ object UI extends SimpleSwingApplication {
                     }
                 })
                 val checkBox = new JCheckBoxMenuItem("Coordinates")
+                //noinspection ConvertExpressionToSAM
                 checkBox.addActionListener(new ActionListener {
                     override def actionPerformed(e: ActionEvent): Unit = uiLevel.showCoordinates_(e.getSource.asInstanceOf[AbstractButton].getModel.isSelected)
                 })
@@ -151,7 +154,7 @@ object UI extends SimpleSwingApplication {
                     })
                     contents += new MenuItem(Action("Solve") {
                         if (validateLevelShowDialog(uiLevel.mutableLevel)) {
-                            showResult(SnowmanSolver.solveBasicEncoding(settings, uiLevel.mutableLevel.toLevel))
+                            showResult(SnowmanSolver.solveBasicEncoding(settings, uiLevel.mutableLevel.toLevel, showSolverUpdate))
                         }
                     })
                 }
@@ -163,7 +166,7 @@ object UI extends SimpleSwingApplication {
                     })
                     contents += new MenuItem(Action("Solve") {
                         if (validateLevelShowDialog(uiLevel.mutableLevel)) {
-                            showResult(SnowmanSolver.solveCheatingEncoding(settings, uiLevel.mutableLevel.toLevel))
+                            showResult(SnowmanSolver.solveCheatingEncoding(settings, uiLevel.mutableLevel.toLevel, showSolverUpdate))
                         }
                     })
                 }
@@ -175,7 +178,7 @@ object UI extends SimpleSwingApplication {
                     })
                     contents += new MenuItem(Action("Solve") {
                         if (validateLevelShowDialog(uiLevel.mutableLevel)) {
-                            showResult(SnowmanSolver.solveReachabilityEncoding(settings, uiLevel.mutableLevel.toLevel))
+                            showResult(SnowmanSolver.solveReachabilityEncoding(settings, uiLevel.mutableLevel.toLevel, showSolverUpdate))
                         }
                     })
                 }
@@ -262,14 +265,21 @@ object UI extends SimpleSwingApplication {
         }
     }
 
+    private def showSolverUpdate(timeStepResult: TimeStepResult[DecodingData]): Unit = { // TODO UI
+        println("Timesteps: " + timeStepResult.timeSteps + " sat: " + timeStepResult.sat)
+    }
+
     private def showResult(snowmanSolverResult: SnowmanSolverResult): Unit = { // TODO UI
         println("Solved: " + snowmanSolverResult.solved)
 
         snowmanSolverResult.result match {
             case Some(r) =>
                 println("Valid: " + snowmanSolverResult.valid)
-                println("Actions:" + r.actions.size)
+                println("Actions: " + r.actions.size)
                 r.actions.foreach(f => println("    " + f.toString))
+                println("Ball Actions: " + r.actionsBall.size)
+                r.actionsBall   .foreach(f => println("    " + f.toString))
+
             case None =>
         }
     }
@@ -310,7 +320,7 @@ object UI extends SimpleSwingApplication {
             try {
                 f(textField.getText.toInt)
             } catch {
-                case e: NumberFormatException =>
+                case _: NumberFormatException =>
                     Dialog.showMessage(null, "Number must be an integer", "Error", Dialog.Message.Error)
             }
         }

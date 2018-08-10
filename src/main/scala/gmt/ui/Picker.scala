@@ -1,6 +1,6 @@
 package gmt.ui
 
-import gmt.snowman.level
+import gmt.snowman.game.`object`.Object
 
 import scala.swing.Swing._
 import scala.swing.event.MousePressed
@@ -13,13 +13,13 @@ class Picker(resourceManager: ResourceManager) extends BoxPanel(Orientation.Vert
     border = EmptyBorder(10, 10, 10, 10)
 
     contents += new Label("Picker")
-    contents += new GridPanel((gmt.snowman.level.`object`.Object.ALL_OBJECTS.length / 2.0f).ceil.toInt, 2) {
-        for (o <- gmt.snowman.level.`object`.Object.ALL_OBJECTS) {
+    contents += new GridPanel((Object.ALL_OBJECTS.length / 2.0f).ceil.toInt, 2) {
+        for (o <- Object.ALL_OBJECTS) {
             contents += new PickerObject(o)
         }
     }
 
-    def current: Option[gmt.snowman.level.`object`.Object] = {
+    def current: Option[gmt.snowman.game.`object`.Object] = {
         _currentPicker match {
             case Some(p) =>
                 Some(p.o)
@@ -44,7 +44,7 @@ class Picker(resourceManager: ResourceManager) extends BoxPanel(Orientation.Vert
         val TILE_HEIGHT = 50
     }
 
-    class PickerObject(val o: level.`object`.Object) extends Panel {
+    class PickerObject(val o: gmt.snowman.game.`object`.Object) extends Panel {
 
         private var selected = false
 
@@ -59,7 +59,7 @@ class Picker(resourceManager: ResourceManager) extends BoxPanel(Orientation.Vert
         listenTo(mouse.clicks)
 
         reactions += {
-            case e: MousePressed  =>
+            case _: MousePressed  =>
                 setCurrent(this)
                 selected = true
                 repaint()

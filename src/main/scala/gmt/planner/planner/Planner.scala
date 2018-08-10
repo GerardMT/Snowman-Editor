@@ -16,9 +16,11 @@ class Planner[A, B](val nThreads: Int, val maxActions: Int) {
 
     private var timeStepResult: Option[TimeStepResult[A]] = None
 
-    def solve(encoder: Encoder[A, B], tranlator: Translator, solver: Solver): PlannerResult[A] = {
+    def solve(encoder: Encoder[A, B], translator: Translator, solver: Solver, updateFunction: TimeStepResult[A] => Unit): PlannerResult[A] = {
+        val updateSincronized = (t: TimeStepResult[A]) => synchronized { updateFunction(t) }
+
         for (i <- 0 until nThreads) {
-            threads.append(new Child[A, B](i, this, new TimeStepSolver[A, B](encoder, tranlator, solver)))
+            threads.append(new Child[A, B](i, this, new TimeStepSolver[A, B](encoder, translator, solver), updateSincronized))
         }
 
         threads.foreach(f => f.start())
@@ -35,9 +37,9 @@ class Planner[A, B](val nThreads: Int, val maxActions: Int) {
     //noinspection AccessorLikeMethodIsEmptyParen
     // The function has to have parentesis https://docs.scala-lang.org/style/naming-conventions.html
     def getTimeStepAndIncrement(): Int = synchronized {
-        val previusTimeStep = timeStep
+        val previousTimeStep = timeStep
         timeStep += 1
-        previusTimeStep
+        previousTimeStep
     }
 
     def solutionFound(child: Child[A, B]): Unit = synchronized {

@@ -3,7 +3,7 @@ package gmt.snowman.encoder
 import gmt.planner.solver.Assignment
 import gmt.planner.solver.value.{ValueBoolean, ValueInteger}
 import gmt.snowman.level.Level
-import gmt.snowman.level.`object`.Wall
+import gmt.snowman.game.`object`.Wall
 import gmt.snowman.encoder.CharacterInterface
 
 import scala.collection.mutable.ArrayBuffer

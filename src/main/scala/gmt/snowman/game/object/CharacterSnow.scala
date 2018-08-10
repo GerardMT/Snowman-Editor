@@ -1,4 +1,4 @@
-package gmt.snowman.level.`object`
+package gmt.snowman.game.`object`
 
 case object CharacterSnow extends Object {
 

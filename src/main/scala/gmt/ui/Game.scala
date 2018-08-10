@@ -153,7 +153,15 @@ class Game(settings: Settings) {
 
         val levelsFileWriter = new FileWriter(levelsFile)
         levelsFileWriter.write("Custom\n")
-        levelsFileWriter.write("straw_hat buttons\n")
+        for (i <- 0 until level.snowmans - 1) {
+            levelsFileWriter.write(", Custom")
+        }
+        levelsFileWriter.write("\n")
+        levelsFileWriter.write("straw_hat buttons")
+        for (i <- 0 until level.snowmans - 1) {
+            levelsFileWriter.write(", straw_hat buttons")
+        }
+        levelsFileWriter.write("\n")
         levelsFileWriter.write("1\n")
         levelsFileWriter.write(level.toString)
         levelsFileWriter.close()
@@ -257,7 +265,6 @@ class Game(settings: Settings) {
     def gameHasOriginalFiles: Boolean = {
         val originalLayoutFile = new File(settings.gamePath + RESOURCES_PATH + LAYOUT_FILENAME)
         val originalLevelsFile = new File(settings.gamePath + RESOURCES_PATH + LEVELS_FILENAME)
-        val originalProgresFile = new File(settings.savePath + PROGRESS_FILENAME)
 
         val messageDigest = MessageDigest.getInstance("SHA-256")
 

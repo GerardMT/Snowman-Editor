@@ -3,7 +3,7 @@ package gmt.ui
 import java.awt.{Color, Font, Rectangle}
 import java.awt.event.{MouseEvent, MouseListener}
 
-import gmt.snowman.level.`object`.{Empty, Object}
+import gmt.snowman.game.`object`.{Empty, Object}
 import gmt.snowman.level.{Coordinate, MutableLevel}
 
 import scala.collection.immutable

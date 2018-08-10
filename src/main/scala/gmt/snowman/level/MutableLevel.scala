@@ -1,8 +1,9 @@
 package gmt.snowman.level
 
 import gmt.snowman.collection.SortedMap
+import gmt.snowman.game.Game
 import gmt.snowman.level.MutableLevel.Info
-import gmt.snowman.level.`object`._
+import gmt.snowman.game.`object`._
 
 import scala.collection.{immutable, mutable}
 import scala.collection.mutable.ListBuffer
@@ -49,7 +50,7 @@ object MutableLevel {
                 val c = lines(y).charAt(x)
 
                 val o = try {
-                    gmt.snowman.level.`object`.Object.createObject(c)
+                    Object.createObject(c)
                 } catch {
                     case _: NoSuchElementException =>
                         throw LevelParserException("Illegal character \"" + c + "\" at (X,Y) = (" + x + "," + y + ")")
@@ -66,13 +67,13 @@ object MutableLevel {
 
 class MutableLevel private (val width: Int, val height: Int){
 
-    private val map = Array.ofDim[gmt.snowman.level.`object`.Object](width, height)
+    private val map = Array.ofDim[gmt.snowman.game.`object`.Object](width, height)
 
-    def update(c: Coordinate, o: gmt.snowman.level.`object`.Object): Unit = {
+    def update(c: Coordinate, o: gmt.snowman.game.`object`.Object): Unit = {
         map(c.x)(c.y) = o
     }
 
-    def apply(c: Coordinate): gmt.snowman.level.`object`.Object = {
+    def apply(c: Coordinate): gmt.snowman.game.`object`.Object = {
         map(c.x)(c.y)
     }
 
@@ -80,7 +81,7 @@ class MutableLevel private (val width: Int, val height: Int){
         var size = 0
         var hasSnow = false
 
-        var someCharacterLocatoin: Option[Location] = None
+        var someCharacterLocation: Option[Location] = None
         val balls = ListBuffer.empty[Location]
 
         val sortedMap = SortedMap.empty[Coordinate, Location]
@@ -95,7 +96,7 @@ class MutableLevel private (val width: Int, val height: Int){
                 sortedMap.put(c, p)
 
                 o match {
-                    case gmt.snowman.level.`object`.Empty =>
+                    case Empty =>
                     case _ =>
                         size += 1
                 }
@@ -104,10 +105,10 @@ class MutableLevel private (val width: Int, val height: Int){
                     case Snow =>
                         hasSnow = true
                     case Character =>
-                        someCharacterLocatoin = Some(p)
+                        someCharacterLocation = Some(p)
                     case CharacterSnow =>
                         hasSnow = true
-                        someCharacterLocatoin = Some(p)
+                        someCharacterLocation = Some(p)
                     case SmallBall | MediumBall | LargeBall =>
                         balls.append(p)
                     case MediumSmallBall | LargeSmallBall | LargeMediumBall | LargeMediumSmallBall =>
@@ -134,7 +135,7 @@ class MutableLevel private (val width: Int, val height: Int){
             sortedMap.remove(f)
         })
 
-        Level(width, height, size, hasSnow, someCharacterLocatoin.get, balls.toList, sortedMap, toString)
+        Level(width, height, size, hasSnow, balls.size % Game.SNOWMAN_BALLS, someCharacterLocation.get, balls.toList, sortedMap, toString)
     }
 
     def validate: (Boolean, Boolean) = {
@@ -153,7 +154,7 @@ class MutableLevel private (val width: Int, val height: Int){
             }
         }
 
-        (character == 1, balls % 3 == 0 && balls != 0)
+        (character == 1, balls % Game.SNOWMAN_BALLS == 0 && balls != 0)
     }
 
     def save: String = {

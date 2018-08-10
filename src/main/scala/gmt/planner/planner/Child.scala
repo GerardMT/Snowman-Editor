@@ -4,12 +4,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import gmt.planner.timestep.{TimeStepResult, TimeStepSolver}
 
-object Child {
-
-    private val THREAD_FOLDER = "thread"
-}
-
-class Child[A, B](threadNumber: Int, threadMaster: Planner[A, B], timeStepSolver: TimeStepSolver[A, B]) extends Thread {
+class Child[A, B](threadNumber: Int, threadMaster: Planner[A, B], timeStepSolver: TimeStepSolver[A, B], updateFunction: TimeStepResult[A] => Unit) extends Thread {
 
     private val _timeStep = new AtomicInteger(0)
 
@@ -27,6 +22,8 @@ class Child[A, B](threadNumber: Int, threadMaster: Planner[A, B], timeStepSolver
                 val solverResult = timeStepSolver.solve(_timeStep.get)
                 solved = solverResult.sat
 
+                updateFunction(solverResult)
+
                 if (solved) {
                     _result = Some(solverResult)
                     threadMaster.solutionFound(this)
@@ -35,7 +32,7 @@ class Child[A, B](threadNumber: Int, threadMaster: Planner[A, B], timeStepSolver
                 }
             }
         } catch {
-            case e: InterruptedException =>
+            case _: InterruptedException =>
         }
     }
 
@@ -44,5 +41,5 @@ class Child[A, B](threadNumber: Int, threadMaster: Planner[A, B], timeStepSolver
 
     def result: TimeStepResult[A] = _result.get
 
-    def timeStep = _timeStep.get()
+    def timeStep: Int = _timeStep.get()
 }

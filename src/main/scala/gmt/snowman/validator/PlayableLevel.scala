@@ -2,13 +2,13 @@ package gmt.snowman.validator
 
 import gmt.snowman.action.SnowmanAction
 import gmt.snowman.level.Coordinate
-import gmt.snowman.level.`object`._
-import gmt.snowman.level.`object`.Object
+import gmt.snowman.game.`object`._
+import gmt.snowman.game.`object`.Object
 
-case class PlayableLevel (private val characterCooridnate: Coordinate, private val map: TwoDimSeq[Object]) {
+case class PlayableLevel (private val characterCoordinate: Coordinate, private val map: TwoDimSeq[Object]) {
 
     def apply(action: SnowmanAction): Option[PlayableLevel] = {
-        val nextCoordinate = characterCooridnate + action.shift
+        val nextCoordinate = characterCoordinate + action.shift
         if (!map.valid(nextCoordinate)) {
             None
         }
@@ -28,7 +28,7 @@ case class PlayableLevel (private val characterCooridnate: Coordinate, private v
                 return None
             }
 
-            ballaAction(nextCoordinate, nextObject, nextNextCoordinate, nextNextObject)
+            ballsAction(nextCoordinate, nextObject, nextNextCoordinate, nextNextObject)
         } else {
             None
         }
@@ -41,16 +41,16 @@ case class PlayableLevel (private val characterCooridnate: Coordinate, private v
             case _ => return None
         }
 
-        val finalMap = map(characterCooridnate) match {
-            case Character => nextMap.updated(characterCooridnate, Grass)
-            case CharacterSnow => nextMap.updated(characterCooridnate, Snow)
+        val finalMap = map(characterCoordinate) match {
+            case Character => nextMap.updated(characterCoordinate, Grass)
+            case CharacterSnow => nextMap.updated(characterCoordinate, Snow)
             case _ => return None
         }
 
         Some(PlayableLevel(nextCoordinate, finalMap))
     }
 
-    private def ballaAction(nextCoordinate: Coordinate, nextObject: Object, nextNextCoordinate: Coordinate, nextNextObject: Object): Option[PlayableLevel] = {
+    private def ballsAction(nextCoordinate: Coordinate, nextObject: Object, nextNextCoordinate: Coordinate, nextNextObject: Object): Option[PlayableLevel] = {
         val (finalMap, newCharacterCoordinate) = nextObject match {
             case SmallBall | MediumBall | LargeBall =>
                 val nextMap = nextNextObject match {
@@ -65,9 +65,9 @@ case class PlayableLevel (private val characterCooridnate: Coordinate, private v
                 }
                 val nextNextMap = nextMap.updated(nextCoordinate, Character)
 
-                val returnMap = map(characterCooridnate) match {
-                    case Character => nextNextMap.updated(characterCooridnate, Grass)
-                    case CharacterSnow => nextNextMap.updated(characterCooridnate, Snow)
+                val returnMap = map(characterCoordinate) match {
+                    case Character => nextNextMap.updated(characterCoordinate, Grass)
+                    case CharacterSnow => nextNextMap.updated(characterCoordinate, Snow)
                     case _ => return None
                 }
                 (returnMap, nextCoordinate)
@@ -86,7 +86,7 @@ case class PlayableLevel (private val characterCooridnate: Coordinate, private v
                 } else {
                     return None
                 }
-                (returnMap , characterCooridnate)
+                (returnMap , characterCoordinate)
             case _ =>
                 return None
         }

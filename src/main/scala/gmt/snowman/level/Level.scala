@@ -1,10 +1,10 @@
 package gmt.snowman.level
 
-import gmt.snowman.level.`object`.{Empty, Object}
+import gmt.snowman.game.`object`.{Empty, Object}
 import gmt.snowman.collection.SortedMap
 import gmt.snowman.validator.{PlayableLevel, TwoDimSeq}
 
-case class Level(width: Int, height: Int, size: Int, hasSnow: Boolean, character: Location, balls: List[Location], map: SortedMap[Coordinate, Location], override val toString: String) {
+case class Level(width: Int, height: Int, size: Int, hasSnow: Boolean, snowmans: Int, character: Location, balls: List[Location], map: SortedMap[Coordinate, Location], override val toString: String) {
 
     def toPlayableLevel: PlayableLevel = {
         val tmpMap = Array.ofDim[Object](width, height)

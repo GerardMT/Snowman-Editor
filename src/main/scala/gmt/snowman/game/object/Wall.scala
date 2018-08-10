@@ -1,4 +1,4 @@
-package gmt.snowman.level.`object`
+package gmt.snowman.game.`object`
 
 case object Wall extends Object {
 

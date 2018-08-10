@@ -4,7 +4,7 @@ import gmt.planner.encoder.Encoding
 import gmt.planner.operation._
 import gmt.planner.solver.Assignment
 import gmt.planner.solver.value.ValueBoolean
-import gmt.snowman.action.SnowmanAction
+import gmt.snowman.action.{BallAction, SnowmanAction}
 import gmt.snowman.encoder.EncodingData.ActionData
 import gmt.snowman.level.{Coordinate, Level}
 
@@ -50,7 +50,7 @@ case class EncoderBasic(override val level: Level) extends EncoderBase[StateBasi
         (pre, eff, expressions)
     }
 
-    override def encodeReachability(state: StateBasic, encoing: Encoding): Unit = {}
+    override def encodeReachability(state: StateBasic, encoding: Encoding): Unit = {}
 
     override protected def encodeCharacterAction(actionName: String, state: StateBasic, stateNext: StateBasic, action: SnowmanAction, encoding: Encoding, actionVariables: mutable.Buffer[BooleanVariable], actionsData: mutable.Buffer[EncodingData.ActionData]): Unit = {
         val actionVariable = BooleanVariable(actionName + "_S" + state.timeStep + "S" + stateNext.timeStep)
@@ -59,7 +59,7 @@ case class EncoderBasic(override val level: Level) extends EncoderBase[StateBasi
 
         actionsData.append(EncodingData.ActionData(action, actionVariable, ActionData.NO_BALL))
 
-        val pre = characterLocatoinValid(state, action.shift)
+        val pre = characterLocationValid(state, action.shift)
 
         val constantEff = ListBuffer(moveCharacter(state, stateNext, action.shift),
             equalBallsVariables(state, stateNext))
@@ -81,7 +81,7 @@ case class EncoderBasic(override val level: Level) extends EncoderBase[StateBasi
         val assignmentsMap = assignments.map(f => (f.name, f.value)).toMap
 
         val actions = ListBuffer.empty[SnowmanAction]
-        val actionsBalls = ListBuffer.empty[SnowmanAction]
+        val actionsBalls = ListBuffer.empty[BallAction]
 
         for (stateData <- encodingData.statesData) {
             val actionData = stateData.actionsData.find(f => assignmentsMap(f.actionVariable.name).asInstanceOf[ValueBoolean].v).get
@@ -89,15 +89,15 @@ case class EncoderBasic(override val level: Level) extends EncoderBase[StateBasi
             actions.append(actionData.action)
 
             if (actionData.ballActionIndex != ActionData.NO_BALL) {
-                actionsBalls.append(actionData.action)
+                actionsBalls.append(BallAction(actionData.action, actionData.ballActionIndex))
             }
         }
 
         DecodingData(actions.toList, actionsBalls.toList)
     }
 
-    private def characterLocatoinValid(state: StateBasic, shift: Coordinate): Clause = {
-        Or((for ((c, o) <- falttenTuple(level.map.keys.map(f => (f, state.occupancy.get(f + shift))))) yield {
+    private def characterLocationValid(state: StateBasic, shift: Coordinate): Clause = {
+        Or((for ((c, o) <- flattenTuple(level.map.keys.map(f => (f, state.occupancy.get(f + shift))))) yield {
             And(Equals(state.character.x, IntegerConstant(c.x)), Equals(state.character.y, IntegerConstant(c.y)), Not(o))
         }).toSeq: _*)
     }

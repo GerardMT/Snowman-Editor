@@ -5,7 +5,7 @@ import gmt.planner.operation
 import gmt.planner.operation.{BooleanVariable, IntegerVariable}
 import gmt.snowman.collection.SortedMap
 import gmt.snowman.encoder.StateBase.Ball
-import gmt.snowman.level.`object`._
+import gmt.snowman.game.`object`._
 import gmt.snowman.level.{Coordinate, Level}
 
 import scala.collection.immutable

@@ -22,7 +22,7 @@ case class EncoderCheating(override val level: Level) extends EncoderBase[StateC
             noOtherBallsOver(state, stateActionBall),
             Not(And(otherBallInFront(state, stateActionBall, shift), otherBallUnder(state, stateActionBall))),
             otherBallsInFrontLarger(state, stateActionBall, shift),
-            characterLocatoinTeleportValid(state, stateActionBall, shift))
+            characterLocationTeleportValid(state, stateActionBall, shift))
 
         val constantEff = ListBuffer(moveBall(stateActionBall, stateNextActionBall, shift),
             equalOtherBallsVariables(state, stateActionBall, stateNext, stateNextActionBall),
@@ -37,7 +37,7 @@ case class EncoderCheating(override val level: Level) extends EncoderBase[StateC
         (pre, eff, expressions)
     }
 
-    override def encodeReachability(state: StateCheating, encoing: Encoding): Unit = {}
+    override def encodeReachability(state: StateCheating, encoding: Encoding): Unit = {}
 
     override protected def encodeCharacterAction(actionName: String, state: StateCheating, stateNext: StateCheating, action: SnowmanAction, encoding: Encoding, actionVariables: mutable.Buffer[BooleanVariable], actionsState: mutable.Buffer[EncodingData.ActionData]): Unit = {}
 
