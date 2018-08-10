@@ -13,7 +13,7 @@ import gmt.snowman.level.{Coordinate, Level, `object`}
 import scala.collection.mutable.ListBuffer
 import scala.collection.{immutable, mutable}
 
-abstract class EncoderBase[A <: StateBase, B <: SnowmanAction](val level: Level) extends Encoder[B, SnowmanEncodingData] {
+abstract class EncoderBase[A <: StateBase, B <: DecodingData](val level: Level) extends Encoder[B, SnowmanEncodingData] {
 
     override def encode(timeSteps: Int): EncoderResult[SnowmanEncodingData] = {
         val encoding = new Encoding
@@ -278,11 +278,11 @@ abstract class EncoderBase[A <: StateBase, B <: SnowmanAction](val level: Level)
         }).toSeq: _*)
     }
 
-    protected def decodeTeleport(assignments: Seq[Assignment], encodingData: SnowmanEncodingData): immutable.Seq[SnowmanAction] = {
+    protected def decodeTeleport(assignments: Seq[Assignment], encodingData: SnowmanEncodingData): Option[DecodingData] = {
         val assignmentsMap = assignments.map(f => (f.name, f.value)).toMap
 
 
-        val actionsBall = ListBuffer.empty[SnowmanAction]
+        val actionsBalls = ListBuffer.empty[SnowmanAction]
         val actions = ListBuffer.empty[SnowmanAction]
 
         var characterLocation = encodingData.level.character.c
@@ -326,6 +326,7 @@ abstract class EncoderBase[A <: StateBase, B <: SnowmanAction](val level: Level)
             }
 
             actions.append(actionData.action)
+            actionsBalls.append(actionData.action)
             println("Action: " + actionData.action + "\n")
 
             val existOtherBallUnder = state.balls.patch(actionData.ballActionIndex, Nil, 1).exists(f => coordinateFromCoordinateVariables(f, assignmentsMap) == ballCoordinate)
@@ -339,7 +340,7 @@ abstract class EncoderBase[A <: StateBase, B <: SnowmanAction](val level: Level)
             state = stateNext
         }
 
-        actions.toList
+        Some(DecodingData(actions.toList, actionsBalls.toList))
     }
 
     private def coordinateFromCoordinateVariables(coordinateVariables: CoordinateVariables, assignmentsMap: immutable.Map[String, Value]): Coordinate = {

@@ -11,7 +11,7 @@ import gmt.snowman.level.{Coordinate, Level}
 import scala.collection.{immutable, mutable}
 import scala.collection.mutable.ListBuffer
 
-case class EncoderReachability(override val level: Level) extends EncoderBase[StateReachability, SnowmanAction](level) {
+case class EncoderReachability(override val level: Level) extends EncoderBase[StateReachability, DecodingData](level) {
 
     override def createState(level: Level, timeStep: Int): StateReachability = StateReachability(level, timeStep)
 
@@ -80,7 +80,7 @@ case class EncoderReachability(override val level: Level) extends EncoderBase[St
 
     override protected def encodeCharacterAction(actionName: String, state: StateReachability, stateNext: StateReachability, action: SnowmanAction, encoding: Encoding, actionVariables: mutable.Buffer[BooleanVariable], actionsState: mutable.Buffer[SnowmanEncodingData.ActionData]): Unit = {}
 
-    override def decode(assignments: Seq[Assignment], encodingData: SnowmanEncodingData): immutable.Seq[SnowmanAction] = decodeTeleport(assignments, encodingData)
+    override def decode(assignments: Seq[Assignment], encodingData: SnowmanEncodingData): Option[DecodingData] = decodeTeleport(assignments, encodingData)
 
     private def reachability(state: StateReachability, stateActionBall: StateBase.Ball, shift: Coordinate): Clause = {
         Or((for ((c, rn) <- state.reachabilityNodes) yield {

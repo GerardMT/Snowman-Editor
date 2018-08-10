@@ -264,10 +264,13 @@ object UI extends SimpleSwingApplication {
 
     private def showResult(snowmanSolverResult: SnowmanSolverResult): Unit = { // TODO UI
         println("Solved: " + snowmanSolverResult.solved)
-        if (snowmanSolverResult.solved) {
-            println("Valid: " + snowmanSolverResult.valid)
-            println("Actions:" + snowmanSolverResult.actions.size)
-            snowmanSolverResult.actions.foreach(f => println("    " + f.toString))
+
+        snowmanSolverResult.result match {
+            case Some(r) =>
+                println("Valid: " + snowmanSolverResult.valid)
+                println("Actions:" + r.actions.size)
+                r.actions.foreach(f => println("    " + f.toString))
+            case None =>
         }
     }
 

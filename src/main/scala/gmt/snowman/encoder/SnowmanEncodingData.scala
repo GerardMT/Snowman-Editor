@@ -10,6 +10,11 @@ import scala.collection.immutable
 
 object SnowmanEncodingData {
     case class StateData(stateNext: StateBase, actionsData: immutable.Seq[ActionData])
+
+    object ActionData {
+        val NO_BALL = -1
+    }
+
     case class ActionData(action: SnowmanAction, actionVariable: BooleanVariable, ballActionIndex: Int)
 }
 

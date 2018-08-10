@@ -5,12 +5,13 @@ import gmt.planner.operation._
 import gmt.planner.solver.Assignment
 import gmt.planner.solver.value.ValueBoolean
 import gmt.snowman.action.SnowmanAction
+import gmt.snowman.encoder.SnowmanEncodingData.ActionData
 import gmt.snowman.level.{Coordinate, Level}
 
+import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
-import scala.collection.{immutable, mutable}
 
-case class EncoderBasic(override val level: Level) extends EncoderBase[StateBasic, SnowmanAction](level) {
+case class EncoderBasic(override val level: Level) extends EncoderBase[StateBasic, DecodingData](level) {
 
     override def createState(level: Level, timeStep: Int): StateBasic = StateBasic(level, timeStep)
 
@@ -56,7 +57,7 @@ case class EncoderBasic(override val level: Level) extends EncoderBase[StateBasi
         encoding.add(VariableDeclaration(actionVariable))
         actionVariables.append(actionVariable)
 
-        actionsData.append(SnowmanEncodingData.ActionData(action, actionVariable, 0))
+        actionsData.append(SnowmanEncodingData.ActionData(action, actionVariable, ActionData.NO_BALL))
 
         val pre = characterLocatoinValid(state, action.shift)
 
@@ -73,36 +74,26 @@ case class EncoderBasic(override val level: Level) extends EncoderBase[StateBasi
         encoding.add(ClauseDeclaration(Implies(actionVariable, pre)))
     }
 
-    override def decode(assignments: Seq[Assignment], encodingData: SnowmanEncodingData): immutable.Seq[SnowmanAction] = {
+    override def decode(assignments: Seq[Assignment], encodingData: SnowmanEncodingData): Option[DecodingData] = {
         // TODO DEBUG
         println(Report.generateReport(level, encodingData.state0 :: encodingData.statesData.map(f => f.stateNext).toList, assignments))
 
         val assignmentsMap = assignments.map(f => (f.name, f.value)).toMap
 
         val actions = ListBuffer.empty[SnowmanAction]
+        val actionsBalls = ListBuffer.empty[SnowmanAction]
 
         for (stateData <- encodingData.statesData) {
+            val actionData = stateData.actionsData.find(f => assignmentsMap(f.actionVariable.name).asInstanceOf[ValueBoolean].v).get
 
-            val iterator = stateData.actionsData.iterator
-            var found = false
+            actions.append(actionData.action)
 
-            while (iterator.hasNext && !found) {
-                val actionData = iterator.next()
-
-                assignmentsMap.get(actionData.actionVariable.name) match {
-                    case Some(a) =>
-                        a match {
-                            case ValueBoolean(true) =>
-                                found = true
-                                actions.append(actionData.action)
-                            case _ =>
-                        }
-                    case None =>
-                }
+            if (actionData.ballActionIndex != ActionData.NO_BALL) {
+                actionsBalls.append(actionData.action)
             }
         }
 
-        actions.toList
+        Some(DecodingData(actions.toList, actionsBalls.toList))
     }
 
     private def characterLocatoinValid(state: StateBasic, shift: Coordinate): Clause = {

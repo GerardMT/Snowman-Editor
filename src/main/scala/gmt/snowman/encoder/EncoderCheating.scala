@@ -9,7 +9,7 @@ import gmt.snowman.level.{Coordinate, Level}
 import scala.collection.mutable.ListBuffer
 import scala.collection.{immutable, mutable}
 
-case class EncoderCheating(override val level: Level) extends EncoderBase[StateCheating, SnowmanAction](level) {
+case class EncoderCheating(override val level: Level) extends EncoderBase[StateCheating, DecodingData](level) {
 
     override def createState(level: Level, timeStep: Int): StateCheating = StateCheating(level, timeStep)
 
@@ -41,7 +41,7 @@ case class EncoderCheating(override val level: Level) extends EncoderBase[StateC
 
     override protected def encodeCharacterAction(actionName: String, state: StateCheating, stateNext: StateCheating, action: SnowmanAction, encoding: Encoding, actionVariables: mutable.Buffer[BooleanVariable], actionsState: mutable.Buffer[SnowmanEncodingData.ActionData]): Unit = {}
 
-    override def decode(assignments: Seq[Assignment], encodingData: SnowmanEncodingData): immutable.Seq[SnowmanAction] = {
+    override def decode(assignments: Seq[Assignment], encodingData: SnowmanEncodingData): Option[DecodingData] = {
         // TODO DEBUG
         println(Report.generateReport(level, encodingData.state0 :: encodingData.statesData.map(f => f.stateNext).toList, assignments))
 

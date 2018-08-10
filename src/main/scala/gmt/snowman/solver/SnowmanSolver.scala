@@ -41,29 +41,33 @@ object SnowmanSolver {
         solveSMTYics2(settings: Settings, level, EncoderReachability(level))
     }
 
-    private def solveSMTYics2(settings: Settings, level: Level, encoder: Encoder[SnowmanAction, SnowmanEncodingData]): SnowmanSolverResult = {
+    private def solveSMTYics2(settings: Settings, level: Level, encoder: Encoder[DecodingData, SnowmanEncodingData]): SnowmanSolverResult = {
         val result = new Planner(1, 100).solve(encoder, SMTLib2, new Yices2Solver(settings.solverPath))
 
-        val (valid, _) = Validator.validate(level, result.actions)
-
-        SnowmanSolverResult(result.sat, valid, result.actions)
+        result.result match {
+            case Some(r) =>
+                val (valid, _ ) = Validator.validate(level, r.actions)
+                SnowmanSolverResult(result.sat, valid, Some(r))
+            case None =>
+                SnowmanSolverResult(result.sat, false, None)
+        }
     }
 
     def solvePDDLStrips(level: Level): SnowmanSolverResult = {
         val encoding = EncoderPDDL.encodeStrips(level)
 
-        SnowmanSolverResult(solved = false, valid = false, List()) // TODO PDDL
+        SnowmanSolverResult(false, false, None) // TODO PDDL
     }
 
     def solvePDDLObjectFluents(level: Level): SnowmanSolverResult = {
         val encoding = EncoderPDDL.encodeObjectFluents(level)
 
-        SnowmanSolverResult(solved = false, valid = false, List()) // TODO PDDL
+        SnowmanSolverResult(false, false, None) // TODO PDDL
     }
 
     def solvePDDLNumericFluents(level: Level): SnowmanSolverResult = {
         val encoding = EncoderPDDL.encodeObjectFluents(level)
 
-        SnowmanSolverResult(solved = false, valid = false, List()) // TODO PDDL
+        SnowmanSolverResult(false, false, None) // TODO PDDL
     }
 }

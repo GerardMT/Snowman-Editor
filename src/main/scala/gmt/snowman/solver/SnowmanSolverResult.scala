@@ -1,6 +1,5 @@
 package gmt.snowman.solver
 
-import gmt.snowman.action.SnowmanAction
+import gmt.snowman.encoder.DecodingData
 
-case class SnowmanSolverResult(solved: Boolean, valid: Boolean, actions: Seq[SnowmanAction])
-
+case class SnowmanSolverResult(solved: Boolean, valid: Boolean, result: Option[DecodingData])

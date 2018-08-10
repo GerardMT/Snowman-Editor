@@ -1,5 +1,3 @@
 package gmt.planner.planner
 
-import gmt.planner.action.Action
-
-case class PlannerResult[A <: Action](sat: Boolean, timeSteps: Int, actions: Seq[A])
+case class PlannerResult[A](sat: Boolean, timeSteps: Int, result: Option[A])
