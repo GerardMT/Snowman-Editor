@@ -2,7 +2,6 @@ package gmt.planner.planner
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import gmt.planner.encoder.EncodingData
 import gmt.planner.timestep.{TimeStepResult, TimeStepSolver}
 
 object Child {
@@ -10,7 +9,7 @@ object Child {
     private val THREAD_FOLDER = "thread"
 }
 
-class Child[A, B <: EncodingData](threadNumber: Int, threadMaster: Planner[A, B], timeStepSolver: TimeStepSolver[A, B]) extends Thread {
+class Child[A, B](threadNumber: Int, threadMaster: Planner[A, B], timeStepSolver: TimeStepSolver[A, B]) extends Thread {
 
     private val _timeStep = new AtomicInteger(0)
 

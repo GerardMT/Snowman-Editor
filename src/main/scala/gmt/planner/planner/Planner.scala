@@ -1,6 +1,6 @@
 package gmt.planner.planner
 
-import gmt.planner.encoder.{Encoder, EncodingData}
+import gmt.planner.encoder.Encoder
 import gmt.planner.solver.Solver
 import gmt.planner.timestep.{TimeStepResult, TimeStepSolver}
 import gmt.planner.translator.Translator
@@ -8,7 +8,7 @@ import gmt.planner.translator.Translator
 import scala.collection.mutable.ListBuffer
 
 
-class Planner[A, B <: EncodingData](val nThreads: Int, val maxActions: Int) {
+class Planner[A, B](val nThreads: Int, val maxActions: Int) {
 
     private var timeStep = 1
 

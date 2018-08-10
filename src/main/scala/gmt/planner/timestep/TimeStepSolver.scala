@@ -1,12 +1,12 @@
 package gmt.planner.timestep
 
 
-import gmt.planner.encoder.{Encoder, EncodingData}
+import gmt.planner.encoder.Encoder
 import gmt.planner.solver.Solver
 import gmt.planner.translator.Translator
 
 
-class TimeStepSolver[A, B <: EncodingData](encoder: Encoder[A, B], translator: Translator, solver: Solver) {
+class TimeStepSolver[A, B](encoder: Encoder[A, B], translator: Translator, solver: Solver) {
 
     def solve(timeSteps: Int): TimeStepResult[A] = {
 
@@ -15,9 +15,9 @@ class TimeStepSolver[A, B <: EncodingData](encoder: Encoder[A, B], translator: T
         val solverResult = solver.solve(translator.translate(encodingResult.encoding))
 
         if (!solverResult.sat) {
-            TimeStepResult(false, timeSteps, None)
+            TimeStepResult(sat = false, timeSteps, None)
         } else {
-            TimeStepResult(true, timeSteps, encoder.decode(solverResult.assignments, encodingResult.encodingData))
+            TimeStepResult(sat = true, timeSteps, encoder.decode(solverResult.assignments, encodingResult.encodingData))
         }
     }
 }
