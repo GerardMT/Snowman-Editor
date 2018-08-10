@@ -1,10 +1,8 @@
 package gmt.planner.timestep
 
-
 import gmt.planner.encoder.Encoder
 import gmt.planner.solver.Solver
 import gmt.planner.translator.Translator
-
 
 class TimeStepSolver[A, B](encoder: Encoder[A, B], translator: Translator, solver: Solver) {
 
@@ -17,7 +15,7 @@ class TimeStepSolver[A, B](encoder: Encoder[A, B], translator: Translator, solve
         if (!solverResult.sat) {
             TimeStepResult(sat = false, timeSteps, None)
         } else {
-            TimeStepResult(sat = true, timeSteps, encoder.decode(solverResult.assignments, encodingResult.encodingData))
+            TimeStepResult(sat = true, timeSteps, Some(encoder.decode(solverResult.assignments, encodingResult.encodingData)))
         }
     }
 }

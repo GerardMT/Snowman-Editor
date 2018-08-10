@@ -41,7 +41,7 @@ object SnowmanSolver {
         solveSMTYics2(settings: Settings, level, EncoderReachability(level))
     }
 
-    private def solveSMTYics2(settings: Settings, level: Level, encoder: Encoder[DecodingData, SnowmanEncodingData]): SnowmanSolverResult = {
+    private def solveSMTYics2(settings: Settings, level: Level, encoder: Encoder[DecodingData, EncodingData]): SnowmanSolverResult = {
         val result = new Planner(1, 100).solve(encoder, SMTLib2, new Yices2Solver(settings.solverPath))
 
         result.result match {

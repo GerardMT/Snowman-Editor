@@ -6,5 +6,5 @@ trait Encoder[A, B] {
 
     def encode(timeSteps: Int): EncoderResult[B]
 
-    def decode(assignments: Seq[Assignment], encodingData: B): Option[A]
+    def decode(assignments: Seq[Assignment], encodingData: B): A
 }

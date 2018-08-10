@@ -39,9 +39,9 @@ case class EncoderCheating(override val level: Level) extends EncoderBase[StateC
 
     override def encodeReachability(state: StateCheating, encoing: Encoding): Unit = {}
 
-    override protected def encodeCharacterAction(actionName: String, state: StateCheating, stateNext: StateCheating, action: SnowmanAction, encoding: Encoding, actionVariables: mutable.Buffer[BooleanVariable], actionsState: mutable.Buffer[SnowmanEncodingData.ActionData]): Unit = {}
+    override protected def encodeCharacterAction(actionName: String, state: StateCheating, stateNext: StateCheating, action: SnowmanAction, encoding: Encoding, actionVariables: mutable.Buffer[BooleanVariable], actionsState: mutable.Buffer[EncodingData.ActionData]): Unit = {}
 
-    override def decode(assignments: Seq[Assignment], encodingData: SnowmanEncodingData): Option[DecodingData] = {
+    override def decode(assignments: Seq[Assignment], encodingData: EncodingData): DecodingData = {
         // TODO DEBUG
         println(Report.generateReport(level, encodingData.state0 :: encodingData.statesData.map(f => f.stateNext).toList, assignments))
 

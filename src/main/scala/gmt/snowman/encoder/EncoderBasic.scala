@@ -5,7 +5,7 @@ import gmt.planner.operation._
 import gmt.planner.solver.Assignment
 import gmt.planner.solver.value.ValueBoolean
 import gmt.snowman.action.SnowmanAction
-import gmt.snowman.encoder.SnowmanEncodingData.ActionData
+import gmt.snowman.encoder.EncodingData.ActionData
 import gmt.snowman.level.{Coordinate, Level}
 
 import scala.collection.mutable
@@ -52,12 +52,12 @@ case class EncoderBasic(override val level: Level) extends EncoderBase[StateBasi
 
     override def encodeReachability(state: StateBasic, encoing: Encoding): Unit = {}
 
-    override protected def encodeCharacterAction(actionName: String, state: StateBasic, stateNext: StateBasic, action: SnowmanAction, encoding: Encoding, actionVariables: mutable.Buffer[BooleanVariable], actionsData: mutable.Buffer[SnowmanEncodingData.ActionData]): Unit = {
+    override protected def encodeCharacterAction(actionName: String, state: StateBasic, stateNext: StateBasic, action: SnowmanAction, encoding: Encoding, actionVariables: mutable.Buffer[BooleanVariable], actionsData: mutable.Buffer[EncodingData.ActionData]): Unit = {
         val actionVariable = BooleanVariable(actionName + "_S" + state.timeStep + "S" + stateNext.timeStep)
         encoding.add(VariableDeclaration(actionVariable))
         actionVariables.append(actionVariable)
 
-        actionsData.append(SnowmanEncodingData.ActionData(action, actionVariable, ActionData.NO_BALL))
+        actionsData.append(EncodingData.ActionData(action, actionVariable, ActionData.NO_BALL))
 
         val pre = characterLocatoinValid(state, action.shift)
 
@@ -74,7 +74,7 @@ case class EncoderBasic(override val level: Level) extends EncoderBase[StateBasi
         encoding.add(ClauseDeclaration(Implies(actionVariable, pre)))
     }
 
-    override def decode(assignments: Seq[Assignment], encodingData: SnowmanEncodingData): Option[DecodingData] = {
+    override def decode(assignments: Seq[Assignment], encodingData: EncodingData): DecodingData = {
         // TODO DEBUG
         println(Report.generateReport(level, encodingData.state0 :: encodingData.statesData.map(f => f.stateNext).toList, assignments))
 
@@ -93,7 +93,7 @@ case class EncoderBasic(override val level: Level) extends EncoderBase[StateBasi
             }
         }
 
-        Some(DecodingData(actions.toList, actionsBalls.toList))
+        DecodingData(actions.toList, actionsBalls.toList)
     }
 
     private def characterLocatoinValid(state: StateBasic, shift: Coordinate): Clause = {
@@ -103,11 +103,11 @@ case class EncoderBasic(override val level: Level) extends EncoderBase[StateBasi
     }
 
     private def characterNextToBall[A <: StateBase with  CharacterInterface](state: A, stateActionBll: StateBase.Ball, shift: Coordinate): Clause = {
-        applyShiftClause(stateActionBll.x, stateActionBll.y, state.character.x, state.character.y, -shift, and)
+        applyShiftClause(stateActionBll, state.character, -shift, AND)
     }
 
     private def moveCharacter[A <: StateBase with  CharacterInterface](state: A, stateNext: A, shift: Coordinate): Clause = {
-        applyShiftClause(state.character.x, state.character.y, stateNext.character.x, stateNext.character.y, shift, and)
+        applyShiftClause(state.character, stateNext.character, shift, AND)
     }
 
     private def equalSnowVariables(state: StateBase, stateNext: StateBase): Clause = {
@@ -119,6 +119,6 @@ case class EncoderBasic(override val level: Level) extends EncoderBase[StateBasi
     private def equalBallsVariables(state: StateBase, stateNext: StateBase): Clause = {
         And((for ((b, bNext) <- state.balls.zip(stateNext.balls)) yield {
             And(Equals(b.x, bNext.x), Equals(b.y, bNext.y), Equals(b.size, bNext.size))
-        }).toSeq: _*)
+        }): _*)
     }
 }
