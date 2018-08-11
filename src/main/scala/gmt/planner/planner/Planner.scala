@@ -1,12 +1,17 @@
 package gmt.planner.planner
 
 import gmt.planner.encoder.Encoder
+import gmt.planner.planner.Planner.PlannerUpdate
 import gmt.planner.solver.Solver
 import gmt.planner.timestep.{TimeStepResult, TimeStepSolver}
 import gmt.planner.translator.Translator
 
 import scala.collection.mutable.ListBuffer
 
+object Planner {
+
+    case class PlannerUpdate[A](timeStepResult: TimeStepResult[A], totalMilliseconds: Long)
+}
 
 class Planner[A, B](val nThreads: Int, val maxActions: Int) {
 
@@ -16,8 +21,10 @@ class Planner[A, B](val nThreads: Int, val maxActions: Int) {
 
     private var timeStepResult: Option[TimeStepResult[A]] = None
 
-    def solve(encoder: Encoder[A, B], translator: Translator, solver: Solver, updateFunction: TimeStepResult[A] => Unit): PlannerResult[A] = {
-        val updateSincronized = (t: TimeStepResult[A]) => synchronized { updateFunction(t) }
+    def solve(encoder: Encoder[A, B], translator: Translator, solver: Solver, updateFunction: PlannerUpdate[A] => Unit): PlannerResult[A] = {
+        val startTime = System.currentTimeMillis()
+
+        val updateSincronized = (t: TimeStepResult[A]) => synchronized { updateFunction(PlannerUpdate(t, startTime)) }
 
         for (i <- 0 until nThreads) {
             threads.append(new Child[A, B](i, this, new TimeStepSolver[A, B](encoder, translator, solver), updateSincronized))
@@ -26,11 +33,13 @@ class Planner[A, B](val nThreads: Int, val maxActions: Int) {
         threads.foreach(f => f.start())
         threads.foreach(f => f.join())
 
+        val time = System.currentTimeMillis() - startTime
+
         timeStepResult match {
             case Some(r) =>
-                PlannerResult[A](r.sat, r.timeSteps, r.result)
+                PlannerResult[A](r.sat, r.timeSteps, r.result, time)
             case None =>
-                PlannerResult[A](sat = false, timeStep, None)
+                PlannerResult[A](sat = false, timeStep, None, time)
         }
     }
 
