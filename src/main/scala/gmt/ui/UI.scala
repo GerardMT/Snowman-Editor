@@ -1,23 +1,24 @@
 package gmt.ui
 
 import java.awt.event.{ActionEvent, ActionListener}
-import java.awt.{GraphicsEnvironment, Rectangle}
+import java.awt.{Color, Component, GraphicsEnvironment, GridBagConstraints, GridBagLayout, Insets, Rectangle}
 import java.io.{File, FileNotFoundException}
 
 import gmt.planner.planner.Planner.PlannerUpdate
-import gmt.snowman.encoder.DecodingData
-import gmt.snowman.game.`object`.Wall
+import gmt.snowman.encoder.{DecodingData, EncoderBase}
 import gmt.snowman.level.MutableLevel
 import gmt.snowman.pddl.EncoderPDDL
 import gmt.snowman.solver.{SnowmanSolver, SnowmanSolverResult}
 import gmt.snowman.util.Files
-import javax.swing.{Box => _, _}
+import javax.swing.{Box, _}
 
 import scala.swing.GridBagPanel.Anchor
-import scala.swing.{Action, Dialog, FileChooser, GridBagPanel, MainFrame, Menu, MenuBar, MenuItem, ScrollPane, Separator, SimpleSwingApplication}
+import scala.swing.{Action, Color, Dialog, Dimension, FileChooser, GridBagPanel, MainFrame, Menu, MenuBar, MenuItem, ScrollPane, Separator, SimpleSwingApplication}
 
 
 object UI extends SimpleSwingApplication {
+
+    val BACKGROUND_COLOR: Color = new Color(247, 247, 247)
 
     private val settingsFile = new File("./snowman_editor.config")
 
@@ -58,7 +59,7 @@ object UI extends SimpleSwingApplication {
     override def top: MainFrame = new MainFrame {
         title = "Snowman Editor"
 
-        peer.setIconImage(resourceManager.getResource(Wall))
+        peer.setIconImage(resourceManager.getIcon)
 
         menuBar = new MenuBar {
             contents += new Menu("File") {
@@ -69,7 +70,7 @@ object UI extends SimpleSwingApplication {
                     val panel = new JPanel
                     panel.add(new JLabel("width:"))
                     panel.add(widthField)
-                    panel.add(javax.swing.Box.createHorizontalStrut(15)) // a spacer
+                    panel.add(javax.swing.Box.createHorizontalStrut(15))
 
                     panel.add(new JLabel("height:"))
                     panel.add(heightField)
@@ -149,12 +150,6 @@ object UI extends SimpleSwingApplication {
                         Dialog.showMessage(null, "Level is corret", "Validator", Dialog.Message.Info)
                     }
                 })
-                val checkBox = new JCheckBoxMenuItem("Coordinates")
-                //noinspection ConvertExpressionToSAM
-                checkBox.addActionListener(new ActionListener {
-                    override def actionPerformed(e: ActionEvent): Unit = uiLevel.showCoordinates_(e.getSource.asInstanceOf[AbstractButton].getModel.isSelected)
-                })
-                peer.add(checkBox)
             }
             contents += new Menu("Game") {
                 contents += new MenuItem(Action("Load and Run"){
@@ -200,14 +195,18 @@ object UI extends SimpleSwingApplication {
                 contents += new Menu("SMT Basic Encoding") {
                     contents += new MenuItem(Action("Generate") {
                         if (validateLevelShowDialog(uiLevel.mutableLevel)) {
-                            generateSMT(f => savePickAndTextFile(SnowmanSolver.encodeBasicEncoding(uiLevel.mutableLevel.toLevel, f), "in_basic-encoding.smtlib2"))
+                            //generateSMT(f => savePickAndTextFile(SnowmanSolver.encodeBasicEncoding(uiLevel.mutableLevel.toLevel, f), "in_basic-encoding.smtlib2"))
                         }
                     })
                     contents += new MenuItem(Action("Solve") {
                         settings.solverPath match {
                             case Some(s) =>
                                 if (validateLevelShowDialog(uiLevel.mutableLevel)) {
-                                    showResult(SnowmanSolver.solveBasicEncoding(s, uiLevel.mutableLevel.toLevel, showSolverUpdate))
+                                    showSolverOptionsDialog() match {
+                                        case Some(o) =>
+                                            showResult(SnowmanSolver.solveBasicEncoding(s, uiLevel.mutableLevel.toLevel, o, showSolverUpdate))
+                                        case None =>
+                                    }
                                 }
                             case None =>
                                 showErrorSolverPathNotDeined()
@@ -217,7 +216,7 @@ object UI extends SimpleSwingApplication {
                 contents += new Menu("SMT Cheating Encoding") {
                     contents += new MenuItem(Action("Generate") {
                         if (validateLevelShowDialog(uiLevel.mutableLevel)) {
-                            generateSMT(f => savePickAndTextFile(SnowmanSolver.encodeCheatingEncoding(uiLevel.mutableLevel.toLevel, f), "in_cheating-encoding.smtlib2"))
+                            //generateSMT(f => savePickAndTextFile(SnowmanSolver.encodeCheatingEncoding(uiLevel.mutableLevel.toLevel, f), "in_cheating-encoding.smtlib2"))
                         }
                     })
 
@@ -225,7 +224,11 @@ object UI extends SimpleSwingApplication {
                         settings.solverPath match {
                             case Some(s) =>
                                 if (validateLevelShowDialog(uiLevel.mutableLevel)) {
-                                    showResult(SnowmanSolver.solveCheatingEncoding(s, uiLevel.mutableLevel.toLevel, showSolverUpdate))
+                                    showSolverOptionsDialog() match {
+                                        case Some(o) =>
+                                            showResult(SnowmanSolver.solveCheatingEncoding(s, uiLevel.mutableLevel.toLevel, o, showSolverUpdate))
+                                        case None =>
+                                    }
                                 }
                             case None =>
                                 showErrorSolverPathNotDeined()
@@ -235,14 +238,18 @@ object UI extends SimpleSwingApplication {
                 contents += new Menu("SMT Reachability Encoding") {
                     contents += new MenuItem(Action("Generate") {
                         if (validateLevelShowDialog(uiLevel.mutableLevel)) {
-                            generateSMT(f => savePickAndTextFile(SnowmanSolver.encodeReachabilityEncoding(uiLevel.mutableLevel.toLevel, f), "in_reachability-encoding.smtlib2"))
+                            //generateSMT(f => savePickAndTextFile(SnowmanSolver.encodeReachabilityEncoding(uiLevel.mutableLevel.toLevel, f), "in_reachability-encoding.smtlib2"))
                         }
                     })
                     contents += new MenuItem(Action("Solve") {
                         settings.solverPath match {
                             case Some(s) =>
                                 if (validateLevelShowDialog(uiLevel.mutableLevel)) {
-                                    showResult(SnowmanSolver.solveReachabilityEncoding(s, uiLevel.mutableLevel.toLevel, showSolverUpdate))
+                                    showSolverOptionsDialog() match {
+                                        case Some(o) =>
+                                            showResult(SnowmanSolver.solveReachabilityEncoding(s, uiLevel.mutableLevel.toLevel, o, showSolverUpdate))
+                                        case None =>
+                                    }
                                 }
                             case None =>
                                 showErrorSolverPathNotDeined()
@@ -265,7 +272,24 @@ object UI extends SimpleSwingApplication {
                         savePickAndTextFile(EncoderPDDL.encodeNumericFluents(uiLevel.mutableLevel.toLevel), "domain_numeric-fluents.pddl")
                     }
                 })
-
+            }
+            contents += new Menu("Editor") {
+                val coordinatesCheckBox = new JCheckBoxMenuItem("Coordinates")
+                //noinspection ConvertExpressionToSAM
+                coordinatesCheckBox.addActionListener(new ActionListener {
+                    override def actionPerformed(e: ActionEvent): Unit = uiLevel.showCoordinates_(e.getSource.asInstanceOf[AbstractButton].getModel.isSelected)
+                })
+                peer.add(coordinatesCheckBox)
+                val mateuCheckBox = new JCheckBoxMenuItem("Mateu mode")
+                //noinspection ConvertExpressionToSAM
+                mateuCheckBox.addActionListener(new ActionListener {
+                    override def actionPerformed(e: ActionEvent): Unit = {
+                        resourceManager.mateuMode_(e.getSource.asInstanceOf[AbstractButton].getModel.isSelected)
+                        uiLevel.repaint()
+                        picker.repaint()
+                    }
+                })
+                peer.add(mateuCheckBox)
             }
         }
 
@@ -351,7 +375,7 @@ object UI extends SimpleSwingApplication {
                 }
             } catch {
                 case _: FileNotFoundException =>
-                    showAccessDeniedDialog
+                    showAccessDeniedDialog()
             }
         }
     }
@@ -423,5 +447,70 @@ object UI extends SimpleSwingApplication {
 
     private def showErrorGamePathsNotDefined(): Unit = {
         showErroDialog("Game path and/or solver path not defined in settings")
+    }
+
+    private def showSolverOptionsDialog(): Option[EncoderBase.EncoderOptions] = {
+        val startTimestep = new JTextField(5)
+        val maxTimesteps = new JTextField(5)
+
+        val startTimestepLabel = new JLabel("Start timestep:")
+        val maxTimestepsLabel = new JLabel("Max timesteps:")
+
+        val timestepPanel = new JPanel(new GridBagLayout)
+        timestepPanel.setBorder(BorderFactory.createTitledBorder("Timesteps"))
+
+        val c = new GridBagConstraints()
+
+        val rightPadding = 5
+        
+        c.anchor = GridBagConstraints.EAST
+        c.gridx = 0
+        c.gridy = 0
+        c.insets = new Insets(0, 0, 0, rightPadding)
+        timestepPanel.add(startTimestepLabel, c)
+
+        c.gridx = 1
+        c.gridy = 0
+        c.insets = new Insets(0, 0, 5, 0)
+        timestepPanel.add(startTimestep, c)
+
+        c.gridx = 0
+        c.gridy = 1
+        c.insets = new Insets(0, 0, 0, rightPadding)
+        timestepPanel.add(maxTimestepsLabel, c)
+
+        c.gridx = 1
+        c.gridy = 1
+        c.insets = new Insets(0, 0, 0, 0)
+        timestepPanel.add(maxTimesteps, c)
+
+
+        val ballSizes = new JCheckBox("Ball sizes")
+        val ballPositions = new JCheckBox("Ball positions")
+        val ballsDistances = new JCheckBox("Balls distances")
+
+        val invariantPanel = new JPanel
+        invariantPanel.setLayout(new BoxLayout(invariantPanel, BoxLayout.Y_AXIS))
+        invariantPanel.setBorder(BorderFactory.createTitledBorder("Invariants"))
+        invariantPanel.add(ballSizes)
+        invariantPanel.add(ballPositions)
+        invariantPanel.add(ballsDistances)
+
+
+        val panel = new JPanel
+        panel.setLayout(new GridBagLayout)
+        val panelC = new GridBagConstraints
+        panelC.anchor = GridBagConstraints.NORTH
+        panel.add(timestepPanel, panelC)
+        panel.add(javax.swing.Box.createHorizontalStrut(15), panelC)
+        panel.add(invariantPanel, panelC)
+
+        val option = JOptionPane.showConfirmDialog(null, panel, "Solver options", JOptionPane.OK_CANCEL_OPTION)
+
+        if (option == JOptionPane.OK_OPTION) {
+            Some(EncoderBase.EncoderOptions(false))
+        } else {
+            None
+        }
     }
 }
