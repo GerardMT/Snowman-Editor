@@ -9,7 +9,7 @@ import gmt.snowman.level.{Coordinate, Level}
 import scala.collection.mutable.ListBuffer
 import scala.collection.{immutable, mutable}
 
-case class EncoderCheating(override val level: Level) extends EncoderBase[StateCheating, DecodingData](level) {
+case class EncoderCheating(override val level: Level, override val encoderOptions: EncoderBase.EncoderOptions) extends EncoderBase[StateCheating, DecodingData](level, encoderOptions) {
 
     override def createState(level: Level, timeStep: Int): StateCheating = StateCheating(level, timeStep)
 
@@ -18,7 +18,7 @@ case class EncoderCheating(override val level: Level) extends EncoderBase[StateC
     override def createBallAction(actionName: String, state: StateCheating, stateActionBall: StateBase.Ball, stateNext: StateCheating, stateNextActionBall: StateBase.Ball, shift: Coordinate): (Clause, Clause, Seq[Expression]) = {
         val (updateBallSizeClause, expressions) = updateBallSize(actionName, state, stateActionBall, stateNextActionBall, shift)
 
-        val pre = And(noWallInFront(state, stateActionBall),
+        val pre = And(noWallInFront(state, stateActionBall, shift),
             noOtherBallsOver(state, stateActionBall),
             Not(And(otherBallInFront(state, stateActionBall, shift), otherBallUnder(state, stateActionBall))),
             otherBallsInFrontLarger(state, stateActionBall, shift),

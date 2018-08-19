@@ -11,7 +11,7 @@ import gmt.snowman.level.{Coordinate, Level}
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
-case class EncoderBasic(override val level: Level) extends EncoderBase[StateBasic, DecodingData](level) {
+case class EncoderBasic(override val level: Level, override val encoderOptions: EncoderBase.EncoderOptions) extends EncoderBase[StateBasic, DecodingData](level, encoderOptions) {
 
     override def createState(level: Level, timeStep: Int): StateBasic = StateBasic(level, timeStep)
 
@@ -26,7 +26,7 @@ case class EncoderBasic(override val level: Level) extends EncoderBase[StateBasi
         val (updateBallSizeClause, updateBallSizeExpressions) = updateBallSize(actionName, state, stateActionBall, stateNextActionBall, shift)
 
         val pre = And(characterNextToBall(state, stateActionBall, shift),
-            noWallInFront(state, stateActionBall),
+            noWallInFront(state, stateActionBall, shift),
             noOtherBallsOver(state, stateActionBall),
             Not(And(otherBallInFront(state, stateActionBall, shift), otherBallUnderVar)),
             otherBallsInFrontLarger(state, stateActionBall, shift))
@@ -93,7 +93,7 @@ case class EncoderBasic(override val level: Level) extends EncoderBase[StateBasi
             }
         }
 
-        DecodingData(actions.toList, actionsBalls.toList)
+        DecodingData(actions.toList, level.balls, actionsBalls.toList)
     }
 
     private def characterLocationValid(state: StateBasic, shift: Coordinate): Clause = {

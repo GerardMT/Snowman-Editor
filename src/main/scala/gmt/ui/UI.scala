@@ -2,9 +2,9 @@ package gmt.ui
 
 import java.awt.event.{ActionEvent, ActionListener}
 import java.awt.{GraphicsEnvironment, Rectangle}
-import java.io.File
+import java.io.{File, FileNotFoundException}
 
-import gmt.planner.timestep.TimeStepResult
+import gmt.planner.planner.Planner.PlannerUpdate
 import gmt.snowman.encoder.DecodingData
 import gmt.snowman.game.`object`.Wall
 import gmt.snowman.level.MutableLevel
@@ -14,15 +14,36 @@ import gmt.snowman.util.Files
 import javax.swing.{Box => _, _}
 
 import scala.swing.GridBagPanel.Anchor
-import scala.swing.{Action, Color, Dialog, FileChooser, GridBagPanel, MainFrame, Menu, MenuBar, MenuItem, ScrollPane, Separator, SimpleSwingApplication}
+import scala.swing.{Action, Dialog, FileChooser, GridBagPanel, MainFrame, Menu, MenuBar, MenuItem, ScrollPane, Separator, SimpleSwingApplication}
 
 
 object UI extends SimpleSwingApplication {
 
-    val BACKGROUND_COLOR: Color = new Color(247, 247, 247)
-
     private val settingsFile = new File("./snowman_editor.config")
-    private val settings = Settings.read(settingsFile)
+
+    private var optionSettings: Option[Settings] =  None
+
+    try {
+        if (!settingsFile.exists()) {
+            showErroDialog("Settings file not found. File created at: " + settingsFile)
+
+            val default = Settings.default
+
+            default.save(settingsFile)
+            optionSettings = Some(default)
+        } else {
+            optionSettings = Some(Settings.read(settingsFile))
+        }
+    } catch {
+        case SettingsParseException(message) =>
+            showErroDialog("Settings error: " + message)
+            System.exit(0)
+        case _: FileNotFoundException =>
+            showAccessDeniedDialog
+            System.exit(0)
+    }
+
+    private val settings = optionSettings.get
 
     private val game = new Game(settings)
 
@@ -37,7 +58,7 @@ object UI extends SimpleSwingApplication {
     override def top: MainFrame = new MainFrame {
         title = "Snowman Editor"
 
-        peer.setIconImage(resourceManager.getIcon)
+        peer.setIconImage(resourceManager.getResource(Wall))
 
         menuBar = new MenuBar {
             contents += new Menu("File") {
@@ -64,7 +85,7 @@ object UI extends SimpleSwingApplication {
                             resize()
                         } catch {
                             case _: NumberFormatException =>
-                                Dialog.showMessage(null, "Number must be an integer", "Error", Dialog.Message.Error)
+                                showErroDialog("Number must be an integer")
                         }
                     }
 
@@ -74,26 +95,32 @@ object UI extends SimpleSwingApplication {
                     val response = fileChooser.showOpenDialog(null)
 
                     if (response == FileChooser.Result.Approve) {
-                        uiLevel.reload(MutableLevel.load(Files.openTextFile(fileChooser.selectedFile)))
+                        try {
+                            uiLevel.reload(MutableLevel.load(Files.openTextFile(fileChooser.selectedFile)))
+                            resize()
+                        } catch {
+                            case _: FileNotFoundException =>
+                                showAccessDeniedDialog
+                        }
                     }
-                    resize()
                 })
                 contents += new MenuItem(Action("Save"){
                     savePickAndTextFile(uiLevel.mutableLevel.save, "level.lvl")
                 })
                 contents += new Separator
                 contents += new Menu("Load") {
-                    val levelsNames: List[String] = game.levelsNames
+                    settings.gamePath match {
+                        case Some(s) =>
+                            val levelsNames: List[String] = game.levelsNames
 
-                    if (levelsNames.isEmpty) {
-                        contents += new MenuItem("Game levels file not found")
-                    } else {
-                        for (n <- levelsNames) {
-                            contents += new MenuItem(Action(n){
-                                uiLevel.reload(MutableLevel.load(game.getLevel(n)))
-                                resize()
-                            })
-                        }
+                            for (n <- levelsNames) {
+                                contents += new MenuItem(Action(n){
+                                    uiLevel.reload(MutableLevel.load(game.getLevel(n)))
+                                    resize()
+                                })
+                            }
+                        case None =>
+                            contents += new MenuItem("Game path not defined")
                     }
                 }
             }
@@ -122,22 +149,51 @@ object UI extends SimpleSwingApplication {
                         Dialog.showMessage(null, "Level is corret", "Validator", Dialog.Message.Info)
                     }
                 })
+                val checkBox = new JCheckBoxMenuItem("Coordinates")
+                //noinspection ConvertExpressionToSAM
+                checkBox.addActionListener(new ActionListener {
+                    override def actionPerformed(e: ActionEvent): Unit = uiLevel.showCoordinates_(e.getSource.asInstanceOf[AbstractButton].getModel.isSelected)
+                })
+                peer.add(checkBox)
             }
             contents += new Menu("Game") {
                 contents += new MenuItem(Action("Load and Run"){
-                    if (game.gameHasOriginalFiles) {
-                        game.backup()
-                    }
+                    if (settings.gamePath.isDefined && settings.savePath.isDefined) {
+                        try {
+                            if (game.gameHasOriginalFiles) {
+                                game.backup()
+                            }
 
-                    if (validateLevelShowDialog(uiLevel.mutableLevel)) {
-                        game.loadAndPlay(uiLevel.mutableLevel.toLevel)
+                            if (validateLevelShowDialog(uiLevel.mutableLevel)) {
+                                game.loadAndRun(uiLevel.mutableLevel.toLevel)
+                            }
+                        } catch {
+                            case _: FileNotFoundException =>
+                                showAccessDeniedDialog
+                        }
+                    } else {
+                        showErrorGamePathsNotDefined()
                     }
                 })
+
                 contents += new MenuItem(Action("Run") {
-                    game.run()
+                    if (settings.gamePath.isDefined && settings.savePath.isDefined) {
+                        game.run()
+                    } else {
+                        showErrorGamePathsNotDefined()
+                    }
                 })
                 contents += new MenuItem(Action("Restore"){
-                    game.restore()
+                    if (settings.gamePath.isDefined && settings.savePath.isDefined) {
+                        try {
+                            game.restore()
+                        } catch {
+                            case _: FileNotFoundException =>
+                                showAccessDeniedDialog
+                        }
+                    } else {
+                        showErrorGamePathsNotDefined()
+                    }
                 })
             }
             contents += new Menu("Solver") {
@@ -148,8 +204,13 @@ object UI extends SimpleSwingApplication {
                         }
                     })
                     contents += new MenuItem(Action("Solve") {
-                        if (validateLevelShowDialog(uiLevel.mutableLevel)) {
-                            showResult(SnowmanSolver.solveBasicEncoding(settings, uiLevel.mutableLevel.toLevel, showSolverUpdate))
+                        settings.solverPath match {
+                            case Some(s) =>
+                                if (validateLevelShowDialog(uiLevel.mutableLevel)) {
+                                    showResult(SnowmanSolver.solveBasicEncoding(s, uiLevel.mutableLevel.toLevel, showSolverUpdate))
+                                }
+                            case None =>
+                                showErrorSolverPathNotDeined()
                         }
                     })
                 }
@@ -159,9 +220,15 @@ object UI extends SimpleSwingApplication {
                             generateSMT(f => savePickAndTextFile(SnowmanSolver.encodeCheatingEncoding(uiLevel.mutableLevel.toLevel, f), "in_cheating-encoding.smtlib2"))
                         }
                     })
+
                     contents += new MenuItem(Action("Solve") {
-                        if (validateLevelShowDialog(uiLevel.mutableLevel)) {
-                            showResult(SnowmanSolver.solveCheatingEncoding(settings, uiLevel.mutableLevel.toLevel, showSolverUpdate))
+                        settings.solverPath match {
+                            case Some(s) =>
+                                if (validateLevelShowDialog(uiLevel.mutableLevel)) {
+                                    showResult(SnowmanSolver.solveCheatingEncoding(s, uiLevel.mutableLevel.toLevel, showSolverUpdate))
+                                }
+                            case None =>
+                                showErrorSolverPathNotDeined()
                         }
                     })
                 }
@@ -172,72 +239,37 @@ object UI extends SimpleSwingApplication {
                         }
                     })
                     contents += new MenuItem(Action("Solve") {
-                        if (validateLevelShowDialog(uiLevel.mutableLevel)) {
-                            showResult(SnowmanSolver.solveReachabilityEncoding(settings, uiLevel.mutableLevel.toLevel, showSolverUpdate))
+                        settings.solverPath match {
+                            case Some(s) =>
+                                if (validateLevelShowDialog(uiLevel.mutableLevel)) {
+                                    showResult(SnowmanSolver.solveReachabilityEncoding(s, uiLevel.mutableLevel.toLevel, showSolverUpdate))
+                                }
+                            case None =>
+                                showErrorSolverPathNotDeined()
                         }
                     })
                 }
                 contents += new Separator
-                contents += new Menu("PDDL adl") {
-                    contents += new MenuItem(Action("Generate") {
-                        if (validateLevelShowDialog(uiLevel.mutableLevel)) {
-                            savePickAndTextFile(EncoderPDDL.encodeStrips(uiLevel.mutableLevel.toLevel), "domain_adl.pddl")
-                        }
-                    })
-                    contents += new MenuItem(Action("Solve") {
-                        if (validateLevelShowDialog(uiLevel.mutableLevel)) {
-                            SnowmanSolver.solvePDDLStrips(uiLevel.mutableLevel.toLevel)
-                        }
-                    })
-                }
-                contents += new Menu("PDDL object-fluents") {
-                    contents += new MenuItem(Action("Generate") {
-                        if (validateLevelShowDialog(uiLevel.mutableLevel)) {
-                            savePickAndTextFile(EncoderPDDL.encodeObjectFluents(uiLevel.mutableLevel.toLevel), "domain_object-fluents.pddl")
-                        }
-                    })
-                    contents += new MenuItem(Action("Solve") {
-                        if (validateLevelShowDialog(uiLevel.mutableLevel)) {
-                            SnowmanSolver.solvePDDLObjectFluents(uiLevel.mutableLevel.toLevel)
-                        }
-                    })
-                }
-                contents += new Menu("PDDL numeric-fluents") {
-                    contents += new MenuItem(Action("Generate") {
-                        if (validateLevelShowDialog(uiLevel.mutableLevel)) {
-                            savePickAndTextFile(EncoderPDDL.encodeNumericFluents(uiLevel.mutableLevel.toLevel), "domain_numeric-fluents.pddl")
-                        }
-                    })
-                    contents += new MenuItem(Action("Solve") {
-                        if (validateLevelShowDialog(uiLevel.mutableLevel)) {
-                            SnowmanSolver.solvePDDLNumericFluents(uiLevel.mutableLevel.toLevel)
-                        }
-                    })
-                }
-            }
-            contents += new Menu("Editor") {
-                val coordinatesCheckBox = new JCheckBoxMenuItem("Coordinates")
-                //noinspection ConvertExpressionToSAM
-                coordinatesCheckBox.addActionListener(new ActionListener {
-                    override def actionPerformed(e: ActionEvent): Unit = uiLevel.showCoordinates_(e.getSource.asInstanceOf[AbstractButton].getModel.isSelected)
-                })
-                peer.add(coordinatesCheckBox)
-                val mateuCheckBox = new JCheckBoxMenuItem("Mateu mode")
-                //noinspection ConvertExpressionToSAM
-                mateuCheckBox.addActionListener(new ActionListener {
-                    override def actionPerformed(e: ActionEvent): Unit = {
-                        resourceManager.mateuMode_(e.getSource.asInstanceOf[AbstractButton].getModel.isSelected)
-                        uiLevel.repaint()
-                        picker.repaint()
+                contents += new MenuItem(Action("Generate PDDL adl") {
+                    if (validateLevelShowDialog(uiLevel.mutableLevel)) {
+                        savePickAndTextFile(EncoderPDDL.encodeStrips(uiLevel.mutableLevel.toLevel), "domain_adl.pddl")
                     }
                 })
-                peer.add(mateuCheckBox)
+                contents += new MenuItem(Action("Generate PDDL object-fluents") {
+                    if (validateLevelShowDialog(uiLevel.mutableLevel)) {
+                        savePickAndTextFile(EncoderPDDL.encodeObjectFluents(uiLevel.mutableLevel.toLevel), "domain_object-fluents.pddl")
+                    }
+                })
+                contents += new MenuItem(Action("Generate PDDL numeric-fluents") {
+                    if (validateLevelShowDialog(uiLevel.mutableLevel)) {
+                        savePickAndTextFile(EncoderPDDL.encodeNumericFluents(uiLevel.mutableLevel.toLevel), "domain_numeric-fluents.pddl")
+                    }
+                })
+
             }
         }
 
         contents = new ScrollPane(new GridBagPanel {
-            background = UI.BACKGROUND_COLOR
-
             val c = new Constraints
 
             c.anchor = Anchor.NorthWest
@@ -279,8 +311,8 @@ object UI extends SimpleSwingApplication {
         }
     }
 
-    private def showSolverUpdate(timeStepResult: TimeStepResult[DecodingData]): Unit = { // TODO UI
-        println("Timesteps: " + timeStepResult.timeSteps + " sat: " + timeStepResult.sat)
+    private def showSolverUpdate(plannerUpdate: PlannerUpdate[DecodingData]): Unit = { // TODO UI
+        println("Timesteps: " + plannerUpdate.timeStepResult.timeSteps + " sat: " + plannerUpdate.timeStepResult.sat + " Time: " + plannerUpdate.timeStepResult.milliseconds + " TotalTime: " + plannerUpdate.totalMilliseconds + " (ms)")
     }
 
     private def showResult(snowmanSolverResult: SnowmanSolverResult): Unit = { // TODO UI
@@ -291,6 +323,8 @@ object UI extends SimpleSwingApplication {
                 println("Valid: " + snowmanSolverResult.valid)
                 println("Actions: " + r.actions.size)
                 r.actions.foreach(f => println("    " + f.toString))
+                println("Ball references from initial state:")
+                r.balls.zipWithIndex.foreach(f => println("    Ball (" + f._2 + "): " + f._1))
                 println("Ball Actions: " + r.actionsBall.size)
                 r.actionsBall   .foreach(f => println("    " + f.toString))
 
@@ -303,16 +337,21 @@ object UI extends SimpleSwingApplication {
         val response = fileChooser.showSaveDialog(null)
 
         if (response == FileChooser.Result.Approve) {
-            if (fileChooser.selectedFile.exists()) {
-                val result = JOptionPane.showConfirmDialog(null, "Text already exists. Overwrite?", "Overwrite", JOptionPane.YES_NO_OPTION)
+            try {
+                if (fileChooser.selectedFile.exists()) {
+                    val result = JOptionPane.showConfirmDialog(null, "Text already exists. Overwrite?", "Overwrite", JOptionPane.YES_NO_OPTION)
 
-                if (result == JOptionPane.YES_OPTION) {
-                    fileChooser.selectedFile.delete()
+                    if (result == JOptionPane.YES_OPTION) {
+                        fileChooser.selectedFile.delete()
 
+                        Files.saveTextFile(fileChooser.selectedFile, string)
+                    }
+                } else {
                     Files.saveTextFile(fileChooser.selectedFile, string)
                 }
-            } else {
-                Files.saveTextFile(fileChooser.selectedFile, string)
+            } catch {
+                case _: FileNotFoundException =>
+                    showAccessDeniedDialog
             }
         }
     }
@@ -335,12 +374,12 @@ object UI extends SimpleSwingApplication {
                 f(textField.getText.toInt)
             } catch {
                 case _: NumberFormatException =>
-                    Dialog.showMessage(null, "Number must be an integer", "Error", Dialog.Message.Error)
+                    showErroDialog("Number must be an integer")
             }
         }
     }
 
-    private def validateLevelShowDialog(mutableLevel: MutableLevel, title: String = "Error", messageType: Dialog.Message.Value = Dialog.Message.Error): Boolean = {
+    private def validateLevelShowDialog(mutableLevel: MutableLevel, title: String = "Error", messageType: Dialog.Message.Value = Dialog.Message.Warning): Boolean = {
         val (characterValid, ballsValid) = uiLevel.mutableLevel.validate
         if (!characterValid || !ballsValid) {
             val characterMessate = if (!characterValid) {
@@ -355,11 +394,34 @@ object UI extends SimpleSwingApplication {
                 ""
             }
 
-            Dialog.showMessage(null, characterMessate + "\n" + ballsMessage, title, messageType)
+            val message = characterMessate + "\n" + ballsMessage
+
+            if (title == "") {
+                showErroDialog(message)
+            } else {
+                Dialog.showMessage(null, message, title, messageType)
+            }
 
             false
         } else {
             true
         }
+    }
+
+    private def showErroDialog(message: String): Unit = {
+        Dialog.showMessage(null, message, "Error", Dialog.Message.Error)
+    }
+
+    private def showAccessDeniedDialog(): Unit = {
+        showErroDialog("Access Denied")
+    }
+
+
+    private def showErrorSolverPathNotDeined(): Unit = {
+        showErroDialog("Solver path not defined in settings")
+    }
+
+    private def showErrorGamePathsNotDefined(): Unit = {
+        showErroDialog("Game path and/or solver path not defined in settings")
     }
 }

@@ -6,6 +6,7 @@ import gmt.planner.operation._
 import gmt.planner.solver.Assignment
 import gmt.planner.solver.value.{Value, ValueBoolean, ValueInteger}
 import gmt.snowman.action.{BallAction, SnowmanAction}
+import gmt.snowman.encoder.EncoderBase.EncoderOptions
 import gmt.snowman.encoder.StateBase.CoordinateVariables
 import gmt.snowman.game.Game
 import gmt.snowman.game.`object`._
@@ -15,7 +16,11 @@ import gmt.snowman.util.AStar
 import scala.collection.mutable.ListBuffer
 import scala.collection.{immutable, mutable}
 
-abstract class EncoderBase[A <: StateBase, B <: DecodingData](val level: Level) extends Encoder[B, EncodingData] {
+object EncoderBase {
+    case class EncoderOptions(invariantBallSizes: Boolean)
+}
+
+abstract class EncoderBase[A <: StateBase, B <: DecodingData](val level: Level, val encoderOptions: EncoderOptions) extends Encoder[B, EncodingData] {
 
     override def encode(timeSteps: Int): EncoderResult[EncodingData] = {
         val encoding = new Encoding
@@ -108,12 +113,7 @@ abstract class EncoderBase[A <: StateBase, B <: DecodingData](val level: Level) 
                 }
             }
 
-            encoding.add(Comment("EO Actions")) // TODO DEBUG
-            if (actionsVariables.length > 1) {
-                encoding.addAll(Operations.getEO(actionsVariables, "EO_A" + timeStep))
-            } else {
-                encoding.add(ClauseDeclaration(actionsVariables.head))
-            }
+            encoding.addAll(Operations.getEO(actionsVariables, "EO_A" + timeStep))
 
             statesData.append(EncodingData.StateData(stateNext, actionsData.toList))
 
@@ -154,10 +154,16 @@ abstract class EncoderBase[A <: StateBase, B <: DecodingData](val level: Level) 
 
     protected def createBallAction(actionName: String, state: A, stateActionBall: StateBase.Ball, stateNext: A, stateNextActionBall: StateBase.Ball, shift: Coordinate): (Clause, Clause, Seq[Expression])
 
-    protected def noWallInFront(state: StateBase, stateActionBall: StateBase.Ball): Clause = { // TODO OPTIMITZACIO Es podria fer per coordenades
-        And((for (l <- level.map.values.filter(f => f.o == Wall)) yield {
-            Or(Not(Equals(stateActionBall.x, IntegerConstant(l.c.x))), Not(Equals(stateActionBall.y, IntegerConstant(l.c.y))))
-        }).toSeq : _*) // TODO Fer alternativa inGrass
+    protected def noWallInFront(state: StateBase, stateActionBall: StateBase.Ball, shift: Coordinate): Clause = { // TODO OPTIMIZATION Can be done with coordinates
+        if (level.map.values.count(f => Object.isPlayableArea(f.o)) < level.map.values.count(f => !Object.isPlayableArea(f.o))) {
+            Not(And((for (l <- level.map.keys.flatMap(f => level.map.get(f + shift)).filter(f => Object.isPlayableArea(f.o))) yield { // TODO BUG
+                Or(Not(Equals(stateActionBall.x, IntegerConstant(l.c.x))), Not(Equals(stateActionBall.y, IntegerConstant(l.c.y))))
+            }).toSeq : _*))
+        } else {
+            And((for (l <- level.map.keys.flatMap(f => level.map.get(f + shift)).filter(f => !Object.isPlayableArea(f.o))) yield {
+                Or(Not(Equals(stateActionBall.x, IntegerConstant(l.c.x))), Not(Equals(stateActionBall.y, IntegerConstant(l.c.y))))
+            }).toSeq : _*)
+        }
     }
 
     protected def noOtherBallsOver(state: StateBase, stateActionBall: StateBase.Ball): Clause = {
@@ -338,7 +344,7 @@ abstract class EncoderBase[A <: StateBase, B <: DecodingData](val level: Level) 
             state = stateNext
         }
 
-        DecodingData(actions.toList, actionsBalls.toList)
+        DecodingData(actions.toList, level.balls, actionsBalls.toList)
     }
 
     private def coordinateFromCoordinateVariables(coordinateVariables: CoordinateVariables, assignmentsMap: immutable.Map[String, Value]): Coordinate = {

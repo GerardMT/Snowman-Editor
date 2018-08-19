@@ -5,7 +5,7 @@ import java.math.BigInteger
 import java.nio.file.Files
 import java.security.MessageDigest
 
-import gmt.snowman.level.{Level, MutableLevel}
+import gmt.snowman.level.Level
 
 import scala.collection.mutable.ListBuffer
 import scala.sys.process._
@@ -36,7 +36,7 @@ class Game(settings: Settings) {
         val levelsFile = if (backupLevelsFile.exists()) {
             backupLevelsFile
         } else if (gameHasOriginalFiles) {
-            new File(settings.gamePath + RESOURCES_PATH + LEVELS_FILENAME)
+            new File(settings.gamePath.get + RESOURCES_PATH + LEVELS_FILENAME)
         } else {
             return List()
         }
@@ -69,10 +69,20 @@ class Game(settings: Settings) {
         names.toList
     }
 
-    def getLevel(name: String): String = {
+    def getLevel(name: String): String= {
         var found = false
 
-        val br = new BufferedReader(new FileReader(new File(BACKUP_DIRECTORY + LEVELS_FILENAME)))
+        val backupLevelsFile = new File(BACKUP_DIRECTORY + LEVELS_FILENAME)
+
+        val levelsFile = if (backupLevelsFile.exists()) {
+            backupLevelsFile
+        } else if (gameHasOriginalFiles) {
+            new File(settings.gamePath.get + RESOURCES_PATH + LEVELS_FILENAME)
+        } else {
+            return ""
+        }
+
+        val br = new BufferedReader(new FileReader(levelsFile))
         try {
             var line = br.readLine
             if (line != null) {
@@ -128,17 +138,17 @@ class Game(settings: Settings) {
         }
     }
 
-    def loadAndPlay(level: Level): Unit = {
-        val steamappiddFile = new File(settings.gamePath + STEAMAPPID_FILENAME)
+    def loadAndRun(level: Level): Unit = {
+        val steamappiddFile = new File(settings.gamePath.get + STEAMAPPID_FILENAME)
         if (!steamappiddFile.exists()) {
             val fileWriter = new FileWriter(steamappiddFile)
             fileWriter.write("316610")
             fileWriter.close()
         }
 
-        val layoutFile = new File(settings.gamePath + RESOURCES_PATH + LAYOUT_FILENAME)
-        val levelsFile = new File(settings.gamePath + RESOURCES_PATH + LEVELS_FILENAME)
-        val progressFile = new File(settings.savePath + PROGRESS_FILENAME)
+        val layoutFile = new File(settings.gamePath.get + RESOURCES_PATH + LAYOUT_FILENAME)
+        val levelsFile = new File(settings.gamePath.get + RESOURCES_PATH + LEVELS_FILENAME)
+        val progressFile = new File(settings.savePath.get + PROGRESS_FILENAME)
 
         layoutFile.delete()
         levelsFile.delete()
@@ -200,15 +210,10 @@ class Game(settings: Settings) {
     }
 
     def run(): Unit = {
-        val linuxPath = settings.gamePath + LINUX_EXECUTABLE
-
-        if (new File(linuxPath).exists()) {
-            Seq(linuxPath).run()
+        if (System.getProperty("os.name").startsWith("Windows")) {
+            Seq(settings.gamePath.get + WINDOWS_EXECUTABLE).run()
         } else {
-            val windowsPath = settings.gamePath + WINDOWS_EXECUTABLE
-            if (new File(windowsPath).exists()) {
-                Seq(windowsPath).!
-            }
+            Seq(settings.gamePath.get + LINUX_EXECUTABLE).run()
         }
     }
 
@@ -218,9 +223,9 @@ class Game(settings: Settings) {
         val backupProgressFile = new File(BACKUP_DIRECTORY + PROGRESS_FILENAME)
 
         if (backupLayoutFile.exists && backupLevelsFile.exists) {
-            val customLayoutFile = new File(settings.gamePath + RESOURCES_PATH + LAYOUT_FILENAME)
-            val customLevelsFile = new File(settings.gamePath + RESOURCES_PATH + LEVELS_FILENAME)
-            val customProgressFile = new File(settings.savePath + PROGRESS_FILENAME)
+            val customLayoutFile = new File(settings.gamePath.get + RESOURCES_PATH + LAYOUT_FILENAME)
+            val customLevelsFile = new File(settings.gamePath.get + RESOURCES_PATH + LEVELS_FILENAME)
+            val customProgressFile = new File(settings.savePath.get + PROGRESS_FILENAME)
 
             // Delete custom files
             customLayoutFile.delete()
@@ -237,9 +242,9 @@ class Game(settings: Settings) {
     }
 
     def backup(): Unit = {
-        val originalLayoutFile = new File(settings.gamePath + RESOURCES_PATH + LAYOUT_FILENAME)
-        val originalLevelsFile = new File(settings.gamePath + RESOURCES_PATH + LEVELS_FILENAME)
-        val originalProgressFile = new File(settings.savePath + PROGRESS_FILENAME)
+        val originalLayoutFile = new File(settings.gamePath.get + RESOURCES_PATH + LAYOUT_FILENAME)
+        val originalLevelsFile = new File(settings.gamePath.get + RESOURCES_PATH + LEVELS_FILENAME)
+        val originalProgressFile = new File(settings.savePath.get + PROGRESS_FILENAME)
 
         val backupLayoutFile = new File(BACKUP_DIRECTORY + LAYOUT_FILENAME)
         val backupLevelsFile = new File(BACKUP_DIRECTORY + LEVELS_FILENAME)
@@ -263,8 +268,8 @@ class Game(settings: Settings) {
     }
 
     def gameHasOriginalFiles: Boolean = {
-        val originalLayoutFile = new File(settings.gamePath + RESOURCES_PATH + LAYOUT_FILENAME)
-        val originalLevelsFile = new File(settings.gamePath + RESOURCES_PATH + LEVELS_FILENAME)
+        val originalLayoutFile = new File(settings.gamePath.get + RESOURCES_PATH + LAYOUT_FILENAME)
+        val originalLevelsFile = new File(settings.gamePath.get + RESOURCES_PATH + LEVELS_FILENAME)
 
         val messageDigest = MessageDigest.getInstance("SHA-256")
 
