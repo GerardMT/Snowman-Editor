@@ -2,23 +2,24 @@ package gmt.ui
 
 import java.awt.event.{ActionEvent, ActionListener}
 import java.awt.{GraphicsEnvironment, Rectangle}
-import java.beans.PropertyChangeListener
 import java.io.File
 
 import gmt.planner.timestep.TimeStepResult
 import gmt.snowman.encoder.DecodingData
-import gmt.snowman.level.MutableLevel
 import gmt.snowman.game.`object`.Wall
+import gmt.snowman.level.MutableLevel
 import gmt.snowman.pddl.EncoderPDDL
 import gmt.snowman.solver.{SnowmanSolver, SnowmanSolverResult}
 import gmt.snowman.util.Files
 import javax.swing.{Box => _, _}
 
 import scala.swing.GridBagPanel.Anchor
-import scala.swing.{Action, Dialog, FileChooser, GridBagPanel, MainFrame, Menu, MenuBar, MenuItem, ScrollPane, Separator, SimpleSwingApplication}
+import scala.swing.{Action, Color, Dialog, FileChooser, GridBagPanel, MainFrame, Menu, MenuBar, MenuItem, ScrollPane, Separator, SimpleSwingApplication}
 
 
 object UI extends SimpleSwingApplication {
+
+    val BACKGROUND_COLOR: Color = new Color(247, 247, 247)
 
     private val settingsFile = new File("./snowman_editor.config")
     private val settings = Settings.read(settingsFile)
@@ -36,7 +37,7 @@ object UI extends SimpleSwingApplication {
     override def top: MainFrame = new MainFrame {
         title = "Snowman Editor"
 
-        peer.setIconImage(resourceManager.getResource(Wall))
+        peer.setIconImage(resourceManager.getIcon)
 
         menuBar = new MenuBar {
             contents += new Menu("File") {
@@ -121,12 +122,6 @@ object UI extends SimpleSwingApplication {
                         Dialog.showMessage(null, "Level is corret", "Validator", Dialog.Message.Info)
                     }
                 })
-                val checkBox = new JCheckBoxMenuItem("Coordinates")
-                //noinspection ConvertExpressionToSAM
-                checkBox.addActionListener(new ActionListener {
-                    override def actionPerformed(e: ActionEvent): Unit = uiLevel.showCoordinates_(e.getSource.asInstanceOf[AbstractButton].getModel.isSelected)
-                })
-                peer.add(checkBox)
             }
             contents += new Menu("Game") {
                 contents += new MenuItem(Action("Load and Run"){
@@ -219,11 +214,30 @@ object UI extends SimpleSwingApplication {
                         }
                     })
                 }
-
+            }
+            contents += new Menu("Editor") {
+                val coordinatesCheckBox = new JCheckBoxMenuItem("Coordinates")
+                //noinspection ConvertExpressionToSAM
+                coordinatesCheckBox.addActionListener(new ActionListener {
+                    override def actionPerformed(e: ActionEvent): Unit = uiLevel.showCoordinates_(e.getSource.asInstanceOf[AbstractButton].getModel.isSelected)
+                })
+                peer.add(coordinatesCheckBox)
+                val mateuCheckBox = new JCheckBoxMenuItem("Mateu mode")
+                //noinspection ConvertExpressionToSAM
+                mateuCheckBox.addActionListener(new ActionListener {
+                    override def actionPerformed(e: ActionEvent): Unit = {
+                        resourceManager.mateuMode_(e.getSource.asInstanceOf[AbstractButton].getModel.isSelected)
+                        uiLevel.repaint()
+                        picker.repaint()
+                    }
+                })
+                peer.add(mateuCheckBox)
             }
         }
 
         contents = new ScrollPane(new GridBagPanel {
+            background = UI.BACKGROUND_COLOR
+
             val c = new Constraints
 
             c.anchor = Anchor.NorthWest

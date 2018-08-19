@@ -12,8 +12,12 @@ class Picker(resourceManager: ResourceManager) extends BoxPanel(Orientation.Vert
 
     border = EmptyBorder(10, 10, 10, 10)
 
+    background = UI.BACKGROUND_COLOR
+
     contents += new Label("Picker")
     contents += new GridPanel((Object.ALL_OBJECTS.length / 2.0f).ceil.toInt, 2) {
+        background = UI.BACKGROUND_COLOR
+
         for (o <- Object.ALL_OBJECTS) {
             contents += new PickerObject(o)
         }
@@ -55,6 +59,8 @@ class Picker(resourceManager: ResourceManager) extends BoxPanel(Orientation.Vert
 
         preferredSize = (PickerObject.TILE_WIDTH, PickerObject.TILE_HEIGHT)
 
+        background = UI.BACKGROUND_COLOR
+
         focusable = true
         listenTo(mouse.clicks)
 
@@ -70,7 +76,7 @@ class Picker(resourceManager: ResourceManager) extends BoxPanel(Orientation.Vert
             g.drawImage(resourceManager.getResource(o), 0, 0, size.width, size.height,null)
 
             if (selected) {
-                drawCenteredCircle(g, size.width / 2, size.height / 2, size.width / 2)
+                g.drawImage(resourceManager.getPickerSelected, 0, 0, size.width, size.height,null)
             }
         }
 

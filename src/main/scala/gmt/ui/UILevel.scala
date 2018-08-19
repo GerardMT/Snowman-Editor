@@ -3,7 +3,7 @@ package gmt.ui
 import java.awt.{Color, Font, Rectangle}
 import java.awt.event.{MouseEvent, MouseListener}
 
-import gmt.snowman.game.`object`.{Empty, Object}
+import gmt.snowman.game.`object`.{Empty, Grass, Object}
 import gmt.snowman.level.{Coordinate, MutableLevel}
 
 import scala.collection.immutable
@@ -97,7 +97,7 @@ class UILevel private (private var width: Int, private var height: Int, var muta
 
         override def paintComponent(g: Graphics2D): Unit = {
             super.paintComponent(g)
-            g.drawImage(resourceManager.getResource(Empty), 0, 0, size.width, size.height, null)
+            g.drawImage(resourceManager.getResource(Grass), 0, 0, size.width, size.height, null)
             g.drawImage(resourceManager.getResource(obj), 0, 0, size.width, size.height, null)
 
             if (paintCoordinates) {

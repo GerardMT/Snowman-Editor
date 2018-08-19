@@ -152,7 +152,7 @@ class Game(settings: Settings) {
         layoutFileWriter.close()
 
         val levelsFileWriter = new FileWriter(levelsFile)
-        levelsFileWriter.write("Custom\n")
+        levelsFileWriter.write("Custom")
         for (i <- 0 until level.snowmans - 1) {
             levelsFileWriter.write(", Custom")
         }
