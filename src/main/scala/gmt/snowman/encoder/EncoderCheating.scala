@@ -6,10 +6,10 @@ import gmt.planner.solver.Assignment
 import gmt.snowman.action.SnowmanAction
 import gmt.snowman.level.{Coordinate, Level}
 
+import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
-import scala.collection.{immutable, mutable}
 
-case class EncoderCheating(override val level: Level, override val encoderOptions: EncoderBase.EncoderOptions) extends EncoderBase[StateCheating, DecodingData](level, encoderOptions) {
+protected case class EncoderCheating(override val level: Level, override val encoderOptions: EncoderBase.EncoderOptions) extends EncoderBase[StateCheating](level, encoderOptions) {
 
     override def createState(level: Level, timeStep: Int): StateCheating = StateCheating(level, timeStep)
 

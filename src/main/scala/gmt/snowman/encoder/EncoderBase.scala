@@ -6,6 +6,7 @@ import gmt.planner.operation._
 import gmt.planner.solver.Assignment
 import gmt.planner.solver.value.{Value, ValueBoolean, ValueInteger}
 import gmt.snowman.action.{BallAction, SnowmanAction}
+import gmt.snowman.encoder.EncoderBase.EncoderEnum
 import gmt.snowman.encoder.EncoderBase.EncoderOptions
 import gmt.snowman.encoder.StateBase.CoordinateVariables
 import gmt.snowman.game.Game
@@ -16,14 +17,33 @@ import gmt.snowman.util.AStar
 import scala.collection.mutable.ListBuffer
 import scala.collection.{immutable, mutable}
 
+
 object EncoderBase {
+
+    object EncoderEnum extends Enumeration {
+        val BASIC, CHEATING, REACHABILITY = Value
+    }
+
+    def apply(encoderEnum: EncoderEnum.Value, level: Level, encoderOptions: EncoderOptions): EncoderBase[_] = {
+        encoderEnum match {
+            case EncoderEnum.BASIC =>
+                EncoderBasic(level, encoderOptions)
+
+            case EncoderEnum.CHEATING =>
+                EncoderCheating(level, encoderOptions)
+
+            case EncoderEnum.REACHABILITY =>
+                EncoderReachability(level, encoderOptions)
+        }
+    }
+
     case class EncoderOptions(invariantBallSizes: Boolean, invariantBallLocations: Boolean, invariantBallDistances: Boolean)
 }
 
-abstract class EncoderBase[A <: StateBase, B <: DecodingData](val level: Level, val encoderOptions: EncoderOptions) extends Encoder[B, EncodingData] {
+abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions: EncoderOptions) extends Encoder[DecodingData, EncodingData] {
 
     override def startTimeStep(): Int = {
-        1 // TODO
+        level.balls.combinations(2).toList.map(f => f(0).c.manhattanDistance(f(1).c)).sorted.drop(level.balls.length - level.snowmans).sum
     }
 
     override def encode(timeSteps: Int): EncoderResult[EncodingData] = {

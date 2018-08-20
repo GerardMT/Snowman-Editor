@@ -6,10 +6,10 @@ import java.io.{File, FileNotFoundException}
 
 import gmt.planner.planner.Planner.{PlannerOptions, PlannerUpdate}
 import gmt.snowman.encoder.DecodingData
-import gmt.snowman.encoder.EncoderBase.EncoderOptions
+import gmt.snowman.encoder.EncoderBase.{EncoderEnum, EncoderOptions}
 import gmt.snowman.level.MutableLevel
 import gmt.snowman.pddl.EncoderPDDL
-import gmt.snowman.solver.SnowmanSolver.GenerateOptions
+import gmt.snowman.solver.SnowmanSolver.{AutoSolveUpdate, AutoSolveUpdateFinal, AutoSolveUpdateProgress, GenerateOptions}
 import gmt.snowman.solver.{SnowmanSolver, SnowmanSolverResult}
 import gmt.snowman.util.Files
 import javax.swing._
@@ -19,6 +19,8 @@ import scala.swing.{Action, Color, Dialog, FileChooser, GridBagPanel, MainFrame,
 
 
 object UI extends SimpleSwingApplication {
+
+    private val CURRENT_DIRECTORY = System.getProperty("user.dir")
 
     val BACKGROUND_COLOR: Color = new Color(167, 191, 150)
 
@@ -94,7 +96,8 @@ object UI extends SimpleSwingApplication {
 
                 })
                 contents += new Separator
-                contents += new MenuItem(Action("Open"){
+                contents += new MenuItem(Action("Open") {
+                    fileChooser.selectedFile_=(new File(CURRENT_DIRECTORY))
                     val response = fileChooser.showOpenDialog(null)
 
                     if (response == FileChooser.Result.Approve) {
@@ -108,7 +111,7 @@ object UI extends SimpleSwingApplication {
                     }
                 })
                 contents += new MenuItem(Action("Save"){
-                    savePickAndTextFile(uiLevel.mutableLevel.save, "level.lvl")
+                    savePickAndTextFile(uiLevel.mutableLevel.save, CURRENT_DIRECTORY + "/level.lvl")
                 })
                 contents += new Separator
                 contents += new Menu("Load") {
@@ -117,7 +120,7 @@ object UI extends SimpleSwingApplication {
                             val levelsNames: List[String] = game.levelsNames
 
                             for (n <- levelsNames) {
-                                contents += new MenuItem(Action(n){
+                                contents += new MenuItem(Action(n) {
                                     uiLevel.reload(MutableLevel.load(game.getLevel(n)))
                                     resize()
                                 })
@@ -199,7 +202,7 @@ object UI extends SimpleSwingApplication {
                         if (validateLevelShowDialog(uiLevel.mutableLevel)) {
                             showGenerateOptionsDialog() match {
                                 case Some((g, e)) =>
-                                    savePickAndTextFile(SnowmanSolver.generateBasicEncoding(uiLevel.mutableLevel.toLevel, e, g), "in_basic-encoding.smtlib2")
+                                    savePickAndTextFile(SnowmanSolver.encodeSMTLIB2(uiLevel.mutableLevel.toLevel, EncoderEnum.BASIC, e, g), CURRENT_DIRECTORY + "/in_basic-encoding.smtlib2")
                                 case None =>
                             }
                         }
@@ -210,7 +213,7 @@ object UI extends SimpleSwingApplication {
                                 if (validateLevelShowDialog(uiLevel.mutableLevel)) {
                                     showSolverOptionsDialog() match {
                                         case Some((p, e)) =>
-                                            showResult(SnowmanSolver.solveBasicEncoding(s, uiLevel.mutableLevel.toLevel, e, p, showSolverUpdate))
+                                            showResult(SnowmanSolver.solveSMTYics2(s, uiLevel.mutableLevel.toLevel, EncoderEnum.BASIC, e, p, showSolverUpdate))
                                         case None =>
                                     }
                                 }
@@ -224,7 +227,7 @@ object UI extends SimpleSwingApplication {
                         if (validateLevelShowDialog(uiLevel.mutableLevel)) {
                             showGenerateOptionsDialog() match {
                                 case Some((g, e)) =>
-                                    savePickAndTextFile(SnowmanSolver.generateCheatingEncoding(uiLevel.mutableLevel.toLevel, e, g), "in_cheating-encoding.smtlib2")
+                                    savePickAndTextFile(SnowmanSolver.encodeSMTLIB2(uiLevel.mutableLevel.toLevel, EncoderEnum.CHEATING, e, g), CURRENT_DIRECTORY + "/in_cheating-encoding.smtlib2")
                                 case None =>
                             }
                         }
@@ -236,7 +239,7 @@ object UI extends SimpleSwingApplication {
                                 if (validateLevelShowDialog(uiLevel.mutableLevel)) {
                                     showSolverOptionsDialog() match {
                                         case Some((p, e)) =>
-                                            showResult(SnowmanSolver.solveCheatingEncoding(s, uiLevel.mutableLevel.toLevel, e, p, showSolverUpdate))
+                                            showResult(SnowmanSolver.solveSMTYics2(s, uiLevel.mutableLevel.toLevel, EncoderEnum.CHEATING, e, p, showSolverUpdate))
                                         case None =>
                                     }
                                 }
@@ -250,7 +253,7 @@ object UI extends SimpleSwingApplication {
                         if (validateLevelShowDialog(uiLevel.mutableLevel)) {
                             showGenerateOptionsDialog() match {
                                 case Some((g, e)) =>
-                                    savePickAndTextFile(SnowmanSolver.generateReachabilityEncoding(uiLevel.mutableLevel.toLevel, e, g), "in_reachability-encoding.smtlib2")
+                                    savePickAndTextFile(SnowmanSolver.encodeSMTLIB2(uiLevel.mutableLevel.toLevel, EncoderEnum.REACHABILITY, e, g), CURRENT_DIRECTORY + "/in_reachability-encoding.smtlib2")
                                 case None =>
                             }
                         }
@@ -261,7 +264,7 @@ object UI extends SimpleSwingApplication {
                                 if (validateLevelShowDialog(uiLevel.mutableLevel)) {
                                     showSolverOptionsDialog() match {
                                         case Some((p, e)) =>
-                                            showResult(SnowmanSolver.solveReachabilityEncoding(s, uiLevel.mutableLevel.toLevel, e, p, showSolverUpdate))
+                                            showResult(SnowmanSolver.solveSMTYics2(s, uiLevel.mutableLevel.toLevel, EncoderEnum.REACHABILITY, e, p, showSolverUpdate))
                                         case None =>
                                     }
                                 }
@@ -273,17 +276,17 @@ object UI extends SimpleSwingApplication {
                 contents += new Separator
                 contents += new MenuItem(Action("Generate PDDL adl") {
                     if (validateLevelShowDialog(uiLevel.mutableLevel)) {
-                        savePickAndTextFile(EncoderPDDL.encodeStrips(uiLevel.mutableLevel.toLevel), "domain_adl.pddl")
+                        savePickAndTextFile(EncoderPDDL.encodeStrips(uiLevel.mutableLevel.toLevel), CURRENT_DIRECTORY + "/domain_adl.pddl")
                     }
                 })
                 contents += new MenuItem(Action("Generate PDDL object-fluents") {
                     if (validateLevelShowDialog(uiLevel.mutableLevel)) {
-                        savePickAndTextFile(EncoderPDDL.encodeObjectFluents(uiLevel.mutableLevel.toLevel), "domain_object-fluents.pddl")
+                        savePickAndTextFile(EncoderPDDL.encodeObjectFluents(uiLevel.mutableLevel.toLevel), CURRENT_DIRECTORY + "/domain_object-fluents.pddl")
                     }
                 })
                 contents += new MenuItem(Action("Generate PDDL numeric-fluents") {
                     if (validateLevelShowDialog(uiLevel.mutableLevel)) {
-                        savePickAndTextFile(EncoderPDDL.encodeNumericFluents(uiLevel.mutableLevel.toLevel), "domain_numeric-fluents.pddl")
+                        savePickAndTextFile(EncoderPDDL.encodeNumericFluents(uiLevel.mutableLevel.toLevel), CURRENT_DIRECTORY + "/domain_numeric-fluents.pddl")
                     }
                 })
             }
@@ -304,6 +307,45 @@ object UI extends SimpleSwingApplication {
                     }
                 })
                 peer.add(mateuCheckBox)
+            }
+            contents += new Menu("Autorunner") {
+                contents += new MenuItem(Action("Solve SMT Basic") {
+                    settings.solverPath match {
+                        case Some(solverPath) =>
+                            showAutorunOptionsDialog() match {
+                                case Some((p, e, levelsPath, outPath)) =>
+                                    SnowmanSolver.autoSolveSMTYices2(solverPath, levelsPath, outPath, EncoderEnum.BASIC, e, p, showAutorSolveUpdate)
+                                case None =>
+                            }
+                        case None =>
+                            showErrorSolverPathNotDeined()
+                    }
+                })
+                contents += new MenuItem(Action("Solve SMT Cheating") {
+                    settings.solverPath match {
+                        case Some(solverPath) =>
+                            showAutorunOptionsDialog() match {
+                                case Some((p, e, levelsPath, outPath)) =>
+                                    SnowmanSolver.autoSolveSMTYices2(solverPath, levelsPath, outPath, EncoderEnum.CHEATING, e, p, showAutorSolveUpdate)
+                                case None =>
+                            }
+                        case None =>
+                            showErrorSolverPathNotDeined()
+
+                    }
+                })
+                contents += new MenuItem(Action("Solve SMT Reachability") {
+                    settings.solverPath match {
+                        case Some(solverPath) =>
+                            showAutorunOptionsDialog() match {
+                                case Some((p, e, levelsPath, outPath)) =>
+                                    SnowmanSolver.autoSolveSMTYices2(solverPath, levelsPath, outPath, EncoderEnum.REACHABILITY, e, p, showAutorSolveUpdate)
+                                case None =>
+                            }
+                        case None =>
+                            showErrorSolverPathNotDeined()
+                    }
+                })
             }
         }
 
@@ -348,6 +390,16 @@ object UI extends SimpleSwingApplication {
             }
 
             peer.setBounds(new Rectangle(x, y, width, height))
+        }
+    }
+
+    private def showAutorSolveUpdate(autoSolveUpdate: AutoSolveUpdate): Unit = {
+        print("Level: " + autoSolveUpdate.level)
+        autoSolveUpdate match {
+            case AutoSolveUpdateProgress(_, plannerUpdate) =>
+                showSolverUpdate(plannerUpdate)
+            case AutoSolveUpdateFinal(_, snowmanSolverResult) =>
+                showResult(snowmanSolverResult)
         }
     }
 
@@ -442,22 +494,113 @@ object UI extends SimpleSwingApplication {
         showErroDialog("Game path and/or solver path not defined in settings")
     }
 
-    private def invariantsLayout(): (JCheckBox, JCheckBox, JCheckBox, JPanel) = {
-        val ballSizesCheckBox = new JCheckBox("Ball sizes")
-        val ballPositionsCheckBox = new JCheckBox("Ball positions")
-        val ballsDistancesCheckBox = new JCheckBox("Balls distances")
 
-        val panel = new JPanel
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS))
-        panel.setBorder(BorderFactory.createTitledBorder("Invariants"))
-        panel.add(ballSizesCheckBox)
-        panel.add(ballPositionsCheckBox)
-        panel.add(ballsDistancesCheckBox)
+    private class InvariantsLayout {
 
-        (ballSizesCheckBox, ballPositionsCheckBox, ballsDistancesCheckBox, panel)
+        private val ballSizesCheckBox = new JCheckBox("Ball sizes")
+        private val ballPositionsCheckBox = new JCheckBox("Ball positions")
+        private val ballsDistancesCheckBox = new JCheckBox("Balls distances")
+
+        def component: JComponent = {
+            val panel = new JPanel
+            panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS))
+            panel.setBorder(BorderFactory.createTitledBorder("Invariants"))
+            panel.add(ballSizesCheckBox)
+            panel.add(ballPositionsCheckBox)
+            panel.add(ballsDistancesCheckBox)
+
+            panel
+        }
+
+        def result: EncoderOptions = {
+            EncoderOptions(ballSizesCheckBox.isSelected, ballPositionsCheckBox.isSelected, ballsDistancesCheckBox.isSelected)
+        }
+    }
+
+    private class OptionsLayout {
+
+        private val AUTO = "auto"
+
+        private val startTimeStepTextField = new JTextField(AUTO, 10)
+        private val maxTimeStepsTextField = new JTextField("100", 10)
+        private val timeoutTextField = new JTextField("3600", 10)
+        private val threadsTextField = new JTextField("1", 10)
+
+        def component: JComponent = {
+            val startTimeStepLabel = new JLabel("Start time step:")
+            val maxTimeStepsLabel = new JLabel("Max time steps:")
+            val timeoutLabel = new JLabel("Timeout (s):")
+            val threadsLabel = new JLabel("Threads:")
+
+            val panel = new JPanel(new GridBagLayout)
+            panel.setBorder(BorderFactory.createTitledBorder("Options"))
+            val c = new GridBagConstraints()
+
+            val RIGHT_PADDING = 5
+            val BOTTOM_PADDING = 5
+
+            c.anchor = GridBagConstraints.EAST
+            c.gridx = 0
+            c.gridy = 0
+            c.insets = new Insets(0, 0, 0, RIGHT_PADDING)
+            panel.add(startTimeStepLabel, c)
+
+            c.gridx = 1
+            c.gridy = 0
+            c.insets = new Insets(0, 0, BOTTOM_PADDING, 0)
+            panel.add(startTimeStepTextField, c)
+
+            c.gridx = 0
+            c.gridy = 1
+            c.insets = new Insets(0, 0, 0, RIGHT_PADDING)
+            panel.add(maxTimeStepsLabel, c)
+
+            c.gridx = 1
+            c.gridy = 1
+            c.insets = new Insets(0, 0, BOTTOM_PADDING, 0)
+            panel.add(maxTimeStepsTextField, c)
+
+            c.anchor = GridBagConstraints.NORTHEAST
+            c.gridx = 0
+            c.gridy = 2
+            c.insets = new Insets(0, 0, 0, RIGHT_PADDING)
+            panel.add(timeoutLabel, c)
+
+            c.gridx = 1
+            c.gridy = 2
+            c.insets = new Insets(0, 0, BOTTOM_PADDING, 0)
+            panel.add(timeoutTextField, c)
+
+            c.gridx = 0
+            c.gridy = 3
+            c.insets = new Insets(0, 0, 0, RIGHT_PADDING)
+            panel.add(threadsLabel, c)
+
+            c.gridx = 1
+            c.gridy = 3
+            c.insets = new Insets(0, 0, 0, 0)
+            panel.add(threadsTextField, c)
+
+            panel
+        }
+
+        def result: PlannerOptions = {
+            val startTimeSteps: Option[Int] = if (startTimeStepTextField.getText == AUTO) {
+                None
+            } else {
+                Some(startTimeStepTextField.getText.toInt)
+            }
+
+            PlannerOptions(startTimeSteps,
+                maxTimeStepsTextField.getText.toInt,
+                timeoutTextField.getText.toInt,
+                threadsTextField.getText.toInt)
+        }
     }
 
     private def showGenerateOptionsDialog(): Option[(GenerateOptions, EncoderOptions)] = {
+        val invariantsLayout = new InvariantsLayout
+
         val timeStepTextField = new JTextField("1", 5)
 
         val threadsLabel = new JLabel("Time Step:")
@@ -466,42 +609,36 @@ object UI extends SimpleSwingApplication {
         timeStepPanel.setBorder(BorderFactory.createTitledBorder("Options"))
         val timeStepC = new GridBagConstraints()
 
-        val rightPadding = 5
+        val RIGHT_PADDING = 5
 
         timeStepC.anchor = GridBagConstraints.EAST
         timeStepC.gridx = 0
         timeStepC.gridy = 0
-        timeStepC.insets = new Insets(0, 0, 0, rightPadding)
+        timeStepC.insets = new Insets(0, 0, 0, RIGHT_PADDING)
         timeStepPanel.add(threadsLabel, timeStepC)
 
         timeStepC.gridx = 1
         timeStepC.gridy = 0
         timeStepC.insets = new Insets(0, 0, 0, 0)
         timeStepPanel.add(timeStepTextField, timeStepC)
-        val (ballSizesCheckBox, ballPositionsCheckBox, ballsDistancesCheckBox, invariantPanel)  = invariantsLayout()
 
-        val panel = new JPanel
-        panel.setLayout(new GridBagLayout)
-        val panelC = new GridBagConstraints
-        panelC.anchor = GridBagConstraints.NORTH
-        panelC.gridx = 0
-        panelC.gridy = 0
-        panel.add(timeStepPanel, panelC)
-        panelC.gridx = 1
-        panelC.gridy = 0
-        panel.add(invariantPanel, panelC)
+        val panel = new JPanel(new GridBagLayout)
+        val c = new GridBagConstraints
+        c.anchor = GridBagConstraints.NORTH
+        c.gridx = 0
+        c.gridy = 0
+        panel.add(timeStepPanel, c)
+        c.gridx = 1
+        c.gridy = 0
+        panel.add(invariantsLayout.component, c)
 
-        val option = JOptionPane.showConfirmDialog(null, panel, "Solver options", JOptionPane.OK_CANCEL_OPTION)
+        val option = JOptionPane.showConfirmDialog(null, panel, "Generate options", JOptionPane.OK_CANCEL_OPTION)
 
         if (option == JOptionPane.OK_OPTION) {
             try {
                 val generateOptions = GenerateOptions(timeStepTextField.getText.toInt)
 
-                val encoderOptions = EncoderOptions(ballSizesCheckBox.isSelected,
-                    ballPositionsCheckBox.isSelected,
-                    ballsDistancesCheckBox.isSelected)
-
-                Some((generateOptions, encoderOptions))
+                Some((generateOptions, invariantsLayout.result))
             } catch {
                 case _: NumberFormatException =>
                     showErroDialog("Number must be an integer")
@@ -514,103 +651,137 @@ object UI extends SimpleSwingApplication {
     }
 
     private def showSolverOptionsDialog(): Option[(PlannerOptions, EncoderOptions)] = {
-        val AUTO = "auto"
+        val optionsLayout = new OptionsLayout
+        val invariantsLayout = new InvariantsLayout
 
-        val startTimeStepTextField = new JTextField(AUTO, 10)
-        val maxTimeStepsTextField = new JTextField("100", 10)
-        val timeoutTextField = new JTextField("3600", 10)
-        val threadsTextField = new JTextField("1", 10)
-        
-        val startTimeStepLabel = new JLabel("Start time step:")
-        val maxTimeStepsLabel = new JLabel("Max time steps:")
-        val timeoutLabel = new JLabel("Timeout (s):")
-        val threadsLabel = new JLabel("Threads:")
-
-        val timestepPanel = new JPanel(new GridBagLayout)
-        timestepPanel.setBorder(BorderFactory.createTitledBorder("Options"))
-        val timeStepC = new GridBagConstraints()
-
-        val rightPadding = 5
-        val bottomPadding = 5
-        
-        timeStepC.anchor = GridBagConstraints.EAST
-        timeStepC.gridx = 0
-        timeStepC.gridy = 0
-        timeStepC.insets = new Insets(0, 0, 0, rightPadding)
-        timestepPanel.add(startTimeStepLabel, timeStepC)
-
-        timeStepC.gridx = 1
-        timeStepC.gridy = 0
-        timeStepC.insets = new Insets(0, 0, bottomPadding, 0)
-        timestepPanel.add(startTimeStepTextField, timeStepC)
-
-        timeStepC.gridx = 0
-        timeStepC.gridy = 1
-        timeStepC.insets = new Insets(0, 0, 0, rightPadding)
-        timestepPanel.add(maxTimeStepsLabel, timeStepC)
-
-        timeStepC.gridx = 1
-        timeStepC.gridy = 1
-        timeStepC.insets = new Insets(0, 0, bottomPadding, 0)
-        timestepPanel.add(maxTimeStepsTextField, timeStepC)
-
-        timeStepC.anchor = GridBagConstraints.NORTHEAST
-        timeStepC.gridx = 0
-        timeStepC.gridy = 2
-        timeStepC.insets = new Insets(0, 0, 0, rightPadding)
-        timestepPanel.add(timeoutLabel, timeStepC)
-
-        timeStepC.gridx = 1
-        timeStepC.gridy = 2
-        timeStepC.insets = new Insets(0, 0, bottomPadding, 0)
-        timestepPanel.add(timeoutTextField, timeStepC)
-
-        timeStepC.gridx = 0
-        timeStepC.gridy = 3
-        timeStepC.insets = new Insets(0, 0, 0, rightPadding)
-        timestepPanel.add(threadsLabel, timeStepC)
-
-        timeStepC.gridx = 1
-        timeStepC.gridy = 3
-        timeStepC.insets = new Insets(0, 0, 0, 0)
-        timestepPanel.add(threadsTextField, timeStepC)
-
-        val (ballSizesCheckBox, ballPositionsCheckBox, ballsDistancesCheckBox, invariantPanel)  = invariantsLayout()
-
-        val panel = new JPanel
-        panel.setLayout(new GridBagLayout)
-        val panelC = new GridBagConstraints
-        panelC.anchor = GridBagConstraints.NORTH
-        panelC.gridx = 0
-        panelC.gridy = 0
-        panel.add(timestepPanel, panelC)
-        panelC.gridx = 1
-        panelC.gridy = 0
-        panel.add(invariantPanel, panelC)
+        val panel = new JPanel(new GridBagLayout)
+        val c = new GridBagConstraints
+        c.anchor = GridBagConstraints.NORTH
+        c.gridx = 0
+        c.gridy = 0
+        panel.add(optionsLayout.component, c)
+        c.gridx = 1
+        c.gridy = 0
+        panel.add(invariantsLayout.component, c)
 
         val option = JOptionPane.showConfirmDialog(null, panel, "Solver options", JOptionPane.OK_CANCEL_OPTION)
 
         if (option == JOptionPane.OK_OPTION) {
             try {
-                val startTimeSteps: Option[Int] = if (startTimeStepTextField.getText == AUTO) {
-                    None
-                } else {
-                    Some(startTimeStepTextField.getText.toInt)
-                }
-
-                val plannerOptions = PlannerOptions(startTimeSteps,
-                    maxTimeStepsTextField.getText.toInt,
-                    timeoutTextField.getText.toInt,
-                    threadsTextField.getText.toInt)
-
-                val encoderOptions = EncoderOptions(ballSizesCheckBox.isSelected,
-                    ballPositionsCheckBox.isSelected,
-                    ballsDistancesCheckBox.isSelected)
-
-                Some((plannerOptions, encoderOptions))
+                Some((optionsLayout.result, invariantsLayout.result))
             } catch {
                 case _: NumberFormatException =>
                     showErroDialog("Number must be an integer")
+                    None
+            }
+
+        } else {
+            None
+        }
+    }
+
+    private def showAutorunOptionsDialog(): Option[(PlannerOptions, EncoderOptions, String, String)] = {
+        val optionsLayout = new OptionsLayout
+        val invariantsLayout = new InvariantsLayout
+
+        val LEVELS_DEFAULT_PATH = CURRENT_DIRECTORY + "/autorunner/levels/"
+        val OUT_DEFAULT_PATH = CURRENT_DIRECTORY + "/autorunner/out/"
+
+        val levelsTextField = new JTextField(LEVELS_DEFAULT_PATH, 30)
+        val outTextField = new JTextField(OUT_DEFAULT_PATH, 30)
+
+        val directoryChooser = new FileChooser
+        directoryChooser.fileSelectionMode_=(FileChooser.SelectionMode.DirectoriesOnly)
+
+        val levelsButton = new JButton("Select")
+        //noinspection ConvertExpressionToSAM
+        levelsButton.addActionListener(new ActionListener {
+            override def actionPerformed(e: ActionEvent): Unit = {
+                directoryChooser.selectedFile_=(new File(LEVELS_DEFAULT_PATH))
+                val result = directoryChooser.showDialog(null, "Select")
+
+                if (result == FileChooser.Result.Approve) {
+                    levelsTextField.setText(directoryChooser.selectedFile.getAbsolutePath)
+                }
+            }
+        })
+
+        val outButton = new JButton("Select")
+        //noinspection ConvertExpressionToSAM
+        outButton.addActionListener(new ActionListener {
+            override def actionPerformed(e: ActionEvent): Unit = {
+                directoryChooser.selectedFile_=(new File(OUT_DEFAULT_PATH))
+                val result = directoryChooser.showDialog(null, "Select")
+
+                if (result == FileChooser.Result.Approve) {
+                    outTextField.setText(directoryChooser.selectedFile.getAbsolutePath)
+                }
+            }
+        })
+
+        val BOTTOM_PADDING = 5
+        val RIGHT_PADDING = 5
+
+        val pathPanel = new JPanel(new GridBagLayout)
+        pathPanel.setBorder(BorderFactory.createTitledBorder("Paths"))
+        val pathC = new GridBagConstraints
+        pathC.anchor = GridBagConstraints.EAST
+        pathC.insets = new Insets(0, 0, BOTTOM_PADDING, RIGHT_PADDING)
+        pathC.gridx = 0
+        pathC.gridy = 0
+        pathPanel.add(new JLabel("Levels directory:"), pathC)
+        pathC.insets = new Insets(0, 0, BOTTOM_PADDING, RIGHT_PADDING)
+        pathC.gridx = 1
+        pathC.gridy = 0
+        pathPanel.add(levelsTextField, pathC)
+        pathC.insets = new Insets(0, 0, BOTTOM_PADDING, 0)
+        pathC.gridx = 2
+        pathC.gridy = 0
+        pathPanel.add(levelsButton, pathC)
+        pathC.insets = new Insets(0, 0, 0, RIGHT_PADDING)
+        pathC.gridx = 0
+        pathC.gridy = 1
+        pathPanel.add(new JLabel("Out directory:"), pathC)
+        pathC.insets = new Insets(0, 0, 0, RIGHT_PADDING)
+        pathC.gridx = 1
+        pathC.gridy = 1
+        pathPanel.add(outTextField, pathC)
+        pathC.insets = new Insets(0, 0, 0, 0)
+        pathC.gridx = 2
+        pathC.gridy = 1
+        pathPanel.add(outButton, pathC)
+
+        val panel = new JPanel(new GridBagLayout)
+        val c = new GridBagConstraints
+        c.anchor = GridBagConstraints.NORTHWEST
+        c.gridwidth = 2
+        c.gridx = 0
+        c.gridy = 0
+        panel.add(pathPanel, c)
+        c.gridwidth = 1
+        c.gridx = 0
+        c.gridy = 1
+        panel.add(optionsLayout.component, c)
+        c.gridx = 1
+        c.gridy = 1
+        panel.add(invariantsLayout.component, c)
+
+        val option = JOptionPane.showConfirmDialog(null, panel, "Autorun options", JOptionPane.OK_CANCEL_OPTION)
+
+        if (option == JOptionPane.OK_OPTION) {
+            try {
+                if (!new File(levelsTextField.getText).exists()) {
+                    throw new FileNotFoundException()
+                }
+                new File(outTextField.getText).mkdirs()
+
+                Some((optionsLayout.result, invariantsLayout.result, levelsTextField.getText(), outTextField.getText))
+            } catch {
+                case _: NumberFormatException =>
+                    showErroDialog("Number must be an integer")
+                    None
+                case _: FileNotFoundException =>
+                    showErroDialog("Directory not found")
                     None
             }
 

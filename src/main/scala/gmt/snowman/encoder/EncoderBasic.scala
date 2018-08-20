@@ -11,7 +11,7 @@ import gmt.snowman.level.{Coordinate, Level}
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
-case class EncoderBasic(override val level: Level, override val encoderOptions: EncoderBase.EncoderOptions) extends EncoderBase[StateBasic, DecodingData](level, encoderOptions) {
+protected case class EncoderBasic(override val level: Level, override val encoderOptions: EncoderBase.EncoderOptions) extends EncoderBase[StateBasic](level, encoderOptions) {
 
     override def createState(level: Level, timeStep: Int): StateBasic = StateBasic(level, timeStep)
 
