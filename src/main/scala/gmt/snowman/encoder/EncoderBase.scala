@@ -5,10 +5,9 @@ import gmt.planner.operation
 import gmt.planner.operation._
 import gmt.planner.solver.Assignment
 import gmt.planner.solver.value.{Value, ValueBoolean, ValueInteger}
-import gmt.snowman.action.{BallAction, SnowmanAction}
+import gmt.snowman.action.{BallAction, Down, Left, Right, SnowmanAction, Up}
 import gmt.snowman.encoder.EncoderBase.EncoderOptions
 import gmt.snowman.encoder.StateBase.CoordinateVariables
-import gmt.snowman.game.Game
 import gmt.snowman.game.`object`._
 import gmt.snowman.level.{Coordinate, Level}
 import gmt.snowman.util.AStar
@@ -18,6 +17,10 @@ import scala.collection.{immutable, mutable}
 
 
 object EncoderBase {
+
+    protected val SMALL_BALL = 1
+    protected val MEDIUM_BALL = 2
+    protected val LARGE_BALL = 4
 
     object EncoderEnum extends Enumeration {
         val BASIC, CHEATING, REACHABILITY = Value
@@ -95,18 +98,56 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
             val actionsData = ListBuffer.empty[EncodingData.ActionData]
 
             encoding.add(Comment("Occupancy"))
-            for (l <- level.map.values.filterNot(f => f.o == Wall)) {
-                val ors = for (b <- stateNext.balls) yield {
-                    And(Equals(b.x, IntegerConstant(l.c.x)), Equals(b.y, IntegerConstant(l.c.y))) // TODO OPTIMITZAR Es pot optimitzar? Pq només es mou la bola que fa l'acció, no cal fer un conjunt d'ors
-                }
-                encoding.add(ClauseDeclaration(Equivalent(Or(ors: _*), stateNext.occupancy.get(l.c).get)))
-            }
 
             encoding.add(ClauseDeclaration(occupancyWalls(stateNext)))
 
             encodeReachability(stateNext, encoding)
 
-            // TODO Invariants
+            if (encoderOptions.invariantBallSizes && level.hasSnow) {
+                val mediumSizeVariables = ListBuffer.empty[BooleanVariable]
+                for ((b, i) <- stateNext.balls.zipWithIndex) {
+                    val variable = BooleanVariable("IBS_M_S" + stateNext.timeStep + "_B" + i)
+                    encoding.add(VariableDeclaration(variable))
+                    encoding.add(ClauseDeclaration(Equivalent(variable, Equals(b.size, IntegerConstant(EncoderBase.MEDIUM_BALL)))))
+                    mediumSizeVariables.append(variable)
+                }
+
+                encoding.addAll(Operations.addCounter(mediumSizeVariables, 2 * level.snowmans + 1, "IBS_M_S" + stateNext.timeStep + "_AMO", Smaller.SMALLER))
+
+                val largeSizeVariables = ListBuffer.empty[BooleanVariable]
+                for ((b, i) <- stateNext.balls.zipWithIndex) {
+                    val variable = BooleanVariable("IBS_L_S" + stateNext.timeStep + "_B" + i)
+                    encoding.add(VariableDeclaration(variable))
+                    largeSizeVariables.append(variable)
+                }
+
+                encoding.addAll(Operations.addCounter(largeSizeVariables, 2 * level.snowmans, "IBS_L_S" + stateNext.timeStep + "_AMO", Smaller.SMALLER))
+            }
+
+            if (encoderOptions.invariantBallLocations) {
+                for (l <- level.map.values.filter(f => Object.isPlayableArea(f.o))) {
+                    val up = level.map.get(l.c + Up.shift).get.o
+                    val down = level.map.get(l.c + Down.shift).get.o
+                    val right = level.map.get(l.c + Right.shift).get.o
+                    val left = level.map.get(l.c + Left.shift).get.o
+
+                    val invalid = !Object.isPlayableArea(up) && !Object.isPlayableArea(right) ||
+                        !Object.isPlayableArea(right) && !Object.isPlayableArea(down) ||
+                        !Object.isPlayableArea(down) && !Object.isPlayableArea(left) ||
+                        !Object.isPlayableArea(left) && !Object.isPlayableArea(up)
+
+                    if (invalid) {
+                        val ors = for (b <- stateNext.balls) yield {
+                            Implies(And(Equals(b.x, IntegerConstant(l.c.x)), Equals(b.y, IntegerConstant(l.c.y))), Not(Or(Equals(b.size, IntegerConstant(EncoderBase.SMALL_BALL)), Equals(b.size, IntegerConstant(EncoderBase.MEDIUM_BALL)))))
+                        }
+                        encoding.add(ClauseDeclaration(And(ors.toList: _*)))
+                    }
+                }
+            }
+
+            if (encoderOptions.invariantBallDistances) {
+                // TODO Invariant
+            }
 
             val actionsVariables = ListBuffer.empty[BooleanVariable]
 
@@ -143,25 +184,27 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
             state = stateNext
         }
 
-        encoding.add(Comment("Goal")) // TODO New goal
-        val combinations = state.balls.combinations(Game.SNOWMAN_BALLS).toList
-
-        val combinationsVariables = ListBuffer.empty[BooleanVariable]
-
-        if (combinations.size > 1) {
-            for ((c, i) <- combinations.zipWithIndex) {
-                val v = BooleanVariable("C" + i)
-
-                encoding.add(Comment("Combination " + i))
-                combinationsVariables.append(v)
-                encoding.add(VariableDeclaration(v))
-                encoding.add(ClauseDeclaration(Equivalent(And(operation.Equals(c(1).x, c.head.x), operation.Equals(c(1).y, c.head.y), operation.Equals(c(2).x, c.head.x), operation.Equals(c(2).y, c.head.y)), v)))
+        encoding.add(Comment("Goal"))
+        if (level.snowmans == 1) {
+            encoding.add(ClauseDeclaration(And(Equals(state.balls.head.x, state.balls(1).x), Equals(state.balls.head.y, state.balls(1).y))))
+            encoding.add(ClauseDeclaration(And(Equals(state.balls.head.x, state.balls(2).x), Equals(state.balls.head.y, state.balls(2).y))))
+        } else {
+            val snowmansVariables = ListBuffer.empty[(IntegerVariable, IntegerVariable)]
+            for (i <- 0 until level.snowmans) {
+                val x = IntegerVariable("G_X_S" + i)
+                val y = IntegerVariable("G_Y_S" + i)
+                snowmansVariables.append((x, y))
+                encoding.add(VariableDeclaration(x))
+                encoding.add(VariableDeclaration(y))
             }
 
-            encoding.addAll(Operations.addEK(combinationsVariables, level.balls.size / 3, "EKC"))
-        } else {
-            val c = combinations.head
-            c.tail.foreach(f => encoding.add(ClauseDeclaration(And(operation.Equals(f.x, c.head.x), operation.Equals(f.y, c.head.y)))))
+            for (b <- state.balls) {
+                val ors = for ((x, y) <- snowmansVariables) yield {
+                    And(Equals(b.x, x), Equals(b.y, y))
+                }
+
+                encoding.add(ClauseDeclaration(Or(ors.toList: _*)))
+            }
         }
 
         EncoderResult(encoding, EncodingData(level, state0, statesData.toList))
@@ -177,9 +220,9 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
 
     protected def createBallAction(actionName: String, state: A, stateActionBall: StateBase.Ball, stateNext: A, stateNextActionBall: StateBase.Ball, shift: Coordinate): (Clause, Clause, Seq[Expression])
 
-    protected def noWallInFront(state: StateBase, stateActionBall: StateBase.Ball, shift: Coordinate): Clause = { // TODO OPTIMIZATION Can be done with coordinates
+    protected def noWallInFront(state: StateBase, stateActionBall: StateBase.Ball, shift: Coordinate): Clause = { // TODO OPTIMIZATION Possible optimization. Can be done with coordinates
         if (level.map.values.count(f => Object.isPlayableArea(f.o)) < level.map.values.count(f => !Object.isPlayableArea(f.o))) {
-            Not(And((for (l <- level.map.keys.flatMap(f => level.map.get(f + shift)).filter(f => Object.isPlayableArea(f.o))) yield { // TODO BUG
+            Not(And((for (l <- level.map.keys.flatMap(f => level.map.get(f + shift)).filter(f => Object.isPlayableArea(f.o))) yield {
                 Or(Not(Equals(stateActionBall.x, IntegerConstant(l.c.x))), Not(Equals(stateActionBall.y, IntegerConstant(l.c.y))))
             }).toSeq : _*))
         } else {
@@ -261,11 +304,28 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
         }
     }
 
-    protected val AND: (Clause, Clause) => And = (c1, c2) => And(c1, c2)
+    protected def updateOccupancyVariables(state: StateBase, stateNext: StateBase): Clause = {
+        val ands = for (l <- level.map.values.filter(f => Object.isPlayableArea(f.o))) yield {
+            val ors = for (b <- stateNext.balls) yield {
+                And(Equals(b.x, IntegerConstant(l.c.x)), Equals(b.y, IntegerConstant(l.c.y)))
+            }
+            Equivalent(Or(ors: _*), stateNext.occupancy.get(l.c).get)
+        }
+        And(ands.toList: _*)
+    }
 
-    protected val OR: (Clause, Clause) => Or = (c1, c2) => Or(Not(c1), Not(c2))
 
-    protected def applyShiftClause(applyVariables: StateBase.CoordinateVariables, variables: StateBase.CoordinateVariables, shift: Coordinate, operation: (Clause, Clause) => Clause): Clause = {
+    protected trait ApplyShiftClauseOperation {
+        def apply(c1: Clause, c2: Clause): Clause
+    }
+    protected object AND extends ApplyShiftClauseOperation {
+        override def apply(c1: Clause, c2: Clause): Clause = And.AND(c1, c2)
+    }
+    protected object OR extends ApplyShiftClauseOperation {
+        override def apply(c1: Clause, c2: Clause): Clause = Or(Not(c1), Not(c2))
+    }
+
+    protected def applyShiftClause(applyVariables: StateBase.CoordinateVariables, variables: StateBase.CoordinateVariables, shift: Coordinate, operation: ApplyShiftClauseOperation): Clause = {
         val newX = if (shift.x > 0) {
             Add(applyVariables.x, IntegerConstant(shift.x))
         } else if (shift.x < 0){
@@ -286,17 +346,11 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
 
     protected def getBallSize(o: gmt.snowman.game.`object`.Object): Int = o match {
         case SmallBall =>
-            1
+            EncoderBase.SMALL_BALL
         case MediumBall =>
-            2
+            EncoderBase.MEDIUM_BALL
         case LargeBall =>
-            4
-        case LargeMediumBall =>
-            6
-        case MediumSmallBall =>
-            3
-        case LargeMediumSmallBall =>
-            7
+            EncoderBase.LARGE_BALL
     }
 
     private def occupancyWalls(state: StateBase): Clause = {
@@ -324,7 +378,7 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
             val preActionCoordinate = ballCoordinate - actionData.action.shift
 
             val assigmentsReport = assignments.map(f => (f.name, f)).toMap
-            println("STATE")
+            println("STATE") // TODO Remove println
             print(Report.generateMap(level, state, assigmentsReport))
             println("STATE NEXT")
             print(Report.generateMap(level, stateNext, assigmentsReport))
@@ -378,7 +432,6 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
         val reverse = path.reverse
         reverse.zip(reverse.tail).map(f => SnowmanAction.ACTIONS.find(f2 => f2.shift == (f._2 - f._1)).get).toList
     }
-
 
     protected def flattenTuple[T,U](l: Iterator[(T, Option[U])]): Iterator[(T, U)] = l.filter(f => f._2.isDefined).map(f => (f._1, f._2.get))
 }

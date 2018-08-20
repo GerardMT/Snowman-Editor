@@ -35,7 +35,8 @@ protected case class EncoderBasic(override val level: Level, override val encode
             Implies(Not(otherBallUnderVar), moveCharacter(state, stateNext, shift)),
             Implies(otherBallUnderVar, equalCharacterVariables(state, stateNext)),
             equalOtherBallsVariables(state, stateActionBall, stateNext, stateNextActionBall),
-            updateBallSizeClause)
+            updateBallSizeClause,
+            updateOccupancyVariables(state, stateNext))
 
         if (level.hasSnow) {
             constantEff.append(updateSnowVariables(state, stateActionBall, stateNext, shift))
@@ -62,7 +63,8 @@ protected case class EncoderBasic(override val level: Level, override val encode
         val pre = characterLocationValid(state, action.shift)
 
         val constantEff = ListBuffer(moveCharacter(state, stateNext, action.shift),
-            equalBallsVariables(state, stateNext))
+            equalBallsVariables(state, stateNext),
+            equalOccupancyVariables(state, stateNext))
 
         if (level.hasSnow) {
             constantEff.append(equalSnowVariables(state, stateNext))
@@ -75,8 +77,7 @@ protected case class EncoderBasic(override val level: Level, override val encode
     }
 
     override def decode(assignments: Seq[Assignment], encodingData: EncodingData): DecodingData = {
-        // TODO DEBUG
-        println(Report.generateReport(level, encodingData.state0 :: encodingData.statesData.map(f => f.stateNext).toList, assignments))
+        println(Report.generateReport(level, encodingData.state0 :: encodingData.statesData.map(f => f.stateNext).toList, assignments)) // TODO Remove println
 
         val assignmentsMap = assignments.map(f => (f.name, f.value)).toMap
 
@@ -120,5 +121,11 @@ protected case class EncoderBasic(override val level: Level, override val encode
         And((for ((b, bNext) <- state.balls.zip(stateNext.balls)) yield {
             And(Equals(b.x, bNext.x), Equals(b.y, bNext.y), Equals(b.size, bNext.size))
         }): _*)
+    }
+
+    protected def equalOccupancyVariables(state: StateBase, stateNext: StateBase): Clause = {
+        And((for ((o, oNext) <- flattenTuple(level.map.keys.map(f => (f, state.occupancy.get(f)))).map(f => (f._2, stateNext.occupancy.get(f._1).get))) yield {
+            Equivalent(o, oNext)
+        }).toList: _*)
     }
 }

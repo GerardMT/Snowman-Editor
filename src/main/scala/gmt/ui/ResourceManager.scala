@@ -8,7 +8,7 @@ import javax.imageio.ImageIO
 
 class ResourceManager {
 
-    private var mateuMode = false // TODO Acabar mode Mateu
+    private var mateuMode = false
 
     private val empty = ImageIO.read(getClass.getResource("/empty.png"))
     private val wall = ImageIO.read(getClass.getResource("/wall.png"))

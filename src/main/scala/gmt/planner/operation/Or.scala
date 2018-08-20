@@ -1,5 +1,9 @@
 package gmt.planner.operation
 
+object Or {
+    val OR: (Clause, Clause) => Clause = (c1, c2) => Or(c1, c2)
+}
+
 case class Or(c: Clause*) extends Clause {
 
     if (!c.forall(f => Operations.isReturnBoolean(f)) || c.isEmpty) {

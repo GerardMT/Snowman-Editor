@@ -26,7 +26,8 @@ protected case class EncoderCheating(override val level: Level, override val enc
 
         val constantEff = ListBuffer(moveBall(stateActionBall, stateNextActionBall, shift),
             equalOtherBallsVariables(state, stateActionBall, stateNext, stateNextActionBall),
-            updateBallSizeClause)
+            updateBallSizeClause,
+            updateOccupancyVariables(state, stateNext))
 
         if (level.hasSnow) {
             constantEff.append(updateSnowVariables(state, stateActionBall, stateNext, shift))
@@ -42,9 +43,7 @@ protected case class EncoderCheating(override val level: Level, override val enc
     override protected def encodeCharacterAction(actionName: String, state: StateCheating, stateNext: StateCheating, action: SnowmanAction, encoding: Encoding, actionVariables: mutable.Buffer[BooleanVariable], actionsState: mutable.Buffer[EncodingData.ActionData]): Unit = {}
 
     override def decode(assignments: Seq[Assignment], encodingData: EncodingData): DecodingData = {
-        // TODO DEBUG
-        println(Report.generateReport(level, encodingData.state0 :: encodingData.statesData.map(f => f.stateNext).toList, assignments))
-
+        println(Report.generateReport(level, encodingData.state0 :: encodingData.statesData.map(f => f.stateNext).toList, assignments)) // TODO Remove println
         decodeTeleport(assignments, encodingData)
     }
 

@@ -6,6 +6,8 @@ import scala.io.Source
 
 object Settings {
 
+    case class SettingsParseException(message: String) extends Exception(message)
+
     private val KEY_GAME_PATH = "game_path"
     private val KEY_SAVE_PATH = "save_path"
     private val KEY_SOLVER_PATH = "solver_path"

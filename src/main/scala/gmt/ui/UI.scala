@@ -12,6 +12,8 @@ import gmt.snowman.pddl.EncoderPDDL
 import gmt.snowman.solver.SnowmanSolver.{AutoSolveUpdate, AutoSolveUpdateFinal, AutoSolveUpdateProgress, GenerateOptions}
 import gmt.snowman.solver.{SnowmanSolver, SnowmanSolverResult}
 import gmt.snowman.util.Files
+import gmt.ui.Game.RestoreException
+import gmt.ui.Settings.SettingsParseException
 import javax.swing._
 
 import scala.swing.GridBagPanel.Anchor
@@ -188,8 +190,8 @@ object UI extends SimpleSwingApplication {
                         try {
                             game.restore()
                         } catch {
-                            case _: FileNotFoundException =>
-                                showAccessDeniedDialog()
+                            case _: RestoreException =>
+                                showErroDialog("Restore files not found")
                         }
                     } else {
                         showErrorGamePathsNotDefined()
@@ -393,7 +395,7 @@ object UI extends SimpleSwingApplication {
         }
     }
 
-    private def showAutorSolveUpdate(autoSolveUpdate: AutoSolveUpdate): Unit = {
+    private def showAutorSolveUpdate(autoSolveUpdate: AutoSolveUpdate): Unit = { // TODO UI
         print("Level: " + autoSolveUpdate.level + " ")
         autoSolveUpdate match {
             case AutoSolveUpdateProgress(_, plannerUpdate) =>
@@ -542,7 +544,7 @@ object UI extends SimpleSwingApplication {
             c.anchor = GridBagConstraints.EAST
             c.gridx = 0
             c.gridy = 0
-            c.insets = new Insets(0, 0, 0, RIGHT_PADDING)
+            c.insets = new Insets(0, 0, BOTTOM_PADDING, RIGHT_PADDING)
             panel.add(startTimeStepLabel, c)
 
             c.gridx = 1
@@ -552,7 +554,7 @@ object UI extends SimpleSwingApplication {
 
             c.gridx = 0
             c.gridy = 1
-            c.insets = new Insets(0, 0, 0, RIGHT_PADDING)
+            c.insets = new Insets(0, 0, BOTTOM_PADDING, RIGHT_PADDING)
             panel.add(maxTimeStepsLabel, c)
 
             c.gridx = 1
@@ -563,7 +565,7 @@ object UI extends SimpleSwingApplication {
             c.anchor = GridBagConstraints.NORTHEAST
             c.gridx = 0
             c.gridy = 2
-            c.insets = new Insets(0, 0, 0, RIGHT_PADDING)
+            c.insets = new Insets(0, 0, BOTTOM_PADDING, RIGHT_PADDING)
             panel.add(timeoutLabel, c)
 
             c.gridx = 1

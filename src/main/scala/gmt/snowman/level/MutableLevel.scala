@@ -10,6 +10,8 @@ import scala.collection.mutable.ListBuffer
 
 object MutableLevel {
 
+    case class LevelParserException(message: String) extends Exception(message)
+
     case class Info(size: Int, width: Int, height: Int, playableArea: Int, balls: Int, objects: immutable.Map[Object, Int])
 
     def default(width: Int, height: Int): MutableLevel = {
@@ -138,7 +140,7 @@ class MutableLevel private (val width: Int, val height: Int){
         Level(width, height, size, hasSnow, balls.size / Game.SNOWMAN_BALLS, someCharacterLocation.get, balls.toList, sortedMap, toString)
     }
 
-    def validate: (Boolean, Boolean) = {
+    def validate: (Boolean, Boolean) = { // TODO Level must be closed
         var balls = 0
         var character = 0
 

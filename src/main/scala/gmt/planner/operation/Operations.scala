@@ -61,14 +61,7 @@ object Operations {
         String.format("%" + digits + "s", i.toBinaryString).replace(' ', '0')
     }
 
-    private def addVariables(v: Seq[IntegerVariable]): Clause = v match {
-        case Seq(h1, h2) =>
-            Add(h1, h2)
-        case Seq(h, t @ _*) =>
-            Add(h, addVariables(t))
-    }
-
-    def addEK(variables: Seq[BooleanVariable], k: Int, newVariablesPrefix: String): Seq[Expression] = {
+    def addCounter(variables: Seq[BooleanVariable], k: Int, newVariablesPrefix: String, comparator: (Clause, Clause) => Clause): Seq[Expression] = {
         val expressions = ListBuffer.empty[Expression]
 
         val newVariables = ListBuffer.empty[IntegerVariable]
@@ -81,7 +74,7 @@ object Operations {
             expressions.append(ClauseDeclaration(Equivalent(Not(v), Equals(newV, IntegerConstant(0)))))
         }
 
-        expressions.append(ClauseDeclaration(Equals(addVariables(newVariables), IntegerConstant(k))))
+        expressions.append(ClauseDeclaration(comparator(newVariables.reduce(Add.ADD), IntegerConstant(k))))
 
         expressions
     }

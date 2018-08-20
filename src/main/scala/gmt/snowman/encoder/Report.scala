@@ -2,9 +2,8 @@ package gmt.snowman.encoder
 
 import gmt.planner.solver.Assignment
 import gmt.planner.solver.value.{ValueBoolean, ValueInteger}
-import gmt.snowman.level.Level
 import gmt.snowman.game.`object`.Wall
-import gmt.snowman.encoder.CharacterInterface
+import gmt.snowman.level.Level
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -18,7 +17,7 @@ object Report {
 
         val assignmentsMap = assignments.map(f => (f.name, f)).toMap
 
-        sb.append("ACTIONS " + (states.size - 1) + "\n\n")
+        sb.append("\nACTIONS " + (states.size - 1) + "\n\n")
 
         for ((s, i) <- states.zipWithIndex) {
             sb.append("STATE " + i + "\n")

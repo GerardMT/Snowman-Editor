@@ -40,6 +40,7 @@ object SnowmanSolver {
         val levelsDirectory = new File(levelsPath)
 
         val resultsFile = new File(outPath + "results.cvs")
+        resultsFile.createNewFile()
 
         val resultsWriter = new BufferedWriter(new FileWriter(resultsFile, true))
         resultsWriter.write("name,solved,timesteps,time,valid,actions,actionsballs\n")
@@ -71,10 +72,11 @@ object SnowmanSolver {
 
                     val actionsString = r.actions.map(f => f.toString).fold("")(union)
                     val actionsBallsString = r.actionsBall.map(f => f.toString).fold("")(union)
+                    val ballsString = r.balls.map(f => f.toString).fold("")(union)
 
                     updateFunction(AutoSolveUpdateFinal(levelName, SnowmanSolverResult(result.sat, valid, result.milliseconds, Some(r))))
 
-                    ("final solved=" + result.sat+ "timesteps=" + result.timeSteps + " time=" + result.milliseconds + " valid=" + valid + " actions=" + actionsString + " actionsballs=" + actionsBallsString + "\n",
+                    ("final solved=" + result.sat+ "timesteps=" + result.timeSteps + " time=" + result.milliseconds + " valid=" + valid + " actions=" + actionsString + " balls=" + ballsString + " actionsballs=" + actionsBallsString + "\n",
                         levelName + "," + result.sat + "," + result.timeSteps + "," + result.milliseconds + "," + valid + "," + r.actions.size + "," + r.actionsBall.size + "\n",
                         SnowmanSolverResult(result.sat, valid, result.milliseconds, Some(r)))
                 case None =>

@@ -63,7 +63,8 @@ protected case class EncoderReachability(override val level: Level, override val
             Implies(Not(otherBallUnderVar), teleportCharacter(stateActionBall, stateNext)),
             Implies(otherBallUnderVar, equalCharacterVariables(state, stateNext)),
             equalOtherBallsVariables(state, stateActionBall, stateNext, stateNextActionBall),
-            updateBallSizeClause)
+            updateBallSizeClause,
+            updateOccupancyVariables(state, stateNext))
 
         if (level.hasSnow) {
             constantEff.append(updateSnowVariables(state, stateActionBall, stateNext, shift))

@@ -98,7 +98,7 @@ object EncoderPDDL {
     }
 
     def encodeNumericFluents(toLevel: Level): String = {
-        throw new NotImplementedError() // TODO
+        throw new NotImplementedError() // TODO PDDL
     }
 
     private def encodeObjectsBalls(level: Level): String ={
