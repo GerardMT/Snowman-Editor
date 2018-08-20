@@ -135,7 +135,7 @@ class MutableLevel private (val width: Int, val height: Int){
             sortedMap.remove(f)
         })
 
-        Level(width, height, size, hasSnow, balls.size % Game.SNOWMAN_BALLS, someCharacterLocation.get, balls.toList, sortedMap, toString)
+        Level(width, height, size, hasSnow, balls.size / Game.SNOWMAN_BALLS, someCharacterLocation.get, balls.toList, sortedMap, toString)
     }
 
     def validate: (Boolean, Boolean) = {

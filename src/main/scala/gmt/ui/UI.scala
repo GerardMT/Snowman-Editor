@@ -394,7 +394,7 @@ object UI extends SimpleSwingApplication {
     }
 
     private def showAutorSolveUpdate(autoSolveUpdate: AutoSolveUpdate): Unit = {
-        print("Level: " + autoSolveUpdate.level)
+        print("Level: " + autoSolveUpdate.level + " ")
         autoSolveUpdate match {
             case AutoSolveUpdateProgress(_, plannerUpdate) =>
                 showSolverUpdate(plannerUpdate)

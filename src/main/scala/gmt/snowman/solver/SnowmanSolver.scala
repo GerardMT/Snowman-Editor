@@ -45,21 +45,25 @@ object SnowmanSolver {
         resultsWriter.write("name,solved,timesteps,time,valid,actions,actionsballs\n")
         resultsWriter.close()
 
-        for ((file, level) <- levelsDirectory.listFiles().map(f => (f, MutableLevel.load(Files.openTextFile(f)).toLevel))) {
-            val levelDirectory = outPath + file.getName
+        for ((file, level) <- levelsDirectory.listFiles().sorted.map(f => (f, MutableLevel.load(Files.openTextFile(f)).toLevel))) {
+            val levelName = file.getName
+            val levelDirectory = outPath + levelName
+
             new File(levelDirectory).mkdir()
             val levelLogFile = new File(levelDirectory + "/out.log")
             levelLogFile.createNewFile()
 
-            val updateFunction: PlannerUpdate[DecodingData] => Unit = f => {
+            val updateFunctionProgress: PlannerUpdate[DecodingData] => Unit = f => {
+                updateFunction(AutoSolveUpdateProgress(levelName, f))
+
                 val writer = new BufferedWriter(new FileWriter(levelLogFile, true))
                 writer.write("update timesteps=" + f.timeStepResult.timeSteps + " sat=" + f.timeStepResult.sat + " time=" + f.timeStepResult.milliseconds + " totaltime=" + f.totalMilliseconds + "\n")
                 writer.close()
             }
 
-            val result = new Planner(plannerOptions).solve(EncoderBase(encoderEnum, level, encoderOptions), SMTLib2, new Yices2Solver(solverPath), updateFunction)
+            val result = new Planner(plannerOptions).solve(EncoderBase(encoderEnum, level, encoderOptions), SMTLib2, new Yices2Solver(solverPath), updateFunctionProgress)
 
-            val (writeFinal, resultString) = result.result match {
+            val (writeFinal, resultString, snowmanResult) = result.result match {
                 case Some(r) =>
                     val (valid, _ ) = Validator.validate(level, r.actions)
 
@@ -68,13 +72,20 @@ object SnowmanSolver {
                     val actionsString = r.actions.map(f => f.toString).fold("")(union)
                     val actionsBallsString = r.actionsBall.map(f => f.toString).fold("")(union)
 
+                    updateFunction(AutoSolveUpdateFinal(levelName, SnowmanSolverResult(result.sat, valid, result.milliseconds, Some(r))))
+
                     ("final solved=" + result.sat+ "timesteps=" + result.timeSteps + " time=" + result.milliseconds + " valid=" + valid + " actions=" + actionsString + " actionsballs=" + actionsBallsString + "\n",
-                        file.getName + "," + result.sat + "," + result.timeSteps + " ," + result.milliseconds + "," + valid + "," + r.actions.size + "," + r.actionsBall.size + "\n")
+                        levelName + "," + result.sat + "," + result.timeSteps + "," + result.milliseconds + "," + valid + "," + r.actions.size + "," + r.actionsBall.size + "\n",
+                        SnowmanSolverResult(result.sat, valid, result.milliseconds, Some(r)))
                 case None =>
-                    SnowmanSolverResult(result.sat, valid = false, result.milliseconds, None)
+                    updateFunction(AutoSolveUpdateFinal(levelName, SnowmanSolverResult(result.sat, valid = false, result.milliseconds, None)))
+
                     ("final solved=" + result.sat+ "timesteps=" + result.timeSteps + " time=" + result.milliseconds + "\n",
-                        file.getName + "," + result.sat + "," + result.timeSteps + " ," + result.milliseconds + "\n")
+                        levelName + "," + result.sat + "," + result.timeSteps + "," + result.milliseconds + "\n",
+                        SnowmanSolverResult(result.sat, valid = false, result.milliseconds, None))
             }
+
+            updateFunction(AutoSolveUpdateFinal(levelName, snowmanResult))
 
             val resultsWriter = new BufferedWriter(new FileWriter(resultsFile, true))
             resultsWriter.write(resultString)

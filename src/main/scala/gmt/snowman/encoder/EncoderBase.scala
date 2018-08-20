@@ -6,7 +6,6 @@ import gmt.planner.operation._
 import gmt.planner.solver.Assignment
 import gmt.planner.solver.value.{Value, ValueBoolean, ValueInteger}
 import gmt.snowman.action.{BallAction, SnowmanAction}
-import gmt.snowman.encoder.EncoderBase.EncoderEnum
 import gmt.snowman.encoder.EncoderBase.EncoderOptions
 import gmt.snowman.encoder.StateBase.CoordinateVariables
 import gmt.snowman.game.Game
@@ -43,7 +42,7 @@ object EncoderBase {
 abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions: EncoderOptions) extends Encoder[DecodingData, EncodingData] {
 
     override def startTimeStep(): Int = {
-        level.balls.combinations(2).toList.map(f => f(0).c.manhattanDistance(f(1).c)).sorted.drop(level.balls.length - level.snowmans).sum
+        level.balls.combinations(2).toList.map(f => f.head.c.manhattanDistance(f(1).c)).sorted.take(level.snowmans * 2).sum
     }
 
     override def encode(timeSteps: Int): EncoderResult[EncodingData] = {
