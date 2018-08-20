@@ -21,4 +21,6 @@ class TimeStepSolver[A, B](encoder: Encoder[A, B], translator: Translator, solve
             TimeStepResult(sat = true, timeSteps, Some(encoder.decode(solverResult.assignments, encodingResult.encodingData)), time )
         }
     }
+
+    def terminate(): Unit = solver.terminate()
 }

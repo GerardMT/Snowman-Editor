@@ -17,10 +17,14 @@ import scala.collection.mutable.ListBuffer
 import scala.collection.{immutable, mutable}
 
 object EncoderBase {
-    case class EncoderOptions(invariantBallSizes: Boolean)
+    case class EncoderOptions(invariantBallSizes: Boolean, invariantBallLocations: Boolean, invariantBallDistances: Boolean)
 }
 
 abstract class EncoderBase[A <: StateBase, B <: DecodingData](val level: Level, val encoderOptions: EncoderOptions) extends Encoder[B, EncodingData] {
+
+    override def startTimeStep(): Int = {
+        1 // TODO
+    }
 
     override def encode(timeSteps: Int): EncoderResult[EncodingData] = {
         val encoding = new Encoding

@@ -19,7 +19,7 @@ case class EncoderReachability(override val level: Level, override val encoderOp
 
     override protected def encodeReachability(state: StateReachability, encoding: Encoding): Unit = {
         encoding.add(Comment("Reachability"))
-        for (p <- level.map.values.filterNot(f => f.o == Wall)) {
+        for (p <- level.map.values.filter(f => Object.isPlayableArea(f.o))) {
             val or = Or((for (b <- level.balls.indices) yield {
                 And(operation.Equals(state.balls(b).x, IntegerConstant(p.c.x)), operation.Equals(state.balls(b).y, IntegerConstant(p.c.y)))
             }): _*)
@@ -27,7 +27,7 @@ case class EncoderReachability(override val level: Level, override val encoderOp
             encoding.add(ClauseDeclaration(Implies(or, operation.Not(state.reachabilityNodes.get(p.c).get))))
         }
 
-        for (l <- level.map.values.filter(f => f.o != Wall)) {
+        for (l <- level.map.values.filter(f => Object.isPlayableArea(f.o))) {
             val nodeStart = state.reachabilityNodes.get(l.c).get
 
             val ors = ListBuffer.empty[Clause]

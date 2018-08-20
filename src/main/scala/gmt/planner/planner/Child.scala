@@ -18,7 +18,7 @@ class Child[A, B](threadNumber: Int, threadMaster: Planner[A, B], timeStepSolver
 
             var solved = false
 
-            while (!solved && !_end && _timeStep.get() <= threadMaster.maxActions) {
+            while (!solved && !_end && _timeStep.get() <= threadMaster.plannerOptions.maxTimeSteps) {
                 val solverResult = timeStepSolver.solve(_timeStep.get)
                 solved = solverResult.sat
 
@@ -33,6 +33,7 @@ class Child[A, B](threadNumber: Int, threadMaster: Planner[A, B], timeStepSolver
             }
         } catch {
             case _: InterruptedException =>
+                timeStepSolver.terminate()
         }
     }
 

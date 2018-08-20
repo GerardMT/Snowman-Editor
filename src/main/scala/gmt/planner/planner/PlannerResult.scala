@@ -1,3 +1,3 @@
 package gmt.planner.planner
 
-case class PlannerResult[A](sat: Boolean, timeSteps: Int, result: Option[A], milliseconds: Long)
+case class PlannerResult[A](sat: Boolean, timeSteps: Int, milliseconds: Long, result: Option[A])
