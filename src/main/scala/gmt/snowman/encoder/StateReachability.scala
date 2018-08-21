@@ -5,6 +5,7 @@ import gmt.planner.operation
 import gmt.planner.operation.{BooleanVariable, IntegerVariable}
 import gmt.snowman.action.SnowmanAction
 import gmt.snowman.collection.SortedMap
+import gmt.snowman.encoder.EncoderBase.EncoderOptions
 import gmt.snowman.encoder.StateBase.Ball
 import gmt.snowman.game.`object`.Object
 import gmt.snowman.level.{Coordinate, Level}
@@ -38,6 +39,8 @@ class StateReachability private (override val timeStep: Int,
                                  override val balls: immutable.Seq[Ball],
                                  override val snow: SortedMap[Coordinate, BooleanVariable],
                                  override val occupancy: SortedMap[Coordinate, BooleanVariable],
+                                 override val mediumBalls: IntegerVariable,
+                                 override val largeBalls: IntegerVariable,
                                  val reachabilityNodes: SortedMap[Coordinate, BooleanVariable],
                                  val reachabilityWeights: SortedMap[Coordinate, IntegerVariable],
                                  val reachabilityEdges: SortedMap[(Coordinate, Coordinate), BooleanVariable],
@@ -45,17 +48,19 @@ class StateReachability private (override val timeStep: Int,
     extends StateBase(timeStep,
         balls,
         snow,
-        occupancy) with CharacterInterface with VariableAdder {
+        occupancy,
+        mediumBalls,
+        largeBalls) with CharacterInterface with VariableAdder {
 
     def this(stateBase: StateBase, reachabilityNodes: SortedMap[Coordinate, BooleanVariable], reachabilityWeights: SortedMap[Coordinate, IntegerVariable], reachabilityEdges: SortedMap[(Coordinate, Coordinate), BooleanVariable] ,characterModule: CharacterModule) {
-        this(stateBase.timeStep, stateBase.balls, stateBase.snow, stateBase.occupancy, reachabilityNodes, reachabilityWeights, reachabilityEdges, characterModule)
+        this(stateBase.timeStep, stateBase.balls, stateBase.snow, stateBase.occupancy, stateBase.mediumBalls, stateBase.largeBalls, reachabilityNodes, reachabilityWeights, reachabilityEdges, characterModule)
     }
 
     override val character: CharacterModule.Character = characterModule.character
 
-    override def addVariables(encoding: Encoding): Unit = {
-        super.addVariables(encoding)
-        characterModule.addVariables(encoding)
+    override def addVariables(encoding: Encoding, encoderOptions: EncoderOptions): Unit = {
+        super.addVariables(encoding, encoderOptions)
+        characterModule.addVariables(encoding, encoderOptions)
 
         for (v <- reachabilityNodes.values) {
             encoding.add(operation.VariableDeclaration(v))

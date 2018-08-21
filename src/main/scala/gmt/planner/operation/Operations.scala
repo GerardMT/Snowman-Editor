@@ -61,22 +61,23 @@ object Operations {
         String.format("%" + digits + "s", i.toBinaryString).replace(' ', '0')
     }
 
-    def addCounter(variables: Seq[BooleanVariable], k: Int, newVariablesPrefix: String, comparator: (Clause, Clause) => Clause): Seq[Expression] = {
-        val expressions = ListBuffer.empty[Expression]
+    def addCounter(variables: Seq[BooleanVariable], k: Int, newVariablesPrefix: String, comparator: (Clause, Clause) => Clause): (Clause, Seq[VariableDeclaration]) = {
+        val variableDeclarations = ListBuffer.empty[VariableDeclaration]
+        val ands = ListBuffer.empty[Clause]
 
         val newVariables = ListBuffer.empty[IntegerVariable]
 
         for ((v, i) <- variables.zipWithIndex) {
             val newV = IntegerVariable(newVariablesPrefix + i)
             newVariables.append(newV)
-            expressions.append(VariableDeclaration(newV))
-            expressions.append(ClauseDeclaration(Equivalent(v, Equals(newV, IntegerConstant(1)))))
-            expressions.append(ClauseDeclaration(Equivalent(Not(v), Equals(newV, IntegerConstant(0)))))
+            variableDeclarations.append(VariableDeclaration(newV))
+            ands.append(Equivalent(v, Equals(newV, IntegerConstant(1))))
+            ands.append(Equivalent(Not(v), Equals(newV, IntegerConstant(0))))
         }
 
-        expressions.append(ClauseDeclaration(comparator(newVariables.reduce(Add.ADD), IntegerConstant(k))))
+        ands.append(comparator(newVariables.reduce(Add.ADD), IntegerConstant(k)))
 
-        expressions
+        (And(ands: _*), variableDeclarations)
     }
 
     def simplify(c: Clause): Clause = {

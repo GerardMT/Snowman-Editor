@@ -1,9 +1,9 @@
 package gmt.snowman.encoder
 
 import gmt.planner.encoder.Encoding
-import gmt.planner.operation
-import gmt.planner.operation.{BooleanVariable, IntegerVariable}
+import gmt.planner.operation.{BooleanVariable, IntegerVariable, VariableDeclaration}
 import gmt.snowman.collection.SortedMap
+import gmt.snowman.encoder.EncoderBase.EncoderOptions
 import gmt.snowman.encoder.StateBase.Ball
 import gmt.snowman.game.`object`._
 import gmt.snowman.level.{Coordinate, Level}
@@ -33,26 +33,32 @@ object StateBase {
             balls.append(Ball(IntegerVariable("B" + i + "_X_S" + timeStep), IntegerVariable("B" + i + "Y_S" + timeStep), IntegerVariable("B" + i + "T_S" + timeStep)))
         }
 
-        new StateBase(timeStep, balls.toList, snow, occupancy)
+        new StateBase(timeStep, balls.toList, snow, occupancy, IntegerVariable("IMB_I" + timeStep), IntegerVariable("ILB_I" + timeStep))
     }
 }
 
 class StateBase (val timeStep: Int,
                  val balls: immutable.Seq[Ball],
                  val snow: SortedMap[Coordinate, BooleanVariable],
-                 val occupancy: SortedMap[Coordinate, BooleanVariable]) extends VariableAdder {
+                 val occupancy: SortedMap[Coordinate, BooleanVariable],
+                 val mediumBalls: IntegerVariable,
+                 val largeBalls: IntegerVariable) extends VariableAdder {
 
-    override def addVariables(encoding: Encoding): Unit = {
+    override def addVariables(encoding: Encoding, encoderOptions: EncoderOptions): Unit = {
         for (b <- balls) {
-            encoding.add(operation.VariableDeclaration(b.x))
-            encoding.add(operation.VariableDeclaration(b.y))
-            encoding.add(operation.VariableDeclaration(b.size))
+            encoding.add(VariableDeclaration(b.x))
+            encoding.add(VariableDeclaration(b.y))
+            encoding.add(VariableDeclaration(b.size))
         }
         for (v <- occupancy.values) {
-            encoding.add(operation.VariableDeclaration(v))
+            encoding.add(VariableDeclaration(v))
         }
         for (v <- snow.values) {
-            encoding.add(operation.VariableDeclaration(v))
+            encoding.add(VariableDeclaration(v))
+        }
+        if (encoderOptions.invariantBallSizes) {
+            encoding.add(VariableDeclaration(mediumBalls))
+            encoding.add(VariableDeclaration(largeBalls))
         }
     }
 }

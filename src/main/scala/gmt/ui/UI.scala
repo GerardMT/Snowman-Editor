@@ -24,7 +24,7 @@ object UI extends SimpleSwingApplication {
 
     private val CURRENT_DIRECTORY = System.getProperty("user.dir")
 
-    val BACKGROUND_COLOR: Color = new Color(167, 191, 150)
+    val BACKGROUND_COLOR: Color = new Color(250, 250, 250)
 
     private val settingsFile = new File("./snowman_editor.config")
 

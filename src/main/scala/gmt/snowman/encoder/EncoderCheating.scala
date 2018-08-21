@@ -16,7 +16,10 @@ protected case class EncoderCheating(override val level: Level, override val enc
     override protected def encodeCharacterState0(state0: StateCheating, encoding: Encoding): Unit = {}
 
     override def createBallAction(actionName: String, state: StateCheating, stateActionBall: StateBase.Ball, stateNext: StateCheating, stateNextActionBall: StateBase.Ball, shift: Coordinate): (Clause, Clause, Seq[Expression]) = {
-        val (updateBallSizeClause, expressions) = updateBallSize(actionName, state, stateActionBall, stateNextActionBall, shift)
+        val expressions = ListBuffer.empty[Expression]
+
+        val (updateBallSizeClause, updateBallSizeExpressions) = updateBallSize(actionName, state, stateActionBall, stateNextActionBall, shift)
+        expressions.appendAll(updateBallSizeExpressions)
 
         val pre = And(noWallInFront(state, stateActionBall, shift),
             noOtherBallsOver(state, stateActionBall),
@@ -31,6 +34,14 @@ protected case class EncoderCheating(override val level: Level, override val enc
 
         if (level.hasSnow) {
             constantEff.append(updateSnowVariables(state, stateActionBall, stateNext, shift))
+        }
+
+        if (encoderOptions.invariantBallSizes && level.hasSnow) {
+            constantEff.append(invariantBallSizes(state, stateActionBall, stateNext, stateNextActionBall))
+        }
+
+        if (encoderOptions.invariantBallLocations) {
+            constantEff.append(invariantBallPositions(stateNext, stateNextActionBall))
         }
 
         val eff = And(constantEff.toList: _*)

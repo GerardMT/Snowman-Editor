@@ -7,6 +7,7 @@ import gmt.planner.solver.value.ValueBoolean
 import gmt.snowman.action.{BallAction, SnowmanAction}
 import gmt.snowman.encoder.EncodingData.ActionData
 import gmt.snowman.level.{Coordinate, Level}
+import gmt.snowman.game.`object`.Object
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -21,9 +22,14 @@ protected case class EncoderBasic(override val level: Level, override val encode
     }
 
     override def createBallAction(actionName: String, state: StateBasic, stateActionBall: StateBase.Ball, stateNext: StateBasic, stateNextActionBall: StateBase.Ball, shift: Coordinate): (Clause, Clause, Seq[Expression]) = {
+        val expressions = ListBuffer.empty[Expression]
+
         val otherBallUnderVar = BooleanVariable(actionName + "_OBU")
+        expressions.append(VariableDeclaration(otherBallUnderVar))
+        expressions.append(ClauseDeclaration(Equivalent(otherBallUnderVar, otherBallUnder(state, stateActionBall))))
 
         val (updateBallSizeClause, updateBallSizeExpressions) = updateBallSize(actionName, state, stateActionBall, stateNextActionBall, shift)
+        expressions.appendAll(updateBallSizeExpressions)
 
         val pre = And(characterNextToBall(state, stateActionBall, shift),
             noWallInFront(state, stateActionBall, shift),
@@ -42,11 +48,15 @@ protected case class EncoderBasic(override val level: Level, override val encode
             constantEff.append(updateSnowVariables(state, stateActionBall, stateNext, shift))
         }
 
-        val eff = And(constantEff.toList: _*)
+        if (encoderOptions.invariantBallSizes && level.hasSnow) {
+            constantEff.append(invariantBallSizes(state, stateActionBall, stateNext, stateNextActionBall))
+        }
 
-        val expressions = List(VariableDeclaration(otherBallUnderVar),
-            ClauseDeclaration(Equivalent(otherBallUnderVar, otherBallUnder(state, stateActionBall)))) ++
-            updateBallSizeExpressions
+        if (encoderOptions.invariantBallLocations) {
+            constantEff.append(invariantBallPositions(stateNext, stateNextActionBall))
+        }
+
+        val eff = And(constantEff.toList: _*)
 
         (pre, eff, expressions)
     }
@@ -124,7 +134,7 @@ protected case class EncoderBasic(override val level: Level, override val encode
     }
 
     protected def equalOccupancyVariables(state: StateBase, stateNext: StateBase): Clause = {
-        And((for ((o, oNext) <- flattenTuple(level.map.keys.map(f => (f, state.occupancy.get(f)))).map(f => (f._2, stateNext.occupancy.get(f._1).get))) yield {
+        And((for ((o, oNext) <- flattenTuple(level.map.values.filter(f => Object.isPlayableArea(f.o)).map(f => (f.c, state.occupancy.get(f.c)))).map(f => (f._2, stateNext.occupancy.get(f._1).get))) yield {
             Equivalent(o, oNext)
         }).toList: _*)
     }

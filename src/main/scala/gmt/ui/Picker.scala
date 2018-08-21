@@ -1,6 +1,6 @@
 package gmt.ui
 
-import gmt.snowman.game.`object`.Object
+import gmt.snowman.game.`object`.{Grass, Object}
 
 import scala.swing.Swing._
 import scala.swing.event.MousePressed
@@ -73,6 +73,7 @@ class Picker(resourceManager: ResourceManager) extends BoxPanel(Orientation.Vert
 
         override def paintComponent(g: Graphics2D): Unit = {
             super.paintComponent(g)
+            g.drawImage(resourceManager.getResource(Grass), 0, 0, size.width, size.height,null)
             g.drawImage(resourceManager.getResource(o), 0, 0, size.width, size.height,null)
 
             if (selected) {
