@@ -67,26 +67,30 @@ object Report {
             occupiedLines.reverse.foreach(f => sb.append(f.mkString + "\n"))
             sb.append("\n")
 
-            sb.append("Reachable\n")
-            val reachableLines = ArrayBuffer.fill(level.height, level.width)(CHAR_UNDEFINED)
+            s match {
+                case sR: StateReachability =>
+                    sb.append("Reachable\n")
+                    val reachableLines = ArrayBuffer.fill(level.height, level.width)(CHAR_UNDEFINED)
 
-            /*for (p <- level.map.values) {
-                s.reachableNodes.get(p.c) match {
-                    case Some(r) =>
-                        val c = assignmentsMap.get(r.name) match {
-                            case Some(Assignment(_, ValueBoolean(v))) =>
-                                if (v) '1' else '0'
+                    for (p <- level.map.values) {
+                        sR.reachabilityNodes.get(p.c) match {
+                            case Some(r) =>
+                                val c = assignmentsMap.get(r.name) match {
+                                    case Some(Assignment(_, ValueBoolean(v))) =>
+                                        if (v) '1' else '0'
+                                    case None =>
+                                        CHAR_UNKNOWN
+                                }
+                                reachableLines(p.c.y)(p.c.x) = c
                             case None =>
                                 CHAR_UNKNOWN
                         }
-                        reachableLines(p.c.y)(p.c.x) = c
-                    case None =>
-                        CHAR_UNKNOWN
-                }
-            }*/
+                    }
 
-            reachableLines.reverse.foreach(f => sb.append(f.mkString + "\n"))
-            sb.append("\n")
+                    reachableLines.reverse.foreach(f => sb.append(f.mkString + "\n"))
+                    sb.append("\n")
+                case _ =>
+            }
         }
 
         sb.toString()

@@ -92,6 +92,8 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
             encoding.add(ClauseDeclaration(Equals(state0.largeBalls, IntegerConstant(level.balls.count(f => f.o == LargeBall)))))
         }
 
+        encodeReachability(state0, encoding)
+
         encoding.add(Comment("Middle States"))
 
         var state = state0
@@ -179,6 +181,11 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
 
     protected def createBallAction(actionName: String, state: A, stateActionBall: StateBase.Ball, stateNext: A, stateNextActionBall: StateBase.Ball, shift: Coordinate): (Clause, Clause, Seq[Expression])
 
+    protected def encodeCharacterState[T <: CharacterInterface](state: T, encoding: Encoding): Unit = {
+        encoding.add(ClauseDeclaration(Equals(state.character.x, IntegerConstant(level.character.c.x))))
+        encoding.add(ClauseDeclaration(Equals(state.character.y, IntegerConstant(level.character.c.y))))
+    }
+
     protected def noWallInFront(state: StateBase, stateActionBall: StateBase.Ball, shift: Coordinate): Clause = { // TODO OPTIMIZATION Possible optimization. Can be done with coordinates
         if (level.map.values.count(f => Object.isPlayableArea(f.o)) < level.map.values.count(f => !Object.isPlayableArea(f.o))) {
             Not(And((for (l <- level.map.keys.flatMap(f => level.map.get(f + shift)).filter(f => Object.isPlayableArea(f.o))) yield {
@@ -253,9 +260,9 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
             expressions.append(VariableDeclaration(theresSnowVar))
             expressions.append(ClauseDeclaration(Equivalent(theresSnow, theresSnowVar)))
 
-            val clause = And(Implies(And(theresSnowVar, operation.Equals(stateActionBall.size, IntegerConstant(1))), operation.Equals(stateNextActionBall.size, IntegerConstant(2))),
-                Implies(And(theresSnowVar, operation.Equals(stateActionBall.size, IntegerConstant(2))), operation.Equals(stateNextActionBall.size, IntegerConstant(4))),
-                Implies(Or(Not(theresSnowVar), operation.Equals(stateActionBall.size, IntegerConstant(4))), operation.Equals(stateNextActionBall.size, stateActionBall.size)))
+            val clause = And(Implies(And(theresSnowVar, operation.Equals(stateActionBall.size, IntegerConstant(EncoderBase.SMALL_BALL))), operation.Equals(stateNextActionBall.size, IntegerConstant(EncoderBase.MEDIUM_BALL))),
+                Implies(And(theresSnowVar, operation.Equals(stateActionBall.size, IntegerConstant(EncoderBase.MEDIUM_BALL))), operation.Equals(stateNextActionBall.size, IntegerConstant(EncoderBase.LARGE_BALL))),
+                Implies(Or(Not(theresSnowVar), operation.Equals(stateActionBall.size, IntegerConstant(EncoderBase.LARGE_BALL))), operation.Equals(stateNextActionBall.size, IntegerConstant(EncoderBase.LARGE_BALL))))
 
             (clause, expressions)
         } else {
@@ -354,7 +361,6 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
 
     protected def decodeTeleport(assignments: Seq[Assignment], encodingData: EncodingData): DecodingData = {
         val assignmentsMap = assignments.map(f => (f.name, f.value)).toMap
-
 
         val actions = ListBuffer.empty[SnowmanAction]
         val actionsBalls = ListBuffer.empty[BallAction]

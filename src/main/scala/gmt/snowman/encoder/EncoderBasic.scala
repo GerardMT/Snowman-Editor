@@ -16,10 +16,7 @@ protected case class EncoderBasic(override val level: Level, override val encode
 
     override def createState(level: Level, timeStep: Int): StateBasic = StateBasic(level, timeStep)
 
-    override protected def encodeCharacterState0(state0: StateBasic, encoding: Encoding): Unit = {
-        encoding.add(ClauseDeclaration(Equals(state0.character.x, IntegerConstant(level.character.c.x))))
-        encoding.add(ClauseDeclaration(Equals(state0.character.y, IntegerConstant(level.character.c.y))))
-    }
+    override protected def encodeCharacterState0(state0: StateBasic, encoding: Encoding): Unit = encodeCharacterState(state0, encoding)
 
     override def createBallAction(actionName: String, state: StateBasic, stateActionBall: StateBase.Ball, stateNext: StateBasic, stateNextActionBall: StateBase.Ball, shift: Coordinate): (Clause, Clause, Seq[Expression]) = {
         val expressions = ListBuffer.empty[Expression]

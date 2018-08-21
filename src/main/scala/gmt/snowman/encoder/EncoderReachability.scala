@@ -15,7 +15,7 @@ protected case class EncoderReachability(override val level: Level, override val
 
     override def createState(level: Level, timeStep: Int): StateReachability = StateReachability(level, timeStep)
 
-    override protected def encodeCharacterState0(state0: StateReachability, encoding: Encoding): Unit = {}
+    override protected def encodeCharacterState0(state0: StateReachability, encoding: Encoding): Unit = encodeCharacterState(state0, encoding)
 
     override protected def encodeReachability(state: StateReachability, encoding: Encoding): Unit = {
         encoding.add(Comment("Reachability"))
@@ -91,7 +91,10 @@ protected case class EncoderReachability(override val level: Level, override val
 
     override protected def encodeCharacterAction(actionName: String, state: StateReachability, stateNext: StateReachability, action: SnowmanAction, encoding: Encoding, actionVariables: mutable.Buffer[BooleanVariable], actionsState: mutable.Buffer[EncodingData.ActionData]): Unit = {}
 
-    override def decode(assignments: Seq[Assignment], encodingData: EncodingData): DecodingData = decodeTeleport(assignments, encodingData)
+    override def decode(assignments: Seq[Assignment], encodingData: EncodingData): DecodingData = {
+        println(Report.generateReport(level, encodingData.state0 :: encodingData.statesData.map(f => f.stateNext).toList, assignments)) // TODO Remove println
+        decodeTeleport(assignments, encodingData)
+    }
 
     private def reachability(state: StateReachability, stateActionBall: StateBase.Ball, shift: Coordinate): Clause = {
         Or((for ((c, rn) <- flattenTuple(level.map.keys.map(f => (f, state.reachabilityNodes.get(f - shift))))) yield {
