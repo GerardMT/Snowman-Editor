@@ -4,6 +4,7 @@ import java.awt.event.{ActionEvent, ActionListener}
 import java.awt.{GraphicsEnvironment, GridBagConstraints, GridBagLayout, Insets, Rectangle}
 import java.io.{File, FileNotFoundException}
 
+import gmt.mod.Game
 import gmt.planner.planner.Planner.{PlannerOptions, PlannerUpdate}
 import gmt.snowman.encoder.DecodingData
 import gmt.snowman.encoder.EncoderBase.{EncoderEnum, EncoderOptions}

@@ -80,7 +80,7 @@ protected case class EncoderReachability(override val level: Level, override val
         }
 
         if (encoderOptions.invariantBallLocations) {
-            constantEff.append(invariantBallPositions(stateNext, stateNextActionBall))
+            constantEff.append(invariantBallLocatoins(stateNext, stateNextActionBall))
         }
 
 

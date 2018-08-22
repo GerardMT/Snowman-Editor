@@ -50,7 +50,7 @@ protected case class EncoderBasic(override val level: Level, override val encode
         }
 
         if (encoderOptions.invariantBallLocations) {
-            constantEff.append(invariantBallPositions(stateNext, stateNextActionBall))
+            constantEff.append(invariantBallLocatoins(stateNext, stateNextActionBall))
         }
 
         val eff = And(constantEff.toList: _*)

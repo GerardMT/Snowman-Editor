@@ -41,7 +41,7 @@ protected case class EncoderCheating(override val level: Level, override val enc
         }
 
         if (encoderOptions.invariantBallLocations) {
-            constantEff.append(invariantBallPositions(stateNext, stateNextActionBall))
+            constantEff.append(invariantBallLocatoins(stateNext, stateNextActionBall))
         }
 
         val eff = And(constantEff.toList: _*)

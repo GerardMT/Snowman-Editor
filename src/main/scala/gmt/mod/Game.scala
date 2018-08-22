@@ -1,20 +1,14 @@
-package gmt.ui
+package gmt.mod
 
-import java.io._
+import java.io.{BufferedReader, File, FileReader, FileWriter}
 import java.math.BigInteger
 import java.nio.file.Files
 import java.security.MessageDigest
 
 import gmt.snowman.level.Level
-import gmt.ui.Game.RestoreException
+import gmt.ui.Settings
 
 import scala.collection.mutable.ListBuffer
-import scala.sys.process._
-
-object Game {
-
-    case class RestoreException(message: String) extends Exception(message)
-}
 
 class Game(settings: Settings) {
 

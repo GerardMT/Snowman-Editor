@@ -289,7 +289,7 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
             Smaller(stateNext.largeBalls, IntegerConstant(2 * level.snowmans)))
     }
 
-    protected def invariantBallPositions(stateNext: StateBase, stateNextActionBall: StateBase.Ball): Clause = {
+    protected def invariantBallLocatoins(stateNext: StateBase, stateNextActionBall: StateBase.Ball): Clause = {
         val ands = ListBuffer.empty[Clause]
 
         for (l <- level.map.values.filter(f => Object.isPlayableArea(f.o))) {
