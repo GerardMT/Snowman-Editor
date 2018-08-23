@@ -262,7 +262,7 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
 
             val clause = And(Implies(And(theresSnowVar, operation.Equals(stateActionBall.size, IntegerConstant(EncoderBase.SMALL_BALL))), operation.Equals(stateNextActionBall.size, IntegerConstant(EncoderBase.MEDIUM_BALL))),
                 Implies(And(theresSnowVar, operation.Equals(stateActionBall.size, IntegerConstant(EncoderBase.MEDIUM_BALL))), operation.Equals(stateNextActionBall.size, IntegerConstant(EncoderBase.LARGE_BALL))),
-                Implies(Or(Not(theresSnowVar), operation.Equals(stateActionBall.size, IntegerConstant(EncoderBase.LARGE_BALL))), operation.Equals(stateNextActionBall.size, IntegerConstant(EncoderBase.LARGE_BALL))))
+                Implies(Or(Not(theresSnowVar), operation.Equals(stateActionBall.size, IntegerConstant(EncoderBase.LARGE_BALL))), operation.Equals(stateNextActionBall.size, stateActionBall.size)))
 
             (clause, expressions)
         } else {
