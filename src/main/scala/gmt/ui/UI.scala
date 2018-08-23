@@ -13,7 +13,7 @@ import gmt.snowman.pddl.EncoderPDDL
 import gmt.snowman.solver.SnowmanSolver.{AutoSolveUpdate, AutoSolveUpdateFinal, AutoSolveUpdateProgress, GenerateOptions}
 import gmt.snowman.solver.{SnowmanSolver, SnowmanSolverResult}
 import gmt.snowman.util.Files
-import gmt.ui.Game.RestoreException
+import gmt.mod.Game.RestoreException
 import gmt.ui.Settings.SettingsParseException
 import javax.swing._
 
