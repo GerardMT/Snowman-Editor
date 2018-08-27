@@ -2,6 +2,7 @@ package gmt.planner.translator
 
 import gmt.planner.encoder.Encoding
 import gmt.planner.operation._
+import gmt.snowman.transaltor.Translator
 
 
 object SMTLib2 extends Translator {

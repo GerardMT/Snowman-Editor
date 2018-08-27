@@ -1,8 +1,8 @@
 package gmt.snowman.pddl
 
 import gmt.snowman.action.SnowmanAction
-import gmt.snowman.level.Level
 import gmt.snowman.game.`object`._
+import gmt.snowman.level.Level
 
 object EncoderPDDL {
 
@@ -97,9 +97,9 @@ object EncoderPDDL {
         encoding
     }
 
-    def encodeNumericFluents(toLevel: Level): String = {
-        throw new NotImplementedError() // TODO PDDL
-    }
+    //def encodeNumericFluents(toLevel: Level): String = {
+    //    throw new NotImplementedError() // TODO PDDL
+    //}
 
     private def encodeObjectsBalls(level: Level): String ={
         var encoding = ""

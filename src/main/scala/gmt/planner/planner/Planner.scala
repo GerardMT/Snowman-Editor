@@ -4,7 +4,7 @@ import gmt.planner.encoder.Encoder
 import gmt.planner.planner.Planner.{PlannerOptions, PlannerUpdate}
 import gmt.planner.solver.Solver
 import gmt.planner.timestep.{TimeStepResult, TimeStepSolver}
-import gmt.planner.translator.Translator
+import gmt.snowman.transaltor.Translator
 
 import scala.collection.mutable.ListBuffer
 

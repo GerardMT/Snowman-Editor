@@ -1,14 +1,14 @@
-package gmt.snowman.solver
+package gmt.snowman.planner
 
 import java.io.{BufferedWriter, File, FileWriter}
 
 import gmt.planner.planner.Planner
 import gmt.planner.planner.Planner.{PlannerOptions, PlannerUpdate}
-import gmt.planner.solver.Yices2Solver
 import gmt.planner.translator.SMTLib2
 import gmt.snowman.encoder.EncoderBase.{EncoderEnum, EncoderOptions}
 import gmt.snowman.encoder._
 import gmt.snowman.level.{Level, MutableLevel}
+import gmt.snowman.solver.Yices2Solver
 import gmt.snowman.util.Files
 import gmt.snowman.validator.Validator
 

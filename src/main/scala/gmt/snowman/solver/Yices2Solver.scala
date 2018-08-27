@@ -1,10 +1,11 @@
-package gmt.planner.solver
+package gmt.snowman.solver
 
 import java.io._
 import java.nio.charset.StandardCharsets
 import java.security.InvalidParameterException
 
 import gmt.planner.solver.value.{ValueBoolean, ValueInteger}
+import gmt.planner.solver.{Assignment, Solver, SolverResult}
 
 import scala.collection.mutable.ListBuffer
 import scala.sys.process.{Process, _}

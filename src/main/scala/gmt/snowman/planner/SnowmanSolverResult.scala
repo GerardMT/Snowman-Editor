@@ -1,4 +1,4 @@
-package gmt.snowman.solver
+package gmt.snowman.planner
 
 import gmt.snowman.encoder.DecodingData
 

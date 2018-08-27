@@ -5,15 +5,15 @@ import java.awt.{GraphicsEnvironment, GridBagConstraints, GridBagLayout, Insets,
 import java.io.{File, FileNotFoundException}
 
 import gmt.mod.Game
+import gmt.mod.Game.RestoreException
 import gmt.planner.planner.Planner.{PlannerOptions, PlannerUpdate}
 import gmt.snowman.encoder.DecodingData
 import gmt.snowman.encoder.EncoderBase.{EncoderEnum, EncoderOptions}
 import gmt.snowman.level.MutableLevel
 import gmt.snowman.pddl.EncoderPDDL
-import gmt.snowman.solver.SnowmanSolver.{AutoSolveUpdate, AutoSolveUpdateFinal, AutoSolveUpdateProgress, GenerateOptions}
-import gmt.snowman.solver.{SnowmanSolver, SnowmanSolverResult}
+import gmt.snowman.planner.SnowmanSolver.{AutoSolveUpdate, AutoSolveUpdateFinal, AutoSolveUpdateProgress, GenerateOptions}
+import gmt.snowman.planner.{SnowmanSolver, SnowmanSolverResult}
 import gmt.snowman.util.Files
-import gmt.mod.Game.RestoreException
 import gmt.ui.Settings.SettingsParseException
 import javax.swing._
 
@@ -287,11 +287,11 @@ object UI extends SimpleSwingApplication {
                         savePickAndTextFile(EncoderPDDL.encodeObjectFluents(uiLevel.mutableLevel.toLevel), CURRENT_DIRECTORY + "/domain_object-fluents.pddl")
                     }
                 })
-                contents += new MenuItem(Action("Generate PDDL numeric-fluents") {
-                    if (validateLevelShowDialog(uiLevel.mutableLevel)) {
-                        savePickAndTextFile(EncoderPDDL.encodeNumericFluents(uiLevel.mutableLevel.toLevel), CURRENT_DIRECTORY + "/domain_numeric-fluents.pddl")
-                    }
-                })
+                //contents += new MenuItem(Action("Generate PDDL numeric-fluents") {
+                //    if (validateLevelShowDialog(uiLevel.mutableLevel)) {
+                //        savePickAndTextFile(EncoderPDDL.encodeNumericFluents(uiLevel.mutableLevel.toLevel), CURRENT_DIRECTORY + "/domain_numeric-fluents.pddl")
+                //    }
+                //})
             }
             contents += new Menu("Editor") {
                 val coordinatesCheckBox = new JCheckBoxMenuItem("Coordinates")
@@ -510,7 +510,7 @@ object UI extends SimpleSwingApplication {
             panel.setBorder(BorderFactory.createTitledBorder("Invariants"))
             panel.add(ballSizesCheckBox)
             panel.add(ballPositionsCheckBox)
-            panel.add(ballsDistancesCheckBox)
+            //panel.add(ballsDistancesCheckBox) // TODO Snow when implemented
 
             panel
         }

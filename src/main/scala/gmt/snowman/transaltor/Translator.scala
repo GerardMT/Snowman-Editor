@@ -1,4 +1,4 @@
-package gmt.planner.translator
+package gmt.snowman.transaltor
 
 import gmt.planner.encoder.Encoding
 

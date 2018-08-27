@@ -2,11 +2,11 @@ package gmt.snowman.level
 
 import gmt.snowman.collection.SortedMap
 import gmt.snowman.game.Game
-import gmt.snowman.level.MutableLevel.Info
 import gmt.snowman.game.`object`._
+import gmt.snowman.level.MutableLevel.Info
 
-import scala.collection.{immutable, mutable}
 import scala.collection.mutable.ListBuffer
+import scala.collection.{immutable, mutable}
 
 object MutableLevel {
 
@@ -14,7 +14,7 @@ object MutableLevel {
 
     case class Info(size: Int, width: Int, height: Int, playableArea: Int, balls: Int, objects: immutable.Map[Object, Int])
 
-    def default(width: Int, height: Int): MutableLevel = {
+    def default(width: Int, height: Int): MutableLevel = { // TODO 0x0 must be invalid
         val mutableLevel = new MutableLevel(width, height)
 
         for (x <- 0 until width) {
