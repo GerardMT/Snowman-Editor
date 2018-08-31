@@ -51,8 +51,8 @@ object Report {
             snowLines.reverse.foreach(f => sb.append(f.mkString + "\n"))
             sb.append("\n")
 
-            sb.append("Occupied\n")
-            val occupiedLines = ArrayBuffer.fill(level.height, level.width)(CHAR_UNDEFINED)
+            sb.append("Occupancy\n")
+            val occupancyLines = ArrayBuffer.fill(level.height, level.width)(CHAR_UNDEFINED)
 
             for (p <- level.map.values) {
                 val c = assignmentsMap.get(s.occupancy.get(p.c).get.name) match {
@@ -61,10 +61,10 @@ object Report {
                     case None =>
                         CHAR_UNKNOWN
                 }
-                occupiedLines(p.c.y)(p.c.x) = c
+                occupancyLines(p.c.y)(p.c.x) = c
             }
 
-            occupiedLines.reverse.foreach(f => sb.append(f.mkString + "\n"))
+            occupancyLines.reverse.foreach(f => sb.append(f.mkString + "\n"))
             sb.append("\n")
 
             s match {

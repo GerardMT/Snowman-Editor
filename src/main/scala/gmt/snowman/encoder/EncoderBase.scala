@@ -45,7 +45,7 @@ object EncoderBase { // TODO Add rule: Can not unmount a snowman once done
 abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions: EncoderOptions) extends Encoder[DecodingData, EncodingData] {
 
     override def startTimeStep(): Int = {
-        level.balls.combinations(2).toList.map(f => f.head.c.manhattanDistance(f(1).c)).sorted.take(level.snowmans * 2).sum
+        level.balls.combinations(2).toList.map(f => f.head.c.manhattanDistance(f(1).c)).min
     }
 
     override def encode(timeSteps: Int): EncoderResult[EncodingData] = {
@@ -186,16 +186,10 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
         encoding.add(ClauseDeclaration(Equals(state.character.y, IntegerConstant(level.character.c.y))))
     }
 
-    protected def noWallInFront(state: StateBase, stateActionBall: StateBase.Ball, shift: Coordinate): Clause = { // TODO OPTIMIZATION Possible optimization. Can be done with coordinates
-        if (level.map.values.count(f => Object.isPlayableArea(f.o)) < level.map.values.count(f => !Object.isPlayableArea(f.o))) {
-            Not(And((for (l <- level.map.keys.flatMap(f => level.map.get(f + shift)).filter(f => Object.isPlayableArea(f.o))) yield {
-                Or(Not(Equals(stateActionBall.x, IntegerConstant(l.c.x))), Not(Equals(stateActionBall.y, IntegerConstant(l.c.y))))
-            }).toSeq : _*))
-        } else {
-            And((for (l <- level.map.keys.flatMap(f => level.map.get(f + shift)).filter(f => !Object.isPlayableArea(f.o))) yield {
-                Or(Not(Equals(stateActionBall.x, IntegerConstant(l.c.x))), Not(Equals(stateActionBall.y, IntegerConstant(l.c.y))))
-            }).toSeq : _*)
-        }
+    protected def noWallInFront(state: StateBase, stateActionBall: StateBase.Ball, shift: Coordinate): Clause = { // TODO OPTIMIZATION Possible optimization. Can be done with coordinates. OPTIMIZATION Check for walls or snow
+        Or((for (c <- flattenTuple(level.map.values.filter(f => Object.isPlayableArea(f.o)).map(f => (f.c, level.map.get(f.c + shift)))).filter(f => Object.isPlayableArea(f._2.o)).map(f => f._1)) yield {
+            And(Equals(stateActionBall.x, IntegerConstant(c.x)), Equals(stateActionBall.y, IntegerConstant(c.y)))
+        }).toSeq : _*)
     }
 
     protected def noOtherBallsOver(state: StateBase, stateActionBall: StateBase.Ball): Clause = {
@@ -386,7 +380,7 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
             println("Path Start: " +  characterLocation)
             println("Path End: " + preActionCoordinate)
 
-            if (preActionCoordinate - characterLocation != actionData.action.shift) {
+            if (preActionCoordinate - characterLocation != Coordinate(0, 0)) {
                 val allNodes = () => level.map.keys.toList
                 val neighboursRelaxed  = (c: Coordinate) => SnowmanAction.ACTIONS.map(f => c + f.shift).filter(f => {val l = level.map.get(f); l.isDefined && Object.isPlayableArea(l.get.o)})
                 val neighbours = (c: Coordinate) => neighboursRelaxed(c).filter(f => !assignmentsMap(state.occupancy.get(f).get.name).asInstanceOf[ValueBoolean].v)

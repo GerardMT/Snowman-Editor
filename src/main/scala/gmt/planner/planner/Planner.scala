@@ -4,7 +4,7 @@ import gmt.planner.encoder.Encoder
 import gmt.planner.planner.Planner.{PlannerOptions, PlannerUpdate}
 import gmt.planner.solver.Solver
 import gmt.planner.timestep.{TimeStepResult, TimeStepSolver}
-import gmt.snowman.transaltor.Translator
+import gmt.planner.translator.Translator
 
 import scala.collection.mutable.ListBuffer
 
@@ -49,7 +49,7 @@ class Planner[A, B](val plannerOptions: PlannerOptions) {
             case Some(r) =>
                 PlannerResult[A](r.sat, r.timeSteps, time, r.result)
             case None =>
-                PlannerResult[A](sat = false, timeStep, time, None)
+                PlannerResult[A](sat = false, timeStep - 2, time, None) // TODO BUG Multithread is not -2
         }
     }
 

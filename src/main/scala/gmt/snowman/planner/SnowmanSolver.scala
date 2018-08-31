@@ -4,11 +4,11 @@ import java.io.{BufferedWriter, File, FileWriter}
 
 import gmt.planner.planner.Planner
 import gmt.planner.planner.Planner.{PlannerOptions, PlannerUpdate}
-import gmt.planner.translator.SMTLib2
 import gmt.snowman.encoder.EncoderBase.{EncoderEnum, EncoderOptions}
 import gmt.snowman.encoder._
 import gmt.snowman.level.{Level, MutableLevel}
 import gmt.snowman.solver.Yices2Solver
+import gmt.snowman.translator.SMTLib2
 import gmt.snowman.util.Files
 import gmt.snowman.validator.Validator
 
@@ -39,7 +39,7 @@ object SnowmanSolver {
     def autoSolveSMTYices2(solverPath: String, levelsPath: String, outPath: String, encoderEnum: EncoderEnum.Value, encoderOptions: EncoderOptions, plannerOptions: PlannerOptions, updateFunction: AutoSolveUpdate => Unit): Unit = {
         val levelsDirectory = new File(levelsPath)
 
-        val resultsFile = new File(outPath + "results.cvs")
+        val resultsFile = new File(outPath + "results.csv")
         resultsFile.createNewFile()
 
         val resultsWriter = new BufferedWriter(new FileWriter(resultsFile, true))
@@ -70,19 +70,19 @@ object SnowmanSolver {
 
                     val union: (String, String) => String = (s1, s2) => s1 + "|" + s2
 
-                    val actionsString = r.actions.map(f => f.toString).fold("")(union)
-                    val actionsBallsString = r.actionsBall.map(f => f.toString).fold("")(union)
-                    val ballsString = r.balls.map(f => f.toString).fold("")(union)
+                    val actionsString = r.actions.map(f => f.toString).reduce(union)
+                    val actionsBallsString = r.actionsBall.map(f => f.toString).reduce(union)
+                    val ballsString = r.balls.map(f => f.toString).reduce(union)
 
                     updateFunction(AutoSolveUpdateFinal(levelName, SnowmanSolverResult(result.sat, valid, result.milliseconds, Some(r))))
 
-                    ("final solved=" + result.sat+ "timesteps=" + result.timeSteps + " time=" + result.milliseconds + " valid=" + valid + " actions=" + actionsString + " balls=" + ballsString + " actionsballs=" + actionsBallsString + "\n",
+                    ("final solved=" + result.sat+ " timesteps=" + result.timeSteps + " time=" + result.milliseconds + " valid=" + valid + " actions=" + actionsString + " balls=" + ballsString + " actionsballs=" + actionsBallsString + "\n",
                         levelName + "," + result.sat + "," + result.timeSteps + "," + result.milliseconds + "," + valid + "," + r.actions.size + "," + r.actionsBall.size + "\n",
                         SnowmanSolverResult(result.sat, valid, result.milliseconds, Some(r)))
                 case None =>
                     updateFunction(AutoSolveUpdateFinal(levelName, SnowmanSolverResult(result.sat, valid = false, result.milliseconds, None)))
 
-                    ("final solved=" + result.sat+ "timesteps=" + result.timeSteps + " time=" + result.milliseconds + "\n",
+                    ("final solved=" + result.sat+ " timesteps=" + result.timeSteps + " time=" + result.milliseconds + "\n",
                         levelName + "," + result.sat + "," + result.timeSteps + "," + result.milliseconds + "\n",
                         SnowmanSolverResult(result.sat, valid = false, result.milliseconds, None))
             }

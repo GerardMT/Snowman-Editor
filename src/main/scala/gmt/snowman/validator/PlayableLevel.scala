@@ -82,7 +82,7 @@ case class PlayableLevel (private val characterCoordinate: Coordinate, private v
                 val returnMap = if (nextNextObject == Grass) {
                     nextNextMap.updated(nextNextCoordinate, top)
                 } else if (nextNextObject == Snow){
-                    nextNextMap.updated(nextNextCoordinate, Object.increaseBall(nextObject))
+                    nextNextMap.updated(nextNextCoordinate, Object.increaseBall(top))
                 } else {
                     return None
                 }

@@ -65,8 +65,8 @@ protected case class EncoderReachability(override val level: Level, override val
             reachability(state, stateActionBall, shift))
 
       val constantEff = ListBuffer(moveBall(stateActionBall, stateNextActionBall, shift),
-            Implies(Not(otherBallUnderVar), teleportCharacter(stateActionBall, stateNext)),
-            Implies(otherBallUnderVar, equalCharacterVariables(state, stateNext)),
+            Implies(Not(otherBallUnderVar), teleportCharacterBall(stateActionBall, stateNext)),
+            Implies(otherBallUnderVar, teleportCharacter(stateActionBall, stateNext, shift)),
             equalOtherBallsVariables(state, stateActionBall, stateNext, stateNextActionBall),
             updateBallSizeClause,
             updateOccupancyVariables(state, stateNext))
@@ -102,7 +102,11 @@ protected case class EncoderReachability(override val level: Level, override val
         }).toSeq: _*)
     }
 
-    private def teleportCharacter[T <: StateBase with CharacterInterface](stateActionBall: StateBase.Ball, stateNext: T): Clause = {
+    private def teleportCharacterBall[T <: StateBase with CharacterInterface](stateActionBall: StateBase.Ball, stateNext: T): Clause = {
         And(Equals(stateNext.character.x, stateActionBall.x), Equals(stateNext.character.y, stateActionBall.y))
+    }
+
+    private def teleportCharacter[T <: StateBase with CharacterInterface](stateActionBall: StateBase.Ball, stateNext: T, shift: Coordinate): Clause = {
+        applyShiftClause(stateActionBall, stateNext.character, -shift, AND)
     }
 }

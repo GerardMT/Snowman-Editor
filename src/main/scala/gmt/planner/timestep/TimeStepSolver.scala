@@ -2,7 +2,7 @@ package gmt.planner.timestep
 
 import gmt.planner.encoder.Encoder
 import gmt.planner.solver.Solver
-import gmt.snowman.transaltor.Translator
+import gmt.planner.translator.Translator
 
 class TimeStepSolver[A, B](encoder: Encoder[A, B], translator: Translator, solver: Solver) {
 
