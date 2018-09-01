@@ -24,7 +24,7 @@ protected case class EncoderReachability(override val level: Level, override val
                 And(operation.Equals(state.balls(b).x, IntegerConstant(p.c.x)), operation.Equals(state.balls(b).y, IntegerConstant(p.c.y)))
             }): _*)
 
-            encoding.add(ClauseDeclaration(Implies(or, operation.Not(state.reachabilityNodes.get(p.c).get))))
+            encoding.add(ClauseDeclaration(Implies(or, operation.Not(state.reachabilityNodes.get(p.c).get)))) // TODO OPTIMIZATION Merge with occupancy
         }
 
         for (l <- level.map.values.filter(f => Object.isPlayableArea(f.o))) {
@@ -42,7 +42,7 @@ protected case class EncoderReachability(override val level: Level, override val
             }
 
             if (ors.nonEmpty) {
-                encoding.add(ClauseDeclaration(Equivalent(Not(And(operation.Equals(state.character.x, IntegerConstant(l.c.x)), operation.Equals(state.character.y, IntegerConstant(l.c.y)))), operation.Implies(nodeStart, Operations.simplify(Or(ors: _*))))))
+                encoding.add(ClauseDeclaration(Implies(And(Or(Not(Equals(state.character.x, IntegerConstant(l.c.x))), Not(Equals(state.character.y, IntegerConstant(l.c.y)))),nodeStart), Operations.simplify(Or(ors: _*)))))
             }
         }
     }
