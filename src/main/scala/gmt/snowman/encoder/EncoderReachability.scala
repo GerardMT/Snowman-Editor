@@ -42,7 +42,7 @@ protected case class EncoderReachability(override val level: Level, override val
             }
 
             if (ors.nonEmpty) {
-                encoding.add(ClauseDeclaration(Implies(And(Or(Not(Equals(state.character.x, IntegerConstant(l.c.x))), Not(Equals(state.character.y, IntegerConstant(l.c.y)))),nodeStart), Operations.simplify(Or(ors: _*)))))
+                encoding.add(ClauseDeclaration(Implies(And(Or(Not(Equals(state.character.x, IntegerConstant(l.c.x))), Not(Equals(state.character.y, IntegerConstant(l.c.y)))), nodeStart), Operations.simplify(Or(ors: _*)))))
             }
         }
     }
