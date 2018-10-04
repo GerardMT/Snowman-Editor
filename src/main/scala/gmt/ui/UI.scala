@@ -279,17 +279,17 @@ object UI extends SimpleSwingApplication {
                 contents += new Separator
                 contents += new MenuItem(Action("Generate PDDL adl") {
                     if (validateLevelShowDialog(uiLevel.mutableLevel)) {
-                        savePickAndTextFile(EncoderPDDL.encodeStrips(uiLevel.mutableLevel.toLevel), CURRENT_DIRECTORY + "/domain_adl.pddl")
+                        savePickAndTextFile(EncoderPDDL.encodeStrips(uiLevel.mutableLevel.toLevel), CURRENT_DIRECTORY + "/problem_adl.pddl")
                     }
                 })
                 contents += new MenuItem(Action("Generate PDDL object-fluents") {
                     if (validateLevelShowDialog(uiLevel.mutableLevel)) {
-                        savePickAndTextFile(EncoderPDDL.encodeObjectFluents(uiLevel.mutableLevel.toLevel), CURRENT_DIRECTORY + "/domain_object-fluents.pddl")
+                        savePickAndTextFile(EncoderPDDL.encodeObjectFluents(uiLevel.mutableLevel.toLevel), CURRENT_DIRECTORY + "/problem_object-fluents.pddl")
                     }
                 })
                 //contents += new MenuItem(Action("Generate PDDL numeric-fluents") {
                 //    if (validateLevelShowDialog(uiLevel.mutableLevel)) {
-                //        savePickAndTextFile(EncoderPDDL.encodeNumericFluents(uiLevel.mutableLevel.toLevel), CURRENT_DIRECTORY + "/domain_numeric-fluents.pddl")
+                //        savePickAndTextFile(EncoderPDDL.encodeNumericFluents(uiLevel.mutableLevel.toLevel), CURRENT_DIRECTORY + "/problem_numeric-fluents.pddl")
                 //    }
                 //})
             }
