@@ -9,12 +9,13 @@ import gmt.mod.Game.RestoreException
 import gmt.planner.planner.Planner.{PlannerOptions, PlannerUpdate}
 import gmt.snowman.encoder.DecodingData
 import gmt.snowman.encoder.EncoderBase.{EncoderEnum, EncoderOptions}
-import gmt.snowman.level.MutableLevel
+import gmt.snowman.level.{Level, MutableLevel}
 import gmt.snowman.pddl.EncoderPDDL
 import gmt.snowman.planner.SnowmanSolver.{AutoSolveUpdate, AutoSolveUpdateFinal, AutoSolveUpdateProgress, GenerateOptions}
 import gmt.snowman.planner.{SnowmanSolver, SnowmanSolverResult}
 import gmt.snowman.util.Files
 import gmt.ui.Settings.SettingsParseException
+import gmt.ui.UI.{showAutorSolveUpdate, showAutorunOptionsDialog}
 import javax.swing._
 
 import scala.swing.GridBagPanel.Anchor
@@ -279,7 +280,7 @@ object UI extends SimpleSwingApplication {
                 contents += new Separator
                 contents += new MenuItem(Action("Generate PDDL adl") {
                     if (validateLevelShowDialog(uiLevel.mutableLevel)) {
-                        savePickAndTextFile(EncoderPDDL.encodeStrips(uiLevel.mutableLevel.toLevel), CURRENT_DIRECTORY + "/problem_adl.pddl")
+                        savePickAndTextFile(EncoderPDDL.encodeAdl(uiLevel.mutableLevel.toLevel), CURRENT_DIRECTORY + "/problem_adl.pddl")
                     }
                 })
                 contents += new MenuItem(Action("Generate PDDL object-fluents") {
@@ -349,6 +350,14 @@ object UI extends SimpleSwingApplication {
                             showErrorSolverPathNotDeined()
                     }
                 })
+                contents += new Separator
+                contents += new MenuItem(Action("Generate PDDL adl") {
+                    autorunnerPDDL(EncoderPDDL.encodeAdl)
+
+                })
+                contents += new MenuItem(Action("Generate PDDL object-fluents") {
+                    autorunnerPDDL(EncoderPDDL.encodeObjectFluents)
+                })
             }
         }
 
@@ -393,6 +402,102 @@ object UI extends SimpleSwingApplication {
             }
 
             peer.setBounds(new Rectangle(x, y, width, height))
+        }
+    }
+
+    private def autorunnerPDDL(encoder: Level => String) = {
+        showAutorunPDDLOptionsDialog() match {
+            case Some((levelsPath, outPath)) =>
+                EncoderPDDL.autoEncoder(encoder, levelsPath, outPath)
+            case None =>
+        }
+    }
+
+    private def showAutorunPDDLOptionsDialog(): Option[(String, String)] = {
+        val LEVELS_DEFAULT_PATH = CURRENT_DIRECTORY + "/autorunner/levels/"
+        val OUT_DEFAULT_PATH = CURRENT_DIRECTORY + "/autorunner/out-pddl/"
+
+        val levelsTextField = new JTextField(LEVELS_DEFAULT_PATH, 30)
+        val outTextField = new JTextField(OUT_DEFAULT_PATH, 30)
+
+        val directoryChooser = new FileChooser
+        directoryChooser.fileSelectionMode_=(FileChooser.SelectionMode.DirectoriesOnly)
+
+        val levelsButton = new JButton("Select")
+        //noinspection ConvertExpressionToSAM
+        levelsButton.addActionListener(new ActionListener {
+            override def actionPerformed(e: ActionEvent): Unit = {
+                directoryChooser.selectedFile_=(new File(LEVELS_DEFAULT_PATH))
+                val result = directoryChooser.showDialog(null, "Select")
+
+                if (result == FileChooser.Result.Approve) {
+                    levelsTextField.setText(directoryChooser.selectedFile.getAbsolutePath)
+                }
+            }
+        })
+
+        val outButton = new JButton("Select")
+        //noinspection ConvertExpressionToSAM
+        outButton.addActionListener(new ActionListener {
+            override def actionPerformed(e: ActionEvent): Unit = {
+                directoryChooser.selectedFile_=(new File(OUT_DEFAULT_PATH))
+                val result = directoryChooser.showDialog(null, "Select")
+
+                if (result == FileChooser.Result.Approve) {
+                    outTextField.setText(directoryChooser.selectedFile.getAbsolutePath)
+                }
+            }
+        })
+
+        val BOTTOM_PADDING = 5
+        val RIGHT_PADDING = 5
+
+        val pathPanel = new JPanel(new GridBagLayout)
+        val pathC = new GridBagConstraints
+        pathC.anchor = GridBagConstraints.EAST
+        pathC.insets = new Insets(0, 0, BOTTOM_PADDING, RIGHT_PADDING)
+        pathC.gridx = 0
+        pathC.gridy = 0
+        pathPanel.add(new JLabel("Levels directory:"), pathC)
+        pathC.insets = new Insets(0, 0, BOTTOM_PADDING, RIGHT_PADDING)
+        pathC.gridx = 1
+        pathC.gridy = 0
+        pathPanel.add(levelsTextField, pathC)
+        pathC.insets = new Insets(0, 0, BOTTOM_PADDING, 0)
+        pathC.gridx = 2
+        pathC.gridy = 0
+        pathPanel.add(levelsButton, pathC)
+        pathC.insets = new Insets(0, 0, 0, RIGHT_PADDING)
+        pathC.gridx = 0
+        pathC.gridy = 1
+        pathPanel.add(new JLabel("Out directory:"), pathC)
+        pathC.insets = new Insets(0, 0, 0, RIGHT_PADDING)
+        pathC.gridx = 1
+        pathC.gridy = 1
+        pathPanel.add(outTextField, pathC)
+        pathC.insets = new Insets(0, 0, 0, 0)
+        pathC.gridx = 2
+        pathC.gridy = 1
+        pathPanel.add(outButton, pathC)
+
+        val option = JOptionPane.showConfirmDialog(null, pathPanel, "Autorun options", JOptionPane.OK_CANCEL_OPTION)
+
+        if (option == JOptionPane.OK_OPTION) {
+            try {
+                if (!new File(levelsTextField.getText).exists()) {
+                    throw new FileNotFoundException()
+                }
+                new File(outTextField.getText).mkdirs()
+
+                Some((levelsTextField.getText(), outTextField.getText))
+            } catch {
+                case _: FileNotFoundException =>
+                    showErroDialog("Directory not found")
+                    None
+            }
+
+        } else {
+            None
         }
     }
 
@@ -688,7 +793,7 @@ object UI extends SimpleSwingApplication {
         val invariantsLayout = new InvariantsLayout
 
         val LEVELS_DEFAULT_PATH = CURRENT_DIRECTORY + "/autorunner/levels/"
-        val OUT_DEFAULT_PATH = CURRENT_DIRECTORY + "/autorunner/out/"
+        val OUT_DEFAULT_PATH = CURRENT_DIRECTORY + "/autorunner/out-solvers/"
 
         val levelsTextField = new JTextField(LEVELS_DEFAULT_PATH, 30)
         val outTextField = new JTextField(OUT_DEFAULT_PATH, 30)

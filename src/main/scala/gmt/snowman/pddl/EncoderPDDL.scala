@@ -1,18 +1,28 @@
 package gmt.snowman.pddl
 
+import java.io.{BufferedWriter, File, FileWriter}
+
 import gmt.snowman.action.SnowmanAction
 import gmt.snowman.game.`object`._
-import gmt.snowman.level.Level
+import gmt.snowman.level.{Level, MutableLevel}
+import gmt.snowman.util.Files
 
 object EncoderPDDL {
 
-    def encodeStrips(level: Level): String = {
+    def encodeAdl(level: Level): String = {
         var encoding = ""
 
-        val directions = List("dir-right", "dir-left", "dir-up", "dir-down")
+        val directions = List("dir_right", "dir_left", "dir_up", "dir_down")
 
-        encoding += "(define (problem snowman-problem)\n"
-        encoding += "    (:domain snowman-adl)\n"
+        val levelName = level.name match {
+            case Some(s) =>
+                s
+            case None =>
+                "snowman_problem"
+        }
+
+        encoding += "(define (problem " + levelName + ")\n"
+        encoding += "    (:domain snowman_adl)\n"
         encoding += "    (:objects\n"
         for (d <- directions) {
             encoding += "        " + d + " - direction\n"
@@ -28,16 +38,16 @@ object EncoderPDDL {
             level.map.get(l.c + o) match {
                 case Some(l2) =>
                     if (l2.o != Wall) {
-                        encoding += "        (next loc-" + l.c.x + "-" + l.c.y + " loc-" + l2.c.x + "-" + l2.c.y + " " + d + ")\n"
+                        encoding += "        (next loc_" + l.c.x + "_" + l.c.y + " loc_" + l2.c.x + "_" + l2.c.y + " " + d + ")\n"
                     }
                 case None =>
             }
         }
 
-        encoding += "        (character-at loc-" + level.character.c.x + "-" + level.character.c.y + ")\n"
+        encoding += "        (character_at loc_" + level.character.c.x + "_" + level.character.c.y + ")\n"
 
         for ((l, i) <- level.balls.zipWithIndex) {
-            encoding += "        (ball-at ball-" + i + " loc-" + l.c.x + "-" + l.c.y + ")\n"
+            encoding += "        (ball_at ball_" + i + " loc_" + l.c.x + "_" + l.c.y + ")\n"
             encoding += encodeBallSize(l.o, i)
         }
 
@@ -58,8 +68,15 @@ object EncoderPDDL {
 
         val directions = List("right", "left", "up", "down")
 
-        encoding += "(define (problem snowman-problem)\n"
-        encoding += "    (:domain snowman-object-fluents)\n"
+        val levelName = level.name match {
+            case Some(s) =>
+                s
+            case None =>
+                "snowman_problem"
+        }
+
+        encoding += "(define (problem " + levelName + ")\n"
+        encoding += "    (:domain snowman_object_fluents)\n"
         encoding += "    (:objects\n"
 
         encoding += encodeObjectsBalls(level)
@@ -78,10 +95,10 @@ object EncoderPDDL {
             }
         }
 
-        encoding += "        (= (character-at) loc-" + level.character.c.x + "-" + level.character.c.y + ")\n"
+        encoding += "        (= (character_at) loc_" + level.character.c.x + "_" + level.character.c.y + ")\n"
 
         for ((l, i) <- level.balls.zipWithIndex) {
-            encoding += "        (= (ball-at) ball-" + i + " loc-" + l.c.x + "-" + l.c.y + ")\n"
+            encoding += "        (= (ball_at) ball_" + i + " loc_" + l.c.x + "_" + l.c.y + ")\n"
             encoding += encodeBallSize(l.o, i)
         }
 
@@ -105,7 +122,7 @@ object EncoderPDDL {
         var encoding = ""
 
         for (i <- level.balls.indices) {
-            encoding += "        ball-" + i + " - ball\n"
+            encoding += "        ball_" + i + " - ball\n"
         }
 
         encoding
@@ -115,7 +132,7 @@ object EncoderPDDL {
         var encoding = ""
 
         for (l <- level.map.values.filter(f => f.o != Wall)) {
-            encoding += "        loc-" + l.c.x + "-" + l.c.y + " - location\n"
+            encoding += "        loc_" + l.c.x + "_" + l.c.y + " - location\n"
         }
 
         encoding
@@ -125,7 +142,7 @@ object EncoderPDDL {
         var encoding = ""
 
         for (l <- level.map.values.filter(f => Object.isBall(f.o))) {
-            encoding += "        (occupancy loc-" + l.c.x + "-" + l.c.y + ")\n"
+            encoding += "        (occupancy loc_" + l.c.x + "_" + l.c.y + ")\n"
         }
 
         encoding
@@ -135,14 +152,14 @@ object EncoderPDDL {
         var encoding = ""
 
         for (l <- level.map.values.filter(f => f.o == Snow)) {
-            encoding += "        (snow loc-" + l.c.x + "-" + l.c.y + ")\n"
+            encoding += "        (snow loc_" + l.c.x + "_" + l.c.y + ")\n"
         }
 
         encoding
     }
 
     private def encodeBallSize(o: Object, index: Int): String = {
-        "        (ball-size-" + getBallSize(o) + " ball-" + index + ")\n"
+        "        (ball_size_" + getBallSize(o) + " ball_" + index + ")\n"
     }
 
     private def encodeGoal(): String = {
@@ -159,5 +176,19 @@ object EncoderPDDL {
             "medium"
         case LargeBall =>
             "large"
+    }
+
+    def autoEncoder(encoder: Level => String, levelsPath: String, outPath: String): Unit = {
+        val levelsDirectory = new File(levelsPath)
+
+        for (file <- levelsDirectory.listFiles().sorted) {
+            try {
+                val level = MutableLevel.load(Files.openTextFile(file)).toLevel
+
+                val outFolder = outPath + file.getName
+                new File(outFolder).mkdir()
+                Files.saveTextFile(new File(outFolder + "/problem.pddl"), encoder(level))
+            }
+        }
     }
 }

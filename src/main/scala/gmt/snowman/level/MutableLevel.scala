@@ -3,7 +3,7 @@ package gmt.snowman.level
 import gmt.snowman.collection.SortedMap
 import gmt.snowman.game.Game
 import gmt.snowman.game.`object`._
-import gmt.snowman.level.MutableLevel.Info
+import gmt.snowman.level.MutableLevel.{Info, LevelParserDescriptionException}
 
 import scala.collection.mutable.ListBuffer
 import scala.collection.{immutable, mutable}
@@ -11,11 +11,12 @@ import scala.collection.{immutable, mutable}
 object MutableLevel {
 
     case class LevelParserException(message: String) extends Exception(message)
+    case class LevelParserDescriptionException(noCharacter: Boolean, ballsMultiple: Boolean) extends Exception
 
     case class Info(size: Int, width: Int, height: Int, playableArea: Int, balls: Int, objects: immutable.Map[Object, Int])
 
     def default(width: Int, height: Int): MutableLevel = { // TODO 0x0 must be invalid
-        val mutableLevel = new MutableLevel(width, height)
+        val mutableLevel = new MutableLevel(width, height, None)
 
         for (x <- 0 until width) {
             for (y <- 0 until height) {
@@ -30,7 +31,7 @@ object MutableLevel {
         mutableLevel
     }
 
-    def load(s: String): MutableLevel = {
+    def load(s: String, name: Option[String] = None): MutableLevel = {
         val lines = ListBuffer.empty[String]
 
         for (l <- s.split("\n")) {
@@ -44,7 +45,7 @@ object MutableLevel {
             }
         })
 
-        val mutableLevel = new MutableLevel(length, lines.length)
+        val mutableLevel = new MutableLevel(length, lines.length, name)
 
         var inverseY = lines.length - 1
         for (y <- lines.indices) {
@@ -67,7 +68,7 @@ object MutableLevel {
     }
 }
 
-class MutableLevel private (val width: Int, val height: Int){
+class MutableLevel private (val width: Int, val height: Int, val name: Option[String]){
 
     private val map = Array.ofDim[gmt.snowman.game.`object`.Object](width, height)
 
@@ -80,6 +81,8 @@ class MutableLevel private (val width: Int, val height: Int){
     }
 
     def toLevel: Level = {
+        validateException
+
         var size = 0
         var hasSnow = false
 
@@ -137,10 +140,34 @@ class MutableLevel private (val width: Int, val height: Int){
             sortedMap.remove(f)
         })
 
-        Level(width, height, size, hasSnow, balls.size / Game.SNOWMAN_BALLS, someCharacterLocation.get, balls.toList, sortedMap, toString)
+        Level(width, height, size, hasSnow, balls.size / Game.SNOWMAN_BALLS, someCharacterLocation.get, balls.toList, sortedMap, toString, name)
     }
 
-    def validate: (Boolean, Boolean) = { // TODO Level must be closed
+    def validateException: Unit = { // TODO Level must be closed
+        var balls = 0
+        var character = 0
+
+        for (x <- 0 until width) {
+            for (y <- 0 until height) {
+                map(x)(y) match {
+                    case Character | CharacterSnow =>
+                        character += 1
+                    case o @ (SmallBall | MediumBall | LargeBall | MediumSmallBall | LargeSmallBall | LargeMediumBall | LargeMediumSmallBall) =>
+                        balls += Object.unpackBalls(o).size
+                    case _ =>
+                }
+            }
+        }
+
+        val noCharacter = character != 1
+        val ballsMultiple = balls % Game.SNOWMAN_BALLS != 0 || balls == 0
+        if (noCharacter || ballsMultiple) {
+            throw LevelParserDescriptionException(noCharacter, ballsMultiple)
+        }
+    }
+
+    @deprecated
+    def validate: (Boolean, Boolean) = {
         var balls = 0
         var character = 0
 
