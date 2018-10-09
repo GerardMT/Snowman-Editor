@@ -89,7 +89,7 @@ object EncoderPDDL {
             level.map.get(l.c + o) match {
                 case Some(l2) =>
                     if (l2.o != Wall) {
-                        encoding += "        (= (next-" + d + " loc-" + l.c.x + "-" + l.c.y + ") loc-" + l2.c.x + "-" + l2.c.y + ")\n"
+                        encoding += "        (= (next_" + d + " loc_" + l.c.x + "_" + l.c.y + ") loc_" + l2.c.x + "_" + l2.c.y + ")\n"
                     }
                 case None =>
             }

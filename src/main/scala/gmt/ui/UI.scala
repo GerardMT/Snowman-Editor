@@ -101,7 +101,7 @@ object UI extends SimpleSwingApplication {
                 })
                 contents += new Separator
                 contents += new MenuItem(Action("Open") {
-                    fileChooser.selectedFile_=(new File(CURRENT_DIRECTORY))
+                    fileChooser.peer.setCurrentDirectory(new File(CURRENT_DIRECTORY))
                     val response = fileChooser.showOpenDialog(null)
 
                     if (response == FileChooser.Result.Approve) {
