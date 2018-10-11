@@ -283,6 +283,22 @@ object UI extends SimpleSwingApplication {
                         savePickAndTextFile(EncoderPDDL.encodeAdl(uiLevel.mutableLevel.toLevel), CURRENT_DIRECTORY + "/problem_adl.pddl")
                     }
                 })
+                contents += new MenuItem(Action("Generate PDDL adl Grounded") {
+                    if (validateLevelShowDialog(uiLevel.mutableLevel)) {
+                        val (domain, problem) = EncoderPDDL.encodeAdlGrounded(uiLevel.mutableLevel.toLevel)
+
+                        val directoryChooser = new FileChooser
+                        directoryChooser.fileSelectionMode_=(FileChooser.SelectionMode.DirectoriesOnly)
+                        directoryChooser.peer.setCurrentDirectory(new File(CURRENT_DIRECTORY))
+
+                        val result = directoryChooser.showDialog(null, "Select")
+
+                        if (result == FileChooser.Result.Approve) {
+                            Files.saveTextFile(new File(directoryChooser.selectedFile.getAbsolutePath + "/domain.pddl"), domain)
+                            Files.saveTextFile(new File(directoryChooser.selectedFile.getAbsolutePath + "/problem.pddl"), problem)
+                        }
+                    }
+                })
                 contents += new MenuItem(Action("Generate PDDL object-fluents") {
                     if (validateLevelShowDialog(uiLevel.mutableLevel)) {
                         savePickAndTextFile(EncoderPDDL.encodeObjectFluents(uiLevel.mutableLevel.toLevel), CURRENT_DIRECTORY + "/problem_object-fluents.pddl")
@@ -352,11 +368,13 @@ object UI extends SimpleSwingApplication {
                 })
                 contents += new Separator
                 contents += new MenuItem(Action("Generate PDDL adl") {
-                    autorunnerPDDL(EncoderPDDL.encodeAdl)
-
+                    autorunnerPDDL(EncoderPDDL.encodeAdl, saverProblem)
+                })
+                contents += new MenuItem(Action("Generate PDDL adl Grounded") {
+                    autorunnerPDDL(EncoderPDDL.encodeAdlGrounded, saverDomainProblem)
                 })
                 contents += new MenuItem(Action("Generate PDDL object-fluents") {
-                    autorunnerPDDL(EncoderPDDL.encodeObjectFluents)
+                    autorunnerPDDL(EncoderPDDL.encodeObjectFluents, saverProblem)
                 })
             }
         }
@@ -405,10 +423,19 @@ object UI extends SimpleSwingApplication {
         }
     }
 
-    private def autorunnerPDDL(encoder: Level => String) = {
+    private def saverProblem(problem: String, path: String) = {
+        Files.saveTextFile(new File(path + "/problem.pddl"), problem)
+    }
+
+    private def saverDomainProblem(domainProblem: (String, String), path: String) = {
+        Files.saveTextFile(new File(path + "/domain.pddl"), domainProblem._1)
+        Files.saveTextFile(new File(path + "/problem.pddl"), domainProblem._2)
+    }
+
+    private def autorunnerPDDL[A](encoder: Level => A, saver: (A, String) => Unit) = {
         showAutorunPDDLOptionsDialog() match {
             case Some((levelsPath, outPath)) =>
-                EncoderPDDL.autoEncoder(encoder, levelsPath, outPath)
+                EncoderPDDL.autoEncoder(encoder, saver, levelsPath, outPath)
             case None =>
         }
     }
