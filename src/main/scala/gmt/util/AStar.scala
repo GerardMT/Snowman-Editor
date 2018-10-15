@@ -1,4 +1,4 @@
-package gmt.snowman.util
+package gmt.util
 
 import scala.collection.{immutable, mutable}
 import scala.collection.mutable.ListBuffer

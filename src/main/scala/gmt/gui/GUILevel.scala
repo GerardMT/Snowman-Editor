@@ -1,4 +1,4 @@
-package gmt.ui
+package gmt.gui
 
 import java.awt.{Color, Font, Rectangle}
 import java.awt.event.{MouseEvent, MouseListener}
@@ -10,14 +10,14 @@ import scala.collection.immutable
 import scala.swing.Swing._
 import scala.swing.{Graphics2D, GridPanel, Panel}
 
-object UILevel {
+object GUILevel {
 
-    def create(mutableLevel: MutableLevel, resourceManager: ResourceManager, picker: Picker): UILevel = {
-        new UILevel(mutableLevel.width, mutableLevel.height, mutableLevel, resourceManager, picker)
+    def create(mutableLevel: MutableLevel, resourceManager: ResourceManager, picker: Picker): GUILevel = {
+        new GUILevel(mutableLevel.width, mutableLevel.height, mutableLevel, resourceManager, picker)
     }
 }
 
-class UILevel private (private var width: Int, private var height: Int, var mutableLevel: MutableLevel, resourceManager: ResourceManager, picker: Picker) extends GridPanel(width, height) {
+class GUILevel private(private var width: Int, private var height: Int, var mutableLevel: MutableLevel, resourceManager: ResourceManager, picker: Picker) extends GridPanel(width, height) {
 
     private var paintCoordinates = false
 

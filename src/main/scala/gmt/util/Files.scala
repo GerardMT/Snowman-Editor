@@ -1,4 +1,4 @@
-package gmt.snowman.util
+package gmt.util
 
 import java.io.{BufferedReader, File, FileReader, FileWriter}
 

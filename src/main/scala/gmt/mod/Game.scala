@@ -5,9 +5,9 @@ import java.math.BigInteger
 import java.nio.file.Files
 import java.security.MessageDigest
 
+import gmt.core.Settings
 import gmt.mod.Game.RestoreException
 import gmt.snowman.level.Level
-import gmt.ui.Settings
 
 import scala.collection.mutable.ListBuffer
 import scala.sys.process._

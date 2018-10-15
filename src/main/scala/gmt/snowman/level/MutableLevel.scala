@@ -3,7 +3,7 @@ package gmt.snowman.level
 import gmt.snowman.collection.SortedMap
 import gmt.snowman.game.Game
 import gmt.snowman.game.`object`._
-import gmt.snowman.level.MutableLevel.{Info, LevelParserDescriptionException}
+import gmt.snowman.level.MutableLevel.{Info, LevelParserValidateException}
 
 import scala.collection.mutable.ListBuffer
 import scala.collection.{immutable, mutable}
@@ -11,7 +11,7 @@ import scala.collection.{immutable, mutable}
 object MutableLevel {
 
     case class LevelParserException(message: String) extends Exception(message)
-    case class LevelParserDescriptionException(noCharacter: Boolean, ballsMultiple: Boolean) extends Exception
+    case class LevelParserValidateException(noCharacter: Boolean, noMultipleBalls: Boolean) extends Exception
 
     case class Info(size: Int, width: Int, height: Int, playableArea: Int, balls: Int, objects: immutable.Map[Object, Int])
 
@@ -162,28 +162,8 @@ class MutableLevel private (val width: Int, val height: Int, val name: Option[St
         val noCharacter = character != 1
         val ballsMultiple = balls % Game.SNOWMAN_BALLS != 0 || balls == 0
         if (noCharacter || ballsMultiple) {
-            throw LevelParserDescriptionException(noCharacter, ballsMultiple)
+            throw LevelParserValidateException(noCharacter, ballsMultiple)
         }
-    }
-
-    @deprecated
-    def validate: (Boolean, Boolean) = {
-        var balls = 0
-        var character = 0
-
-        for (x <- 0 until width) {
-            for (y <- 0 until height) {
-                map(x)(y) match {
-                    case Character | CharacterSnow =>
-                        character += 1
-                    case o @ (SmallBall | MediumBall | LargeBall | MediumSmallBall | LargeSmallBall | LargeMediumBall | LargeMediumSmallBall) =>
-                        balls += Object.unpackBalls(o).size
-                    case _ =>
-                }
-            }
-        }
-
-        (character == 1, balls % Game.SNOWMAN_BALLS == 0 && balls != 0)
     }
 
     def save: String = {

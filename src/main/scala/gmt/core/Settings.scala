@@ -1,12 +1,19 @@
-package gmt.ui
+package gmt.core
 
 import java.io.{File, FileNotFoundException, FileWriter}
+
+import gmt.core.Settings.{SettingsNoGamePathException, SettingsNoSavePathException, SettingsNoSolverPathException}
+import gmt.util
+import gmt.util.OptionException
 
 import scala.io.Source
 
 object Settings {
 
     case class SettingsParseException(message: String) extends Exception(message)
+    case class SettingsNoGamePathException() extends Exception
+    case class SettingsNoSavePathException() extends Exception
+    case class SettingsNoSolverPathException() extends Exception
 
     private val KEY_GAME_PATH = "game_path"
     private val KEY_SAVE_PATH = "save_path"
@@ -14,7 +21,7 @@ object Settings {
 
     private val SEPARATOR = '='
 
-    def default: Settings = Settings(None, None, Some("yices-smt2"))
+    def default: Settings = Settings(OptionException(None, new SettingsNoGamePathException), OptionException(None, new SettingsNoSavePathException), OptionException(Some("yices-smt2"), new SettingsNoSolverPathException))
 
     def read(file: File): Settings = {
         val configFile = try {
@@ -28,11 +35,10 @@ object Settings {
         lines.zipWithIndex.foreach(f => {
             if (!f._1.contains(SEPARATOR)) {
                 throw SettingsParseException("No " + SEPARATOR  + " at line " + f._2)
-
             }
         })
 
-        val settingsSplit = lines.toList.map(f => f.split(SEPARATOR))
+        val settingsSplit = lines.map(f => f.split(SEPARATOR))
 
         settingsSplit.zipWithIndex.foreach(f => {
             if (f._1.length > 2) {
@@ -75,37 +81,34 @@ object Settings {
                 throw SettingsParseException("Key \"" + KEY_SOLVER_PATH + "\" not found")
         }
 
-        new Settings(gamePath, savePath, solverPath)
+        new Settings(OptionException(gamePath, new SettingsNoGamePathException), OptionException(savePath, new SettingsNoSavePathException), OptionException(solverPath, new SettingsNoSolverPathException))
     }
 }
 
 
-case class Settings private(gamePath: Option[String],
-                            savePath: Option[String],
-                            solverPath: Option[String]) {
+case class Settings private(gamePath: OptionException[String, SettingsNoGamePathException],
+                            savePath: OptionException[String, SettingsNoSavePathException],
+                            solverPath: OptionException[String, SettingsNoSolverPathException]) {
 
     def save(file: File): Unit = {
         val fileWriter = new FileWriter(file)
 
-        val saveGamePath = gamePath match {
-            case Some(s) =>
-                s
-            case None =>
-                ""
+        val saveGamePath = if (gamePath.isDefined) {
+            gamePath.get
+        } else {
+            ""
         }
 
-        val saveSavePath  = savePath match {
-            case Some(s) =>
-                s
-            case None =>
-                ""
+        val saveSavePath = if (savePath.isDefined) {
+            savePath.get
+        } else {
+            ""
         }
 
-        val saveSolverPath = solverPath match {
-            case Some(s) =>
-                s
-            case None =>
-                ""
+        val saveSolverPath = if (solverPath.isDefined) {
+            solverPath.get
+        } else {
+            ""
         }
 
         fileWriter.append(Settings.KEY_GAME_PATH + Settings.SEPARATOR + saveGamePath + "\n")

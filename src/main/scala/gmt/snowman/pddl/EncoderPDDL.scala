@@ -1,12 +1,8 @@
 package gmt.snowman.pddl
 
-import java.io.{BufferedWriter, File, FileWriter}
-
 import gmt.snowman.action.SnowmanAction
-import gmt.snowman.game.`object`._
-import gmt.snowman.level.{Level, MutableLevel}
-import gmt.snowman.util.Files
-import gmt.snowman.game.`object`.Object
+import gmt.snowman.game.`object`.{Object, _}
+import gmt.snowman.level.Level
 
 object EncoderPDDL {
 
@@ -114,10 +110,6 @@ object EncoderPDDL {
 
         encoding
     }
-
-    //def encodeNumericFluents(toLevel: Level): String = {
-    //    throw new NotImplementedError() // TODO PDDL
-    //}
 
     def encodeAdlGrounded(level: Level): (String, String)= {
         val domain = StringBuilder.newBuilder
@@ -350,7 +342,7 @@ object EncoderPDDL {
         (domain.toString(), problem.toString())
     }
 
-    private def encodeObjectsBalls(level: Level): String ={
+    private def encodeObjectsBalls(level: Level): String = {
         var encoding = ""
 
         for (i <- level.balls.indices) {
@@ -360,7 +352,7 @@ object EncoderPDDL {
         encoding
     }
 
-    private def encodeObjectsLocations(level: Level): String ={
+    private def encodeObjectsLocations(level: Level): String = {
         var encoding = ""
 
         for (l <- level.map.values.filter(f => f.o != Wall)) {
@@ -408,19 +400,5 @@ object EncoderPDDL {
             "medium"
         case LargeBall =>
             "large"
-    }
-
-    def autoEncoder[A](encoder: Level => A, saver: (A, String) => Unit, levelsPath: String, outPath: String): Unit = {
-        val levelsDirectory = new File(levelsPath)
-
-        for (file <- levelsDirectory.listFiles().sorted) {
-            try {
-                val level = MutableLevel.load(Files.openTextFile(file)).toLevel
-
-                val outFolder = outPath + file.getName
-                new File(outFolder).mkdir()
-                saver(encoder(level), outFolder)
-            }
-        }
     }
 }

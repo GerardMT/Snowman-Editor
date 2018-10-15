@@ -11,7 +11,7 @@ import scala.collection.mutable.ListBuffer
 object Planner {
 
     case class PlannerUpdate[A](timeStepResult: TimeStepResult[A], totalMilliseconds: Long)
-    case class PlannerOptions(startTimeSteps: Option[Int], maxTimeSteps: Int, timeout: Int, threads: Int)
+    case class PlannerOptions(startTimeSteps: Option[Int], maxTimeSteps: Int, threads: Int)
 }
 
 class Planner[A, B](val plannerOptions: PlannerOptions) {
@@ -37,8 +37,6 @@ class Planner[A, B](val plannerOptions: PlannerOptions) {
         for (i <- 0 until plannerOptions.threads) {
             threads.append(new Child[A, B](i, this, new TimeStepSolver[A, B](encoder, translator, solver), updateSincronized))
         }
-
-        new Timeout(threads, plannerOptions.timeout).start()
 
         threads.foreach(f => f.start())
         threads.foreach(f => f.join())

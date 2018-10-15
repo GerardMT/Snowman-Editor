@@ -1,4 +1,4 @@
-package gmt.ui
+package gmt.gui
 
 import gmt.snowman.game.`object`.{Grass, Object}
 
@@ -12,11 +12,11 @@ class Picker(resourceManager: ResourceManager) extends BoxPanel(Orientation.Vert
 
     border = EmptyBorder(10, 10, 10, 10)
 
-    background = UI.BACKGROUND_COLOR
+    background = GUI.BACKGROUND_COLOR
 
     contents += new Label("Picker")
     contents += new GridPanel((Object.ALL_OBJECTS.length / 2.0f).ceil.toInt, 2) {
-        background = UI.BACKGROUND_COLOR
+        background = GUI.BACKGROUND_COLOR
 
         for (o <- Object.ALL_OBJECTS) {
             contents += new PickerObject(o)
@@ -59,7 +59,7 @@ class Picker(resourceManager: ResourceManager) extends BoxPanel(Orientation.Vert
 
         preferredSize = (PickerObject.TILE_WIDTH, PickerObject.TILE_HEIGHT)
 
-        background = UI.BACKGROUND_COLOR
+        background = GUI.BACKGROUND_COLOR
 
         focusable = true
         listenTo(mouse.clicks)

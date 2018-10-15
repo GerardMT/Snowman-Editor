@@ -10,7 +10,7 @@ import gmt.snowman.encoder.EncoderBase.EncoderOptions
 import gmt.snowman.encoder.StateBase.CoordinateVariables
 import gmt.snowman.game.`object`._
 import gmt.snowman.level.{Coordinate, Level}
-import gmt.snowman.util.AStar
+import gmt.util.AStar
 
 import scala.collection.mutable.ListBuffer
 import scala.collection.{immutable, mutable}
@@ -39,7 +39,7 @@ object EncoderBase { // TODO Add rule: Can not unmount a snowman once done
         }
     }
 
-    case class EncoderOptions(invariantBallSizes: Boolean, invariantBallLocations: Boolean, invariantBallDistances: Boolean)
+    case class EncoderOptions(invariantBallSizes: Boolean, invariantBallLocations: Boolean)
 }
 
 abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions: EncoderOptions) extends Encoder[DecodingData, EncodingData] {

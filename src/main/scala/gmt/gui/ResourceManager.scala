@@ -1,4 +1,4 @@
-package gmt.ui
+package gmt.gui
 
 import java.awt.Image
 
