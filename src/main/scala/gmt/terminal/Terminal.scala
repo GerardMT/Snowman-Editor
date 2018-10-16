@@ -2,8 +2,7 @@ package gmt.terminal
 
 import java.io.{File, FileNotFoundException}
 
-import gmt.core.{Core, Settings}
-import gmt.core.Settings.SettingsParseException
+import gmt.main.Settings.SettingsParseException
 import gmt.planner.planner.Planner.{PlannerOptions, PlannerUpdate}
 import gmt.snowman.encoder.DecodingData
 import gmt.snowman.encoder.EncoderBase.{EncoderEnum, EncoderOptions}
@@ -12,35 +11,22 @@ import gmt.snowman.pddl.EncoderPDDL
 import gmt.snowman.planner.{SnowmanSolver, SnowmanSolverResult}
 import gmt.util.Files
 
-object Terminal {
+object Main {
 
-    def showSolverUpdate(plannerUpdate: PlannerUpdate[DecodingData]): Unit = {
-        println("Timesteps: " + plannerUpdate.timeStepResult.timeSteps + " sat: " + plannerUpdate.timeStepResult.sat + " Time: " + plannerUpdate.timeStepResult.milliseconds + " TotalTime: " + plannerUpdate.totalMilliseconds + " (ms)")
+    def main(args: Array[String]): Unit = {
+
     }
 
-    def showResult(snowmanSolverResult: SnowmanSolverResult): Unit = {
-        println("Solved: " + snowmanSolverResult.solved)
-
-        snowmanSolverResult.result match {
-            case Some(r) =>
-                println("Valid: " + snowmanSolverResult.valid)
-                println("Actions: " + r.actions.size)
-                r.actions.foreach(f => println("    " + f.toString))
-                println("Ball references from initial state:")
-                r.balls.zipWithIndex.foreach(f => println("    Ball (" + f._2 + "): " + f._1))
-                println("Ball Actions: " + r.actionsBall.size)
-                r.actionsBall   .foreach(f => println("    " + f.toString))
-
-            case None =>
-        }
-    }
 }
 
-case class Terminal(main: Core) extends {
+class Terminal ls{
 
-    def parseArguments(arguments: List[String]): Unit = {
+    def main(args: Array[String]): Unit = {
         try {
-            arguments match {
+            args.toList match {
+                case List(settingsPath, "gui") =>
+                    gmt.gui.Main(new File(settingsPath))
+
                 case List("smt-basic", levelPath, resultsPath, startTimeStepsStr, maxTimeSteps, threads, invaraintBallSizes, invariantBallLocations) =>
                     openLevelSolveSMT(levelPath, resultsPath, startTimeStepsStr, maxTimeSteps, threads, invaraintBallSizes, invariantBallLocations, EncoderEnum.BASIC)
 
@@ -96,7 +82,7 @@ case class Terminal(main: Core) extends {
 
         val plannerOptions = PlannerOptions(startTimeSteps, maxTimeSteps.toInt, threads.toInt)
         val encoderOptions = EncoderOptions(invaraintBallSizes.toBoolean, invariantBallLocations.toBoolean)
-        val result = SnowmanSolver.solveSMTYics2(main.settings.solverPath.get, level, encoderEnum, encoderOptions, plannerOptions, Terminal.showSolverUpdate)
+        val result = SnowmanSolver.solveSMTYics2(settings.solverPath.get, level, encoderEnum, encoderOptions, plannerOptions, Terminal.showSolverUpdate)
 
         Terminal.showResult(result)
 
@@ -122,4 +108,29 @@ case class Terminal(main: Core) extends {
         Files.saveTextFile(new File(domainPath), domain)
         Files.saveTextFile(new File(problemPath), problem)
     }
+
+    def showSolverUpdate(plannerUpdate: PlannerUpdate[DecodingData]): Unit = {
+        println("Timesteps: " + plannerUpdate.timeStepResult.timeSteps + " sat: " + plannerUpdate.timeStepResult.sat + " Time: " + plannerUpdate.timeStepResult.milliseconds + " TotalTime: " + plannerUpdate.totalMilliseconds + " (ms)")
+    }
+
+    def showResult(snowmanSolverResult: SnowmanSolverResult): Unit = {
+        println("Solved: " + snowmanSolverResult.solved)
+
+        snowmanSolverResult.result match {
+            case Some(r) =>
+                println("Valid: " + snowmanSolverResult.valid)
+                println("Actions: " + r.actions.size)
+                r.actions.foreach(f => println("    " + f.toString))
+                println("Ball references from initial state:")
+                r.balls.zipWithIndex.foreach(f => println("    Ball (" + f._2 + "): " + f._1))
+                println("Ball Actions: " + r.actionsBall.size)
+                r.actionsBall   .foreach(f => println("    " + f.toString))
+
+            case None =>
+        }
+    }
+}
+
+case class Terminal {
+
 }

@@ -4,8 +4,8 @@ import java.awt.event.{ActionEvent, ActionListener}
 import java.awt.{GraphicsEnvironment, GridBagConstraints, GridBagLayout, Insets, Rectangle}
 import java.io.{File, FileNotFoundException}
 
-import gmt.core.Settings
-import gmt.core.Settings.{SettingsNoSolverPathException, SettingsParseException}
+import gmt.main.Settings
+import gmt.main.Settings.{SettingsNoSolverPathException, SettingsParseException}
 import gmt.mod.Game
 import gmt.mod.Game.RestoreException
 import gmt.planner.planner.Planner.PlannerOptions
@@ -20,40 +20,26 @@ import gmt.util.Files
 import javax.swing._
 
 import scala.swing.GridBagPanel.Anchor
-import scala.swing.{Action, Color, Dialog, FileChooser, GridBagPanel, MainFrame, Menu, MenuBar, MenuItem, ScrollPane, Separator, SimpleSwingApplication}
+import scala.swing.{Action, Color, Dialog, Dimension, FileChooser, GridBagPanel, MainFrame, Menu, MenuBar, MenuItem, ScrollPane, Separator}
 
+case class Main(private val settingsFile: File) {
 
-object GUI extends SimpleSwingApplication {
+    val settings: Settings = try {
+        Settings.load(settingsFile)
+    } catch {
+        case SettingsParseException(message) =>
+            showErroDialog("Settings error: " + message)
+            sys.exit()
+        case _: FileNotFoundException =>
+            showErroDialog("Settings file not found. File created at: " + settingsFile)
+            sys.exit()
+    }
 
     private val CURRENT_DIRECTORY = System.getProperty("user.dir")
 
     val BACKGROUND_COLOR: Color = new Color(250, 250, 250)
 
-    private val settingsFile = new File("./snowman_editor.config") // TODO New GUI Main
-
     private var optionSettings: Option[Settings] =  None
-
-    try {
-        if (!settingsFile.exists()) {
-            showErroDialog("Settings file not found. File created at: " + settingsFile)
-
-            val default = Settings.default
-
-            default.save(settingsFile)
-            optionSettings = Some(default)
-        } else {
-            optionSettings = Some(Settings.read(settingsFile))
-        }
-    } catch {
-        case SettingsParseException(message) =>
-            showErroDialog("Settings error: " + message)
-            System.exit(0)
-        case _: FileNotFoundException =>
-            showAccessDeniedDialog()
-            System.exit(0)
-    }
-
-    private val settings = optionSettings.get
 
     private val game = new Game(settings)
 
@@ -65,7 +51,7 @@ object GUI extends SimpleSwingApplication {
 
     private val fileChooser = new FileChooser()
 
-    override def top: MainFrame = new MainFrame {
+    val top: MainFrame = new MainFrame {
         title = "Snowman Editor"
 
         peer.setIconImage(resourceManager.getIcon)
@@ -390,6 +376,13 @@ object GUI extends SimpleSwingApplication {
             peer.setBounds(new Rectangle(x, y, width, height))
         }
     }
+
+    if (top.size == new Dimension(0,0)) {
+        top.pack()
+    }
+
+    top.visible = true
+
 
     private def savePickAndTextFile(string: String, fileName: String): Unit = {
         fileChooser.selectedFile_=(new File(fileName))

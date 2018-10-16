@@ -1,9 +1,8 @@
-package gmt.core
+package gmt.main
 
 import java.io.{File, FileNotFoundException, FileWriter}
 
-import gmt.core.Settings.{SettingsNoGamePathException, SettingsNoSavePathException, SettingsNoSolverPathException}
-import gmt.util
+import gmt.main.Settings.{SettingsNoGamePathException, SettingsNoSavePathException, SettingsNoSolverPathException}
 import gmt.util.OptionException
 
 import scala.io.Source
@@ -23,7 +22,7 @@ object Settings {
 
     def default: Settings = Settings(OptionException(None, new SettingsNoGamePathException), OptionException(None, new SettingsNoSavePathException), OptionException(Some("yices-smt2"), new SettingsNoSolverPathException))
 
-    def read(file: File): Settings = {
+    def load(file: File): Settings = {
         val configFile = try {
             Source.fromFile(file.getPath)
         } catch {
