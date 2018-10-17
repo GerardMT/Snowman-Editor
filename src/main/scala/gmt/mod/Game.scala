@@ -170,12 +170,12 @@ class Game(settings: Settings) {
 
         val levelsFileWriter = new FileWriter(levelsFile)
         levelsFileWriter.write("Custom")
-        for (i <- 0 until level.snowmans - 1) {
+        for (_ <- 0 until level.snowmans - 1) {
             levelsFileWriter.write(", Custom")
         }
         levelsFileWriter.write("\n")
         levelsFileWriter.write("straw_hat buttons")
-        for (i <- 0 until level.snowmans - 1) {
+        for (_ <- 0 until level.snowmans - 1) {
             levelsFileWriter.write(", straw_hat buttons")
         }
         levelsFileWriter.write("\n")

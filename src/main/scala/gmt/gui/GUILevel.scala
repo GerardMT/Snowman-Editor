@@ -1,12 +1,11 @@
 package gmt.gui
 
-import java.awt.{Color, Font, Rectangle}
 import java.awt.event.{MouseEvent, MouseListener}
+import java.awt.{Color, Font, Rectangle}
 
-import gmt.snowman.game.`object`.{Empty, Grass, Object}
+import gmt.snowman.game.`object`.{Grass, Object}
 import gmt.snowman.level.{Coordinate, MutableLevel}
 
-import scala.collection.immutable
 import scala.swing.Swing._
 import scala.swing.{Graphics2D, GridPanel, Panel}
 

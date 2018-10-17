@@ -18,7 +18,7 @@ object Validator {
                 action += 1
             }
         } catch {
-            case e: Throwable =>
+            case _: Throwable =>
                 return (false, action)
         }
 

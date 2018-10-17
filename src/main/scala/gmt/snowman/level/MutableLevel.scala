@@ -143,7 +143,7 @@ class MutableLevel private (val width: Int, val height: Int, val name: Option[St
         Level(width, height, size, hasSnow, balls.size / Game.SNOWMAN_BALLS, someCharacterLocation.get, balls.toList, sortedMap, toString, name)
     }
 
-    def validateException: Unit = { // TODO Level must be closed
+    def validateException()(): Unit = { // TODO Level must be closed
         var balls = 0
         var character = 0
 

@@ -24,44 +24,44 @@ class Yices2Solver(solverBinaryPath: String) extends Solver {
         _process = Some((solverBinaryPath #< inputStream #> outputStream).run())
         _process.get.exitValue()
 
-        terminated match {
-            case true =>
-                SolverResult(false, List()) // TODO Use Option[Assigments] and 3 state variable: sat, unsat, terminated
-            case false =>
-                val assignments = ListBuffer.empty[Assignment]
+        if (terminated) {
+            SolverResult(sat = false, List())
+        } else {
+            val assignments = ListBuffer.empty[Assignment]
 
-                val lines = outputStream.toString.split("\n").toList
+            val lines = outputStream.toString.split("\n").toList
 
-                val sat = lines.head match {
-                    case "sat" =>
-                        true
-                    case "unsat" =>
-                        false
-                    case _ =>
-                        lines.foreach(f => System.err.println(f))
-                        throw new InvalidParameterException
-                }
+            val sat = lines.head match {
+                case "sat" =>
+                    true
+                case "unsat" =>
+                    false
+                case _ =>
+                    lines.foreach(f => System.err.println(f))
+                    throw new InvalidParameterException
+                    false
+            }
 
-                for (l <- lines.tail) {
-                    if (l.startsWith("(=")) {
-                        val s = l.drop(3).dropRight(1).split(' ')
-                        val v = s(1) match {
-                            case "true" =>
-                                ValueBoolean(true)
-                            case "false" =>
-                                ValueBoolean(false)
-                            case _ =>
-                                if (s.length == 3) {
-                                    ValueInteger(-s(2).dropRight(1).toInt)
-                                } else {
-                                    ValueInteger(s(1).toInt)
-                                }
-                        }
-                        assignments.append(Assignment(s(0), v))
+            for (l <- lines.tail) {
+                if (l.startsWith("(=")) {
+                    val s = l.drop(3).dropRight(1).split(' ')
+                    val v = s(1) match {
+                        case "true" =>
+                            ValueBoolean(true)
+                        case "false" =>
+                            ValueBoolean(false)
+                        case _ =>
+                            if (s.length == 3) {
+                                ValueInteger(-s(2).dropRight(1).toInt)
+                            } else {
+                                ValueInteger(s(1).toInt)
+                            }
                     }
+                    assignments.append(Assignment(s(0), v))
                 }
+            }
 
-                SolverResult(sat, assignments)
+            SolverResult(sat, assignments)
         }
 
     }

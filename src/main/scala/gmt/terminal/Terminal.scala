@@ -2,6 +2,7 @@ package gmt.terminal
 
 import java.io.{File, FileNotFoundException}
 
+import gmt.main.Settings
 import gmt.main.Settings.SettingsParseException
 import gmt.planner.planner.Planner.{PlannerOptions, PlannerUpdate}
 import gmt.snowman.encoder.DecodingData
@@ -11,102 +12,10 @@ import gmt.snowman.pddl.EncoderPDDL
 import gmt.snowman.planner.{SnowmanSolver, SnowmanSolverResult}
 import gmt.util.Files
 
-object Main {
+object Terminal {
 
     def main(args: Array[String]): Unit = {
-
-    }
-
-}
-
-class Terminal ls{
-
-    def main(args: Array[String]): Unit = {
-        try {
-            args.toList match {
-                case List(settingsPath, "gui") =>
-                    gmt.gui.Main(new File(settingsPath))
-
-                case List("smt-basic", levelPath, resultsPath, startTimeStepsStr, maxTimeSteps, threads, invaraintBallSizes, invariantBallLocations) =>
-                    openLevelSolveSMT(levelPath, resultsPath, startTimeStepsStr, maxTimeSteps, threads, invaraintBallSizes, invariantBallLocations, EncoderEnum.BASIC)
-
-                case List("smt-cheating", levelPath, resultsPath, startTimeStepsStr, maxTimeSteps, threads, invaraintBallSizes, invariantBallLocations) =>
-                    openLevelSolveSMT(levelPath, resultsPath, startTimeStepsStr, maxTimeSteps, threads, invaraintBallSizes, invariantBallLocations, EncoderEnum.CHEATING)
-
-                case List("smt-reachability", levelPath, resultsPath, startTimeStepsStr, maxTimeSteps, threads, invaraintBallSizes, invariantBallLocations) =>
-                    openLevelSolveSMT(levelPath, resultsPath, startTimeStepsStr, maxTimeSteps, threads, invaraintBallSizes, invariantBallLocations, EncoderEnum.REACHABILITY)
-
-                case List("adl", levelPath, problemPath) =>
-                    openLevelGeneratePDDLProblem(levelPath, problemPath, EncoderPDDL.encodeAdl)
-
-                case List("adl-grounded", levelPath, problemPath) =>
-                    openLevelGeneratePDDLProblem(levelPath, problemPath, EncoderPDDL.encodeObjectFluents)
-
-                case List("object-fluents", levelPath, domainPath, problemPath) =>
-                    openLevelGeneratePDDLDomainProblem(levelPath, domainPath, problemPath, EncoderPDDL.encodeAdlGrounded)
-
-                case List("--help") | List("-h") =>
-                    System.out.println("<snomwna editor> <settings path> <option>")
-                    System.out.println("")
-                    System.out.println("<option>:")
-                    System.out.println("")
-                    System.out.println("    smt-basic <level path> <result path> <start time steps (<int> | auto)> <max time steps> <threads> <invariant ball sizes (true | false)> <invariant ball locations (true | false)>")
-                    System.out.println("    smt-cheating <level path> <result path> <start time steps (<int> | auto)> <max time steps> <threads> <invariant ball sizes (true | false)> <invariant ball locations (true | false)>")
-                    System.out.println("    smt-reachability <level path> <result path> <start time steps (<int> | auto)> <max time steps> <threads> <invariant ball sizes (true | false)> <invariant ball locations (true | false)>")
-                    System.out.println("    adl <level path> <save problem path>")
-                    System.out.println("    adl-grounded <level path> <save domain path> <save problem path>")
-                    System.out.println("    object-fluents <level path> <save problem path>")
-
-                case List(_*) =>
-                    System.out.println("Error parsing the arguments. -h for help.")
-            }
-        } catch {
-            case SettingsParseException(message) =>
-                System.out.println("Settings error: " + message)
-                System.exit(0)
-            case e : FileNotFoundException =>
-                System.out.println()
-                System.exit(0)
-        }
-    }
-
-    private def openLevelSolveSMT(levelPath: String, resultsPath: String, startTimeStepsStr: String, maxTimeSteps: String, threads: String, invaraintBallSizes: String, invariantBallLocations: String, encoderEnum: EncoderEnum.Value): Unit = {
-        val startTimeSteps = startTimeStepsStr match {
-            case "auto" =>
-                None
-            case _ @ other =>
-                Some(other.toInt)
-        }
-
-        val level = MutableLevel.load(Files.openTextFile(new File(levelPath))).toLevel
-
-        val plannerOptions = PlannerOptions(startTimeSteps, maxTimeSteps.toInt, threads.toInt)
-        val encoderOptions = EncoderOptions(invaraintBallSizes.toBoolean, invariantBallLocations.toBoolean)
-        val result = SnowmanSolver.solveSMTYics2(settings.solverPath.get, level, encoderEnum, encoderOptions, plannerOptions, Terminal.showSolverUpdate)
-
-        Terminal.showResult(result)
-
-        result.result match {
-            case Some(r) =>
-                val resultString = StringBuilder.newBuilder
-                resultString.append("solved=" + result.solved + "\n")
-                resultString.append("solvingTime=" + result.milliseconds + "\n")
-                resultString.append("actions=" + r.actions.head.toString + r.actions.map(f => "|" + f).mkString)
-
-                Files.saveTextFile(new File(resultsPath), resultString.toString())
-            case None =>
-        }
-    }
-
-    private def openLevelGeneratePDDLProblem(levelPath: String, problemPath: String, generator : Level => String): Unit = {
-        Files.saveTextFile(new File(problemPath), generator(MutableLevel.load(Files.openTextFile(new File(levelPath))).toLevel))
-    }
-
-    private def openLevelGeneratePDDLDomainProblem(levelPath: String, domainPath: String, problemPath: String, generator : Level => (String, String)): Unit = {
-        val (domain, problem) = generator(MutableLevel.load(Files.openTextFile(new File(levelPath))).toLevel)
-
-        Files.saveTextFile(new File(domainPath), domain)
-        Files.saveTextFile(new File(problemPath), problem)
+        new Terminal().parseArguments(args.toList)
     }
 
     def showSolverUpdate(plannerUpdate: PlannerUpdate[DecodingData]): Unit = {
@@ -131,6 +40,121 @@ class Terminal ls{
     }
 }
 
-case class Terminal {
+class Terminal {
+
+    def parseArguments(arguments: List[String]): Unit = {
+        arguments match {
+            case List(settingsPath, _*) =>
+                new TerminalSettings(new File(settingsPath)).parseArguments(arguments.tail)
+
+            case List("--help") | List("-h") =>
+                System.out.print("""<snowman editor> <settings path> <option>
+                                   |
+                                   |<option>:
+                                   |
+                                   |    smt-basic <level path> <result path> <start time steps (<int> | auto)> <max time steps> <threads> <invariant ball sizes (true | false)> <invariant ball locations (true | false)>
+                                   |    smt-cheating <level path> <result path> <start time steps (<int> | auto)> <max time steps> <threads> <invariant ball sizes (true | false)> <invariant ball locations (true | false)>
+                                   |    smt-reachability <level path> <result path> <start time steps (<int> | auto)> <max time steps> <threads> <invariant ball sizes (true | false)> <invariant ball locations (true | false)>
+                                   |    adl <level path> <save problem path>
+                                   |    adl-grounded <level path> <save domain path> <save problem path>
+                                   |    object-fluents <level path> <save problem path>""".stripMargin)
+            case _ =>
+                wrongArgumentsError()
+        }
+    }
+
+    private def wrongArgumentsError(): Unit = {
+        System.out.println("Error parsing the arguments. -h for help.")
+    }
+
+    class TerminalSettings(private val settingsFile: File) {
+
+        private val settings: Settings = try {
+            Settings.load(settingsFile)
+        } catch {
+            case SettingsParseException(message) =>
+                System.out.println("Settings error: " + message)
+                sys.exit()
+            case _: FileNotFoundException =>
+                System.out.println("Settings file not found. File created at: " + settingsFile)
+                sys.exit()
+        }
+
+        def parseArguments(arguments: List[String]): Unit = {
+            try {
+                arguments match {
+                    case List("gui") =>
+                        new gmt.gui.GUI(settingsFile)
+
+                    case List("smt-basic", levelPath, resultsPath, startTimeStepsStr, maxTimeSteps, threads, invaraintBallSizes, invariantBallLocations) =>
+                        openLevelSolveSMT(levelPath, resultsPath, startTimeStepsStr, maxTimeSteps, threads, invaraintBallSizes, invariantBallLocations, EncoderEnum.BASIC)
+
+                    case List("smt-cheating", levelPath, resultsPath, startTimeStepsStr, maxTimeSteps, threads, invaraintBallSizes, invariantBallLocations) =>
+                        openLevelSolveSMT(levelPath, resultsPath, startTimeStepsStr, maxTimeSteps, threads, invaraintBallSizes, invariantBallLocations, EncoderEnum.CHEATING)
+
+                    case List("smt-reachability", levelPath, resultsPath, startTimeStepsStr, maxTimeSteps, threads, invaraintBallSizes, invariantBallLocations) =>
+                        openLevelSolveSMT(levelPath, resultsPath, startTimeStepsStr, maxTimeSteps, threads, invaraintBallSizes, invariantBallLocations, EncoderEnum.REACHABILITY)
+
+                    case List("adl", levelPath, problemPath) =>
+                        openLevelGeneratePDDLProblem(levelPath, problemPath, EncoderPDDL.encodeAdl)
+
+                    case List("adl-grounded", levelPath, problemPath) =>
+                        openLevelGeneratePDDLProblem(levelPath, problemPath, EncoderPDDL.encodeObjectFluents)
+
+                    case List("object-fluents", levelPath, domainPath, problemPath) =>
+                        openLevelGeneratePDDLDomainProblem(levelPath, domainPath, problemPath, EncoderPDDL.encodeAdlGrounded)
+
+                    case List(_*) =>
+                        wrongArgumentsError()
+                }
+            } catch {
+                case SettingsParseException(message) =>
+                    System.out.println("Settings error: " + message)
+                    System.exit(0)
+                case _: FileNotFoundException =>
+                    System.out.println()
+                    System.exit(0)
+            }
+        }
+
+        private def openLevelSolveSMT(levelPath: String, resultsPath: String, startTimeStepsStr: String, maxTimeSteps: String, threads: String, invaraintBallSizes: String, invariantBallLocations: String, encoderEnum: EncoderEnum.Value): Unit = {
+            val startTimeSteps = startTimeStepsStr match {
+                case "auto" =>
+                    None
+                case _@other =>
+                    Some(other.toInt)
+            }
+
+            val level = MutableLevel.load(Files.openTextFile(new File(levelPath))).toLevel
+
+            val plannerOptions = PlannerOptions(startTimeSteps, maxTimeSteps.toInt, threads.toInt)
+            val encoderOptions = EncoderOptions(invaraintBallSizes.toBoolean, invariantBallLocations.toBoolean)
+            val result = SnowmanSolver.solveSMTYics2(settings.solverPath.get, level, encoderEnum, encoderOptions, plannerOptions, Terminal.showSolverUpdate)
+
+            Terminal.showResult(result)
+
+            result.result match {
+                case Some(r) =>
+                    val resultString = StringBuilder.newBuilder
+                    resultString.append("solved=" + result.solved + "\n")
+                    resultString.append("solvingTime=" + result.milliseconds + "\n")
+                    resultString.append("actions=" + r.actions.head.toString + r.actions.map(f => "|" + f).mkString)
+
+                    Files.saveTextFile(new File(resultsPath), resultString.toString())
+                case None =>
+            }
+        }
+
+        private def openLevelGeneratePDDLProblem(levelPath: String, problemPath: String, generator: Level => String): Unit = {
+            Files.saveTextFile(new File(problemPath), generator(MutableLevel.load(Files.openTextFile(new File(levelPath))).toLevel))
+        }
+
+        private def openLevelGeneratePDDLDomainProblem(levelPath: String, domainPath: String, problemPath: String, generator: Level => (String, String)): Unit = {
+            val (domain, problem) = generator(MutableLevel.load(Files.openTextFile(new File(levelPath))).toLevel)
+
+            Files.saveTextFile(new File(domainPath), domain)
+            Files.saveTextFile(new File(problemPath), problem)
+        }
+    }
 
 }

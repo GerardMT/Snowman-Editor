@@ -22,9 +22,14 @@ import javax.swing._
 import scala.swing.GridBagPanel.Anchor
 import scala.swing.{Action, Color, Dialog, Dimension, FileChooser, GridBagPanel, MainFrame, Menu, MenuBar, MenuItem, ScrollPane, Separator}
 
-case class Main(private val settingsFile: File) {
+object GUI {
 
-    val settings: Settings = try {
+    val BACKGROUND_COLOR: Color = new Color(250, 250, 250)
+}
+
+class GUI(private val settingsFile: File) {
+
+    private val settings: Settings = try {
         Settings.load(settingsFile)
     } catch {
         case SettingsParseException(message) =>
@@ -36,10 +41,6 @@ case class Main(private val settingsFile: File) {
     }
 
     private val CURRENT_DIRECTORY = System.getProperty("user.dir")
-
-    val BACKGROUND_COLOR: Color = new Color(250, 250, 250)
-
-    private var optionSettings: Option[Settings] =  None
 
     private val game = new Game(settings)
 
@@ -336,7 +337,7 @@ case class Main(private val settingsFile: File) {
         contents = new ScrollPane(new GridBagPanel {
             val c = new Constraints
 
-            background = BACKGROUND_COLOR
+            background = GUI.BACKGROUND_COLOR
 
             c.anchor = Anchor.NorthWest
             c.gridx = 0
@@ -452,7 +453,6 @@ case class Main(private val settingsFile: File) {
 
         private val ballSizesCheckBox = new JCheckBox("Ball sizes")
         private val ballPositionsCheckBox = new JCheckBox("Ball positions")
-        private val ballsDistancesCheckBox = new JCheckBox("Balls distances")
 
         def component: JComponent = {
             val panel = new JPanel
@@ -460,7 +460,6 @@ case class Main(private val settingsFile: File) {
             panel.setBorder(BorderFactory.createTitledBorder("Invariants"))
             panel.add(ballSizesCheckBox)
             panel.add(ballPositionsCheckBox)
-            //panel.add(ballsDistancesCheckBox) // TODO Snow when implemented
 
             panel
         }
@@ -611,116 +610,6 @@ case class Main(private val settingsFile: File) {
             } catch {
                 case _: NumberFormatException =>
                     showErroDialog("Number must be an integer")
-                    None
-            }
-
-        } else {
-            None
-        }
-    }
-
-    private def showAutorunOptionsDialog(): Option[(PlannerOptions, EncoderOptions, String, String)] = {
-        val optionsLayout = new OptionsLayout
-        val invariantsLayout = new InvariantsLayout
-
-        val LEVELS_DEFAULT_PATH = CURRENT_DIRECTORY + "/autorunner/levels/"
-        val OUT_DEFAULT_PATH = CURRENT_DIRECTORY + "/autorunner/out-solvers/"
-
-        val levelsTextField = new JTextField(LEVELS_DEFAULT_PATH, 30)
-        val outTextField = new JTextField(OUT_DEFAULT_PATH, 30)
-
-        val directoryChooser = new FileChooser
-        directoryChooser.fileSelectionMode_=(FileChooser.SelectionMode.DirectoriesOnly)
-
-        val levelsButton = new JButton("Select")
-        //noinspection ConvertExpressionToSAM
-        levelsButton.addActionListener(new ActionListener {
-            override def actionPerformed(e: ActionEvent): Unit = {
-                directoryChooser.selectedFile_=(new File(LEVELS_DEFAULT_PATH))
-                val result = directoryChooser.showDialog(null, "Select")
-
-                if (result == FileChooser.Result.Approve) {
-                    levelsTextField.setText(directoryChooser.selectedFile.getAbsolutePath)
-                }
-            }
-        })
-
-        val outButton = new JButton("Select")
-        //noinspection ConvertExpressionToSAM
-        outButton.addActionListener(new ActionListener {
-            override def actionPerformed(e: ActionEvent): Unit = {
-                directoryChooser.selectedFile_=(new File(OUT_DEFAULT_PATH))
-                val result = directoryChooser.showDialog(null, "Select")
-
-                if (result == FileChooser.Result.Approve) {
-                    outTextField.setText(directoryChooser.selectedFile.getAbsolutePath)
-                }
-            }
-        })
-
-        val BOTTOM_PADDING = 5
-        val RIGHT_PADDING = 5
-
-        val pathPanel = new JPanel(new GridBagLayout)
-        pathPanel.setBorder(BorderFactory.createTitledBorder("Paths"))
-        val pathC = new GridBagConstraints
-        pathC.anchor = GridBagConstraints.EAST
-        pathC.insets = new Insets(0, 0, BOTTOM_PADDING, RIGHT_PADDING)
-        pathC.gridx = 0
-        pathC.gridy = 0
-        pathPanel.add(new JLabel("Levels directory:"), pathC)
-        pathC.insets = new Insets(0, 0, BOTTOM_PADDING, RIGHT_PADDING)
-        pathC.gridx = 1
-        pathC.gridy = 0
-        pathPanel.add(levelsTextField, pathC)
-        pathC.insets = new Insets(0, 0, BOTTOM_PADDING, 0)
-        pathC.gridx = 2
-        pathC.gridy = 0
-        pathPanel.add(levelsButton, pathC)
-        pathC.insets = new Insets(0, 0, 0, RIGHT_PADDING)
-        pathC.gridx = 0
-        pathC.gridy = 1
-        pathPanel.add(new JLabel("Out directory:"), pathC)
-        pathC.insets = new Insets(0, 0, 0, RIGHT_PADDING)
-        pathC.gridx = 1
-        pathC.gridy = 1
-        pathPanel.add(outTextField, pathC)
-        pathC.insets = new Insets(0, 0, 0, 0)
-        pathC.gridx = 2
-        pathC.gridy = 1
-        pathPanel.add(outButton, pathC)
-
-        val panel = new JPanel(new GridBagLayout)
-        val c = new GridBagConstraints
-        c.anchor = GridBagConstraints.NORTHWEST
-        c.gridwidth = 2
-        c.gridx = 0
-        c.gridy = 0
-        panel.add(pathPanel, c)
-        c.gridwidth = 1
-        c.gridx = 0
-        c.gridy = 1
-        panel.add(optionsLayout.component, c)
-        c.gridx = 1
-        c.gridy = 1
-        panel.add(invariantsLayout.component, c)
-
-        val option = JOptionPane.showConfirmDialog(null, panel, "Autorun options", JOptionPane.OK_CANCEL_OPTION)
-
-        if (option == JOptionPane.OK_OPTION) {
-            try {
-                if (!new File(levelsTextField.getText).exists()) {
-                    throw new FileNotFoundException()
-                }
-                new File(outTextField.getText).mkdirs()
-
-                Some((optionsLayout.result, invariantsLayout.result, levelsTextField.getText(), outTextField.getText))
-            } catch {
-                case _: NumberFormatException =>
-                    showErroDialog("Number must be an integer")
-                    None
-                case _: FileNotFoundException =>
-                    showErroDialog("Directory not found")
                     None
             }
 
