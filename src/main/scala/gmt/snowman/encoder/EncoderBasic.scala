@@ -38,8 +38,7 @@ protected case class EncoderBasic(override val level: Level, override val encode
             Implies(Not(otherBallUnderVar), moveCharacter(state, stateNext, shift)),
             Implies(otherBallUnderVar, equalCharacterVariables(state, stateNext)),
             equalOtherBallsVariables(state, stateActionBall, stateNext, stateNextActionBall),
-            updateBallSizeClause,
-            updateOccupancyVariables(state, stateNext))
+            updateBallSizeClause)
 
         if (level.hasSnow) {
             constantEff.append(updateSnowVariables(state, stateActionBall, stateNext, shift))
@@ -70,8 +69,7 @@ protected case class EncoderBasic(override val level: Level, override val encode
         val pre = characterLocationValid(state, action.shift)
 
         val constantEff = ListBuffer(moveCharacter(state, stateNext, action.shift),
-            equalBallsVariables(state, stateNext),
-            equalOccupancyVariables(state, stateNext))
+            equalBallsVariables(state, stateNext))
 
         if (level.hasSnow) {
             constantEff.append(equalSnowVariables(state, stateNext))
@@ -105,16 +103,16 @@ protected case class EncoderBasic(override val level: Level, override val encode
     }
 
     private def characterLocationValid(state: StateBasic, shift: Coordinate): Clause = {
-        Or((for ((c, o) <- flattenTuple(level.map.keys.map(f => (f, state.occupancy.get(f + shift))))) yield {
-            And(Equals(state.character.x, IntegerConstant(c.x)), Equals(state.character.y, IntegerConstant(c.y)), Not(o))
-        }).toSeq: _*)
+        And((for (b <- state.balls) yield {
+            Not(applyShiftClause(state.character, b, shift, AND))
+        }): _*)
     }
 
-    private def characterNextToBall[A <: StateBase with  CharacterInterface](state: A, stateActionBll: StateBase.Ball, shift: Coordinate): Clause = {
+    private def characterNextToBall[A <: StateBase](state: A, stateActionBll: StateBase.Ball, shift: Coordinate): Clause = {
         applyShiftClause(stateActionBll, state.character, -shift, AND)
     }
 
-    private def moveCharacter[A <: StateBase with  CharacterInterface](state: A, stateNext: A, shift: Coordinate): Clause = {
+    private def moveCharacter[A <: StateBase](state: A, stateNext: A, shift: Coordinate): Clause = {
         applyShiftClause(state.character, stateNext.character, shift, AND)
     }
 
@@ -128,11 +126,5 @@ protected case class EncoderBasic(override val level: Level, override val encode
         And((for ((b, bNext) <- state.balls.zip(stateNext.balls)) yield {
             And(Equals(b.x, bNext.x), Equals(b.y, bNext.y), Equals(b.size, bNext.size))
         }): _*)
-    }
-
-    protected def equalOccupancyVariables(state: StateBase, stateNext: StateBase): Clause = {
-        And((for ((o, oNext) <- flattenTuple(level.map.values.filter(f => Object.isPlayableArea(f.o)).map(f => (f.c, state.occupancy.get(f.c)))).map(f => (f._2, stateNext.occupancy.get(f._1).get))) yield {
-            Equivalent(o, oNext)
-        }).toList: _*)
     }
 }

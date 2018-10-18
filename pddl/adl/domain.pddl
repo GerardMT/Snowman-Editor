@@ -1,4 +1,4 @@
-(define (domain snowman-adl)
+(define (domain snowman_adl)
     
     (:requirements
         :typing
@@ -16,11 +16,11 @@
         (snow ?l - location)
         (next ?from ?to - location ?dir - direction)
         (occupancy ?l - location)
-        (character-at ?l - location)
-        (ball-at ?b - ball ?l - location)
-        (ball-size-small ?b - ball)
-        (ball-size-medium ?b - ball)
-        (ball-size-large ?b - ball)
+        (character_at ?l - location)
+        (ball_at ?b - ball ?l - location)
+        (ball_size_small ?b - ball)
+        (ball_size_medium ?b - ball)
+        (ball_size_large ?b - ball)
         (goal)
     )
     
@@ -32,13 +32,13 @@
      :precondition
         (and
             (next ?from ?to ?dir)
-            (character-at ?from)
+            (character_at ?from)
             (not (occupancy ?to)))
 
      :effect
         (and
-            (not (character-at ?from))
-            (character-at ?to))
+            (not (character_at ?from))
+            (character_at ?to))
     )
     
     (:action move_ball
@@ -50,76 +50,76 @@
         (and
             (next ?ppos ?from ?dir)
             (next ?from ?to ?dir)
-            (ball-at ?b ?from)
-            (character-at ?ppos)
+            (ball_at ?b ?from)
+            (character_at ?ppos)
             (forall (?o - ball)
                 (or 
                     (= ?o ?b)
                     (or 
-                        (not (ball-at ?o ?from))
+                        (not (ball_at ?o ?from))
                         (or 
                             (and
-                                (ball-size-small ?b)
-                                (ball-size-medium ?o))
+                                (ball_size_small ?b)
+                                (ball_size_medium ?o))
                             (and
-                                (ball-size-small ?b)
-                                (ball-size-large ?o))
+                                (ball_size_small ?b)
+                                (ball_size_large ?o))
                             (and
-                                (ball-size-medium ?b)
-                                (ball-size-large ?o))))))
+                                (ball_size_medium ?b)
+                                (ball_size_large ?o))))))
             (or
                 (forall (?o - ball)
                     (or 
                         (= ?o ?b)
-                        (not (ball-at ?o ?from))))
+                        (not (ball_at ?o ?from))))
                 (forall (?o - ball)
-                        (not (ball-at ?o ?to))))
+                        (not (ball_at ?o ?to))))
             (forall (?o - ball)
                     (or
-                        (not (ball-at ?o ?to))
+                        (not (ball_at ?o ?to))
                         (or 
                             (and
-                                (ball-size-small ?b)
-                                (ball-size-medium ?o))
+                                (ball_size_small ?b)
+                                (ball_size_medium ?o))
                             (and
-                                (ball-size-small ?b)
-                                (ball-size-large ?o))
+                                (ball_size_small ?b)
+                                (ball_size_large ?o))
                             (and
-                                (ball-size-medium ?b)
-                                (ball-size-large ?o))))))
+                                (ball_size_medium ?b)
+                                (ball_size_large ?o))))))
       :effect
         (and
             (when
                 (forall (?o - ball)
                     (or (= ?o ?b)
-                    (ball-at ?o ?to)))
+                    (ball_at ?o ?to)))
                 (goal))
             (not (occupancy ?from))
             (occupancy ?to)
-            (not (ball-at ?b ?from))
-            (ball-at ?b ?to)
+            (not (ball_at ?b ?from))
+            (ball_at ?b ?to)
             (when
                 (forall (?o - ball)
                     (or 
                         (= ?o ?b)
-                        (not (ball-at ?o ?from))))
+                        (not (ball_at ?o ?from))))
                 (and
-                    (not (character-at ?ppos))
-                    (character-at ?from)))
+                    (not (character_at ?ppos))
+                    (character_at ?from)))
             (not (snow ?to))
             (when
                 (and
                     (snow ?to)
-                    (ball-size-small ?b))
+                    (ball_size_small ?b))
                 (and
-                    (not (ball-size-small ?b))
-                    (ball-size-medium ?b)))
+                    (not (ball_size_small ?b))
+                    (ball_size_medium ?b)))
             (when
                 (and
                     (snow ?to)
-                    (ball-size-medium ?b))
+                    (ball_size_medium ?b))
                 (and
-                    (not (ball-size-medium ?b))
-                    (ball-size-large ?b))))
+                    (not (ball_size_medium ?b))
+                    (ball_size_large ?b))))
     )
 )

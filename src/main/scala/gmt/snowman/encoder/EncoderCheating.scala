@@ -29,8 +29,7 @@ protected case class EncoderCheating(override val level: Level, override val enc
 
         val constantEff = ListBuffer(moveBall(stateActionBall, stateNextActionBall, shift),
             equalOtherBallsVariables(state, stateActionBall, stateNext, stateNextActionBall),
-            updateBallSizeClause,
-            updateOccupancyVariables(state, stateNext))
+            updateBallSizeClause)
 
         if (level.hasSnow) {
             constantEff.append(updateSnowVariables(state, stateActionBall, stateNext, shift))

@@ -7,6 +7,7 @@ import gmt.snowman.action.SnowmanAction
 import gmt.snowman.collection.SortedMap
 import gmt.snowman.encoder.EncoderBase.EncoderOptions
 import gmt.snowman.encoder.StateBase.Ball
+import gmt.snowman.encoder.StateBase.Character
 import gmt.snowman.game.`object`.Object
 import gmt.snowman.level.{Coordinate, Level}
 
@@ -31,36 +32,33 @@ object StateReachability {
             }
         }
 
-        new StateReachability(StateBase(level, timeStep), reachabilityNodes, reachabilityWeights, reachabilityEdges, CharacterModule(level, timeStep))
+        new StateReachability(StateBase(level, timeStep), reachabilityNodes, reachabilityWeights, reachabilityEdges)
     }
 }
 
 class StateReachability private (override val timeStep: Int,
+                                 override val character: Character,
                                  override val balls: immutable.Seq[Ball],
                                  override val snow: SortedMap[Coordinate, BooleanVariable],
-                                 override val occupancy: SortedMap[Coordinate, BooleanVariable],
                                  override val mediumBalls: IntegerVariable,
                                  override val largeBalls: IntegerVariable,
                                  val reachabilityNodes: SortedMap[Coordinate, BooleanVariable],
                                  val reachabilityWeights: SortedMap[Coordinate, IntegerVariable],
-                                 val reachabilityEdges: SortedMap[(Coordinate, Coordinate), BooleanVariable],
-                                 private val characterModule: CharacterModule)
+                                 val reachabilityEdges: SortedMap[(Coordinate, Coordinate), BooleanVariable])
     extends StateBase(timeStep,
+        character,
         balls,
         snow,
-        occupancy,
         mediumBalls,
-        largeBalls) with CharacterInterface with VariableAdder {
+        largeBalls) with VariableAdder {
 
-    def this(stateBase: StateBase, reachabilityNodes: SortedMap[Coordinate, BooleanVariable], reachabilityWeights: SortedMap[Coordinate, IntegerVariable], reachabilityEdges: SortedMap[(Coordinate, Coordinate), BooleanVariable] ,characterModule: CharacterModule) {
-        this(stateBase.timeStep, stateBase.balls, stateBase.snow, stateBase.occupancy, stateBase.mediumBalls, stateBase.largeBalls, reachabilityNodes, reachabilityWeights, reachabilityEdges, characterModule)
+    def this(stateBase: StateBase, reachabilityNodes: SortedMap[Coordinate, BooleanVariable], reachabilityWeights: SortedMap[Coordinate, IntegerVariable], reachabilityEdges: SortedMap[(Coordinate, Coordinate), BooleanVariable]) {
+        this(stateBase.timeStep, stateBase.character, stateBase.balls, stateBase.snow, stateBase.mediumBalls, stateBase.largeBalls, reachabilityNodes, reachabilityWeights, reachabilityEdges)
     }
 
-    override val character: CharacterModule.Character = characterModule.character
 
     override def addVariables(encoding: Encoding, encoderOptions: EncoderOptions): Unit = {
         super.addVariables(encoding, encoderOptions)
-        characterModule.addVariables(encoding, encoderOptions)
 
         for (v <- reachabilityNodes.values) {
             encoding.add(operation.VariableDeclaration(v))

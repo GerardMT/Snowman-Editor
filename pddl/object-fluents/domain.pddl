@@ -1,12 +1,12 @@
-(define (domain snowman-object-fluents)
-    
+(define (domain snowman_object_fluents)
+
     (:requirements 
         :typing
         :negative-preconditions
         :equality
         :disjunctive-preconditions
         :conditional-effects
-        :object-fluets
+        :object-fluents
     )
 
     (:types 
@@ -20,71 +20,75 @@
     )
     
     (:functions
-        (character-at) - location
-        (ball-at ?b - ball) - location
-        (next-up ?l - location) - location
-        (next-down ?l - location) - location
-        (next-right ?l - location) - location
-        (next-left ?l - location) - location
+        (character_at) - location
+        (ball_at ?b - ball) - location
+        (next_up ?l - location) - location
+        (next_down ?l - location) - location
+        (next_right ?l - location) - location
+        (next_left ?l - location) - location
     )
     
     (:action move_up_character
-        
+
      :parameters
-        
-     :precondition
-        (not (occupancy (next-up (character-at))))
+        ()
+
+     :precondition 
+        (not (occupancy (next_up (character_at))))
 
      :effect
-        (assign (character-at) (next-up (character-at)))
+        (assign (character_at) (next_up (character_at)))
     )
 
     (:action move_down_character
         
      :parameters
-        
+        ()
+
      :precondition
-        (not (occupancy (next-down (character-at))))
+        (not (occupancy (next_down (character_at))))
         
      :effect
-        (assign (character-at) (next-down (character-at)))
+        (assign (character_at) (next_down (character_at)))
     )
 
     (:action move_right_character
         
      :parameters
-        
+        ()
+  
      :precondition
-        (not (occupancy (next-right (character-at))))
+        (not (occupancy (next_right (character_at))))
         
      :effect
-        (assign (character-at) (next-right (character-at)))
+        (assign (character_at) (next_right (character_at)))
     )
 
     (:action move_left_character
         
      :parameters
-        
+        ()
+  
      :precondition
-        (not (occupancy (next-left (character-at))))
+        (not (occupancy (next_left (character_at))))
         
      :effect
-        (assign (character-at) (next-left (character-at)))
+        (assign (character_at) (next_left (character_at)))
     )
     
     (:action move_up_ball
 
      :parameters
-        (?b - ball)
+        ()
 
      :precondition
         (and
-            (= (character-at) (next-down (ball-at ?b)))
+            (= (character_at) (next_down (ball_at ?b)))
             (forall (?o - ball)
                 (or 
                     (= ?o ?b)
                     (or 
-                        (not (= (ball-at ?o) (ball-at ?b)))
+                        (not (= (ball_at ?o) (ball_at ?b)))
                         (or 
                             (and
                                 (ball-size-small ?b)
@@ -99,12 +103,12 @@
                 (forall (?o - ball)
                     (or 
                         (= ?o ?b)
-                        (not (= (ball-at ?o) ((ball-at ?b))))))
+                        (not (= (ball_at ?o) ((ball_at ?b))))))
                 (forall (?o - ball)
-                        (not (= (ball-at ?o) (next-up (ball-at ?b))))))
+                        (not (= (ball_at ?o) (next_up (ball_at ?b))))))
             (forall (?o - ball)
                     (or
-                        (not (= (ball-at ?o) (next-up (ball-at ?b))))
+                        (not (= (ball_at ?o) (next_up (ball_at ?b))))
                         (or 
                             (and
                                 (ball-size-small ?b)
@@ -121,28 +125,28 @@
             (when
                 (forall (?o - ball)
                     (or (= ?o ?b)
-                    (= (ball-at ?o) (next-up (ball-at ?b)))))
+                    (= (ball_at ?o) (next_up (ball_at ?b)))))
                 (goal))
-            (not (occupancy (ball-at ?b)))
-            (occupancy (next-up (ball-at ?b)))
-            (assign (ball-at ?b) (next-up (ball-at ?b)))
+            (not (occupancy (ball_at ?b)))
+            (occupancy (next_up (ball_at ?b)))
+            (assign (ball_at ?b) (next_up (ball_at ?b)))
             (when
                 (forall (?o - ball)
                     (or 
                         (= ?o ?b)
-                        (not (= (ball-at ?o) (ball-at ?b)))))
-                (assign (character-at) (ball-at ?b)))
-            (not (snow (next-up (ball-at ?b))))
+                        (not (= (ball_at ?o) (ball_at ?b)))))
+                (assign (character_at) (ball_at ?b)))
+            (not (snow (next_up (ball_at ?b))))
             (when
                 (and
-                    (snow (next-up (ball-at ?b)))
+                    (snow (next_up (ball_at ?b)))
                     (ball-size-small ?b))
                 (and
                     (not (ball-size-small ?b))
                     (ball-size-medium ?b)))
             (when
                 (and
-                    (snow (next-up (ball-at ?b)))
+                    (snow (next_up (ball_at ?b)))
                     (ball-size-medium ?b))
                 (and
                     (not (ball-size-medium ?b))
@@ -156,12 +160,12 @@
 
      :precondition
         (and
-            (= (character-at) (next-up (ball-at ?b)))
+            (= (character_at) (next_up (ball_at ?b)))
             (forall (?o - ball)
                 (or 
                     (= ?o ?b)
                     (or 
-                        (not (= (ball-at ?o) (ball-at ?b)))
+                        (not (= (ball_at ?o) (ball_at ?b)))
                         (or 
                             (and
                                 (ball-size-small ?b)
@@ -176,12 +180,12 @@
                 (forall (?o - ball)
                     (or 
                         (= ?o ?b)
-                        (not (= (ball-at ?o) ((ball-at ?b))))))
+                        (not (= (ball_at ?o) ((ball_at ?b))))))
                 (forall (?o - ball)
-                        (not (= (ball-at ?o) (next-down (ball-at ?b))))))
+                        (not (= (ball_at ?o) (next_down (ball_at ?b))))))
             (forall (?o - ball)
                     (or
-                        (not (= (ball-at ?o) (next-down (ball-at ?b))))
+                        (not (= (ball_at ?o) (next_down (ball_at ?b))))
                         (or
                             (and
                                 (ball-size-small ?b)
@@ -198,28 +202,28 @@
             (when
                 (forall (?o - ball)
                     (or (= ?o ?b)
-                    (= (ball-at ?o) (next-down (ball-at ?b)))))
+                    (= (ball_at ?o) (next_down (ball_at ?b)))))
                 (goal))
-            (not (occupancy (ball-at ?b)))
-            (occupancy (next-down (ball-at ?b)))
-            (assign (ball-at ?b) (next-down (ball-at ?b)))
+            (not (occupancy (ball_at ?b)))
+            (occupancy (next_down (ball_at ?b)))
+            (assign (ball_at ?b) (next_down (ball_at ?b)))
             (when
                 (forall (?o - ball)
                     (or 
                         (= ?o ?b)
-                        (not (= (ball-at ?o) (ball-at ?b)))))
-                (assign (character-at) (ball-at ?b)))
-            (not (snow (next-down (ball-at ?b))))
+                        (not (= (ball_at ?o) (ball_at ?b)))))
+                (assign (character_at) (ball_at ?b)))
+            (not (snow (next_down (ball_at ?b))))
             (when
                 (and
-                    (snow (next-down (ball-at ?b)))
+                    (snow (next_down (ball_at ?b)))
                     (ball-size-small ?b))
                 (and
                     (not (ball-size-small ?b))
                     (ball-size-medium ?b)))
             (when
                 (and
-                    (snow (next-down (ball-at ?b)))
+                    (snow (next_down (ball_at ?b)))
                     (ball-size-medium ?b))
                 (and
                     (not (ball-size-medium ?b))
@@ -233,12 +237,12 @@
 
      :precondition
         (and
-            (= (character-at) (next-left (ball-at ?b)))
+            (= (character_at) (next_left (ball_at ?b)))
             (forall (?o - ball)
                 (or 
                     (= ?o ?b)
                     (or 
-                        (not (= (ball-at ?o) (ball-at ?b)))
+                        (not (= (ball_at ?o) (ball_at ?b)))
                         (or 
                             (and
                                 (ball-size-small ?b)
@@ -253,12 +257,12 @@
                 (forall (?o - ball)
                     (or 
                         (= ?o ?b)
-                        (not (= (ball-at ?o) ((ball-at ?b))))))
+                        (not (= (ball_at ?o) ((ball_at ?b))))))
                 (forall (?o - ball)
-                        (not (= (ball-at ?o) (next-right (ball-at ?b))))))
+                        (not (= (ball_at ?o) (next_right (ball_at ?b))))))
             (forall (?o - ball)
                     (or
-                        (not (= (ball-at ?o) (next-right (ball-at ?b))))
+                        (not (= (ball_at ?o) (next_right (ball_at ?b))))
                         (or
                             (and
                                 (ball-size-small ?b)
@@ -275,28 +279,28 @@
             (when
                 (forall (?o - ball)
                     (or (= ?o ?b)
-                    (= (ball-at ?o (next-right (ball-at ?b))))))
+                    (= (ball_at ?o (next_right (ball_at ?b))))))
                 (goal))
-            (not (occupancy (ball-at ?b)))
-            (occupancy (next-right (ball-at ?b)))
-            (assign (ball-at ?b) (next-right (ball-at ?b)))
+            (not (occupancy (ball_at ?b)))
+            (occupancy (next_right (ball_at ?b)))
+            (assign (ball_at ?b) (next_right (ball_at ?b)))
             (when
                 (forall (?o - ball)
                     (or 
                         (= ?o ?b)
-                        (not (= (ball-at ?o) (ball-at ?b)))))
-                (assign (character-at) (ball-at ?b)))
-            (not (snow (next-right (ball-at ?b))))
+                        (not (= (ball_at ?o) (ball_at ?b)))))
+                (assign (character_at) (ball_at ?b)))
+            (not (snow (next_right (ball_at ?b))))
             (when
                 (and
-                    (snow (next-right (ball-at ?b)))
+                    (snow (next_right (ball_at ?b)))
                     (ball-size-small ?b))
                 (and
                     (not (ball-size-small ?b))
                     (ball-size-medium ?b)))
             (when
                 (and
-                    (snow (next-right (ball-at ?b)))
+                    (snow (next_right (ball_at ?b)))
                     (ball-size-medium ?b))
                 (and
                     (not (ball-size-medium ?b))
@@ -310,12 +314,12 @@
 
      :precondition
         (and
-            (= (character-at) (next-right (ball-at ?b)))
+            (= (character_at) (next_right (ball_at ?b)))
             (forall (?o - ball)
                 (or 
                     (= ?o ?b)
                     (or 
-                        (not (= (ball-at ?o) (ball-at ?b)))
+                        (not (= (ball_at ?o) (ball_at ?b)))
                         (or 
                             (and
                                 (ball-size-small ?b)
@@ -330,12 +334,12 @@
                 (forall (?o - ball)
                     (or 
                         (= ?o ?b)
-                        (not (= (ball-at ?o) ((ball-at ?b))))))
+                        (not (= (ball_at ?o) ((ball_at ?b))))))
                 (forall (?o - ball)
-                        (not (= (ball-at ?o) (next-left (ball-at ?b))))))
+                        (not (= (ball_at ?o) (next_left (ball_at ?b))))))
             (forall (?o - ball)
                     (or
-                        (not (= (ball-at ?o) (next-left (ball-at ?b))))
+                        (not (= (ball_at ?o) (next_left (ball_at ?b))))
                         (or
                             (and
                                 (ball-size-small ?b)
@@ -352,28 +356,28 @@
             (when
                 (forall (?o - ball)
                     (or (= ?o ?b)
-                    (= (ball-at ?o) (next-left (ball-at ?b)))))
+                    (= (ball_at ?o) (next_left (ball_at ?b)))))
                 (goal))
-            (not (occupancy (ball-at ?b)))
-            (occupancy (next-left (ball-at ?b)))
-            (assign (ball-at ?b) (next-left (ball-at ?b)))
+            (not (occupancy (ball_at ?b)))
+            (occupancy (next_left (ball_at ?b)))
+            (assign (ball_at ?b) (next_left (ball_at ?b)))
             (when
                 (forall (?o - ball)
                     (or 
                         (= ?o ?b)
-                        (not (= (ball-at ?o) (ball-at ?b)))))
-                (assign (character-at) (ball-at ?b)))
-            (not (snow (next-left (ball-at ?b))))
+                        (not (= (ball_at ?o) (ball_at ?b)))))
+                (assign (character_at) (ball_at ?b)))
+            (not (snow (next_left (ball_at ?b))))
             (when
                 (and
-                    (snow (next-left (ball-at ?b)))
+                    (snow (next_left (ball_at ?b)))
                     (ball-size-small ?b))
                 (and
                     (not (ball-size-small ?b))
                     (ball-size-medium ?b)))
             (when
                 (and
-                    (snow (next-left (ball-at ?b)))
+                    (snow (next_left (ball_at ?b)))
                     (ball-size-medium ?b))
                 (and
                     (not (ball-size-medium ?b))

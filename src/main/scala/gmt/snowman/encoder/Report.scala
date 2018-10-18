@@ -51,22 +51,6 @@ object Report {
             snowLines.reverse.foreach(f => sb.append(f.mkString + "\n"))
             sb.append("\n")
 
-            sb.append("Occupancy\n")
-            val occupancyLines = ArrayBuffer.fill(level.height, level.width)(CHAR_UNDEFINED)
-
-            for (p <- level.map.values) {
-                val c = assignmentsMap.get(s.occupancy.get(p.c).get.name) match {
-                    case Some(Assignment(_, ValueBoolean(v))) =>
-                        if (v) '1' else '0'
-                    case None =>
-                        CHAR_UNKNOWN
-                }
-                occupancyLines(p.c.y)(p.c.x) = c
-            }
-
-            occupancyLines.reverse.foreach(f => sb.append(f.mkString + "\n"))
-            sb.append("\n")
-
             s match {
                 case sR: StateReachability =>
                     sb.append("Reachable\n")
@@ -130,25 +114,20 @@ object Report {
             }
         }
 
-        // Player
-        state match {
-            case c: CharacterInterface =>
-                val pXA = assignmentsMap.get(c.character.x.name)
-                val pYA = assignmentsMap.get(c.character.y.name)
+        // Character
+        val pXA = assignmentsMap.get(state.character.x.name)
+        val pYA = assignmentsMap.get(state.character.y.name)
 
-                if(pXA.isDefined && pYA.isDefined) {
-                    val pX = pXA.get match { case Assignment(_, ValueInteger(v)) => v }
-                    val pY = pYA.get match { case Assignment(_, ValueInteger(v)) => v }
+        if(pXA.isDefined && pYA.isDefined) {
+            val pX = pXA.get match { case Assignment(_, ValueInteger(v)) => v }
+            val pY = pYA.get match { case Assignment(_, ValueInteger(v)) => v }
 
-                    if (mapLines(pY)(pX) == '.') {
-                        mapLines(pY)(pX) = 'q'
-                    } else {
-                        mapLines(pY)(pX) = 'p'
-                    }
-                }
-            case _ =>
+            if (mapLines(pY)(pX) == '.') {
+                mapLines(pY)(pX) = 'q'
+            } else {
+                mapLines(pY)(pX) = 'p'
+            }
         }
-
 
         // Balls
         for (b <- state.balls) {

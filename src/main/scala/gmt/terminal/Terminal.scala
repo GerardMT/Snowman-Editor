@@ -138,7 +138,7 @@ class Terminal {
                     val resultString = StringBuilder.newBuilder
                     resultString.append("solved=" + result.solved + "\n")
                     resultString.append("solvingTime=" + result.milliseconds + "\n")
-                    resultString.append("actions=" + r.actions.head.toString + r.actions.map(f => "|" + f).mkString)
+                    resultString.append("actions=" + r.actions.head.toString + r.actions.tail.map(f => "|" + f).mkString)
 
                     Files.saveTextFile(new File(resultsPath), resultString.toString())
                 case None =>

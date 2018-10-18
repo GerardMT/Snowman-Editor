@@ -76,16 +76,6 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
             encoding.add(ClauseDeclaration(s))
         }
 
-        encoding.add(Comment("S0 Occupancy"))
-        for ((c, v) <- state0.occupancy) {
-            val o = level.map.get(c).get.o
-            if (o == Wall || Object.isBall(o)) {
-                encoding.add(ClauseDeclaration(v))
-            } else {
-                encoding.add(ClauseDeclaration(Not(v)))
-            }
-        }
-
         if (encoderOptions.invariantBallSizes) {
             encoding.add(Comment("S0 Invariant Ball Sies"))
             encoding.add(ClauseDeclaration(Equals(state0.mediumBalls, IntegerConstant(level.balls.count(f => f.o == MediumBall)))))
@@ -105,8 +95,6 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
 
             val actionsData = ListBuffer.empty[EncodingData.ActionData]
 
-            encoding.add(Comment("Occupancy"))
-            encoding.add(ClauseDeclaration(occupancyWalls(stateNext)))
 
             encodeReachability(stateNext, encoding)
 
@@ -181,7 +169,7 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
 
     protected def createBallAction(actionName: String, state: A, stateActionBall: StateBase.Ball, stateNext: A, stateNextActionBall: StateBase.Ball, shift: Coordinate): (Clause, Clause, Seq[Expression])
 
-    protected def encodeCharacterState[T <: CharacterInterface](state: T, encoding: Encoding): Unit = {
+    protected def encodeCharacterState[T <: StateBase](state: T, encoding: Encoding): Unit = {
         encoding.add(ClauseDeclaration(Equals(state.character.x, IntegerConstant(level.character.c.x))))
         encoding.add(ClauseDeclaration(Equals(state.character.y, IntegerConstant(level.character.c.y))))
     }
@@ -220,7 +208,7 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
         applyShiftClause(stateActionBall, stateNextActionBall, shift, AND)
     }
 
-    protected def equalCharacterVariables[T <: CharacterInterface](state: T, stateNext: T): Clause = {
+    protected def equalCharacterVariables[T <: StateBase](state: T, stateNext: T): Clause = {
         And(Equals(state.character.x, stateNext.character.x), Equals(state.character.y, stateNext.character.y))
     }
 
@@ -237,9 +225,9 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
     }
 
     protected def characterLocationTeleportValid[T <: StateBase](state: T, stateActionBall: StateBase.Ball, shift: Coordinate): Clause = {
-        Or((for ((c, o) <- flattenTuple(level.map.keys.map(f => (f, state.occupancy.get(f - shift))))) yield {
-            And(Equals(stateActionBall.x, IntegerConstant(c.x)), Equals(stateActionBall.y, IntegerConstant(c.y)), Not(o))
-        }).toSeq: _*)
+        And((for (b <- state.balls.filter(f => f != stateActionBall)) yield { // TODO From character
+            Not(applyShiftClause(b, stateActionBall, shift, AND))
+        }): _*)
     }
 
     protected def updateBallSize(actionName: String, state: StateBase, stateActionBall: StateBase.Ball, stateNextActionBall: StateBase.Ball, shift: Coordinate): (Clause, Seq[Expression]) = {
@@ -262,16 +250,6 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
         } else {
             (Equals(stateNextActionBall.size, stateActionBall.size), Seq.empty)
         }
-    }
-
-    protected def updateOccupancyVariables(state: StateBase, stateNext: StateBase): Clause = {
-        val ands = for (l <- level.map.values.filter(f => Object.isPlayableArea(f.o))) yield {
-            val ors = for (b <- stateNext.balls) yield {
-                And(Equals(b.x, IntegerConstant(l.c.x)), Equals(b.y, IntegerConstant(l.c.y)))
-            }
-            Equivalent(Or(ors: _*), stateNext.occupancy.get(l.c).get)
-        }
-        And(ands.toList: _*)
     }
 
     protected def invariantBallSizes(state: StateBase, stateActionBall: StateBase.Ball, stateNext: StateBase, stateNextActionBall: StateBase.Ball): Clause = {
@@ -304,10 +282,6 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
 
         And(ands: _*)
     }
-
-//    protected def invariantBallDistances(stateNext: StateBase): (Clause, Seq[VariableDeclaration]) = {
-//        // TODO Invariant
-//    }
 
     protected trait ApplyShiftClauseOperation {
         def apply(c1: Clause, c2: Clause): Clause
@@ -347,12 +321,6 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
             EncoderBase.LARGE_BALL
     }
 
-    private def occupancyWalls(state: StateBase): Clause = {
-        And((for (o <- level.map.values.filter(f => !Object.isPlayableArea(f.o)).flatMap(f => state.occupancy.get(f.c))) yield {
-            o
-        }).toSeq: _*)
-    }
-
     protected def decodeTeleport(assignments: Seq[Assignment], encodingData: EncodingData): DecodingData = {
         val assignmentsMap = assignments.map(f => (f.name, f.value)).toMap
 
@@ -383,14 +351,14 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
             if (preActionCoordinate - characterLocation != Coordinate(0, 0)) {
                 val allNodes = () => level.map.keys.toList
                 val neighboursRelaxed  = (c: Coordinate) => SnowmanAction.ACTIONS.map(f => c + f.shift).filter(f => {val l = level.map.get(f); l.isDefined && Object.isPlayableArea(l.get.o)})
-                val neighbours = (c: Coordinate) => neighboursRelaxed(c).filter(f => !assignmentsMap(state.occupancy.get(f).get.name).asInstanceOf[ValueBoolean].v)
+                val neighbours = (c: Coordinate) => neighboursRelaxed(c).filter(f => state.balls.exists(b => assignmentsMap(b.x.name).asInstanceOf[ValueInteger].v == c.x && assignmentsMap(b.y.name).asInstanceOf[ValueInteger].v == c.y))
                 val heuristic = (start: Coordinate, goal: Coordinate) => start.euclideanDistance(goal).toFloat
 
                 var path = AStar.aStar(characterLocation, preActionCoordinate, allNodes, neighbours, heuristic)
                 if (path.isEmpty) {
                     path = AStar.aStar(characterLocation, preActionCoordinate, allNodes, neighboursRelaxed, heuristic)
 
-                    println("Omitting occupancy for balls")
+                    println("Omitting occpuied locations for balls")
                 }
 
                 val pathActions = pathToActions(path)

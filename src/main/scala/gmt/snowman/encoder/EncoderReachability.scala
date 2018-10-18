@@ -24,7 +24,7 @@ protected case class EncoderReachability(override val level: Level, override val
                 And(operation.Equals(state.balls(b).x, IntegerConstant(p.c.x)), operation.Equals(state.balls(b).y, IntegerConstant(p.c.y)))
             }): _*)
 
-            encoding.add(ClauseDeclaration(Implies(or, operation.Not(state.reachabilityNodes.get(p.c).get)))) // TODO OPTIMIZATION Merge with occupancy
+            encoding.add(ClauseDeclaration(Implies(or, operation.Not(state.reachabilityNodes.get(p.c).get))))
         }
 
         for (l <- level.map.values.filter(f => Object.isPlayableArea(f.o))) {
@@ -68,8 +68,7 @@ protected case class EncoderReachability(override val level: Level, override val
             Implies(Not(otherBallUnderVar), teleportCharacterBall(stateActionBall, stateNext)),
             Implies(otherBallUnderVar, teleportCharacter(stateActionBall, stateNext, shift)),
             equalOtherBallsVariables(state, stateActionBall, stateNext, stateNextActionBall),
-            updateBallSizeClause,
-            updateOccupancyVariables(state, stateNext))
+            updateBallSizeClause)
 
         if (level.hasSnow) {
             constantEff.append(updateSnowVariables(state, stateActionBall, stateNext, shift))
@@ -82,7 +81,6 @@ protected case class EncoderReachability(override val level: Level, override val
         if (encoderOptions.invariantBallLocations) {
             constantEff.append(invariantBallLocatoins(stateNext, stateNextActionBall))
         }
-
 
         val eff = And(constantEff.toList: _*)
 
@@ -102,11 +100,11 @@ protected case class EncoderReachability(override val level: Level, override val
         }).toSeq: _*)
     }
 
-    private def teleportCharacterBall[T <: StateBase with CharacterInterface](stateActionBall: StateBase.Ball, stateNext: T): Clause = {
+    private def teleportCharacterBall[T <: StateBase](stateActionBall: StateBase.Ball, stateNext: T): Clause = {
         And(Equals(stateNext.character.x, stateActionBall.x), Equals(stateNext.character.y, stateActionBall.y))
     }
 
-    private def teleportCharacter[T <: StateBase with CharacterInterface](stateActionBall: StateBase.Ball, stateNext: T, shift: Coordinate): Clause = {
+    private def teleportCharacter[T <: StateBase](stateActionBall: StateBase.Ball, stateNext: T, shift: Coordinate): Clause = {
         applyShiftClause(stateActionBall, stateNext.character, -shift, AND)
     }
 }
