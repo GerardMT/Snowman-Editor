@@ -95,7 +95,7 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
 
             val actionsData = ListBuffer.empty[EncodingData.ActionData]
 
-
+            encodeLocationsRestriction(stateNext, encoding)
             encodeReachability(stateNext, encoding)
 
             val actionsVariables = ListBuffer.empty[BooleanVariable]
@@ -174,12 +174,6 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
         encoding.add(ClauseDeclaration(Equals(state.character.y, IntegerConstant(level.character.c.y))))
     }
 
-    protected def noWallInFront(state: StateBase, stateActionBall: StateBase.Ball, shift: Coordinate): Clause = { // TODO OPTIMIZATION Possible optimization. Can be done with coordinates. OPTIMIZATION Check for walls or snow
-        Or((for (c <- flattenTuple(level.map.values.filter(f => Object.isPlayableArea(f.o)).map(f => (f.c, level.map.get(f.c + shift)))).filter(f => Object.isPlayableArea(f._2.o)).map(f => f._1)) yield {
-            And(Equals(stateActionBall.x, IntegerConstant(c.x)), Equals(stateActionBall.y, IntegerConstant(c.y)))
-        }).toSeq : _*)
-    }
-
     protected def noOtherBallsOver(state: StateBase, stateActionBall: StateBase.Ball): Clause = {
         And((for (b <- state.balls.filter(f => f != stateActionBall)) yield {
             Or(Not(Equals(stateActionBall.x, b.x)), Not(Equals(stateActionBall.y, b.y)), Smaller(stateActionBall.size, b.size))
@@ -222,12 +216,6 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
         Operations.simplify(And((for ((c, s) <- flattenTuple(level.map.keys.map(f => (f, state.snow.get(f + shift))))) yield {
             Equivalent(And(s, Or(Not(Equals(stateActionBall.x, IntegerConstant(c.x))), Not(Equals(stateActionBall.y, IntegerConstant(c.y))))), stateNext.snow.get(c + shift).get)
         }).toSeq: _*))
-    }
-
-    protected def characterLocationTeleportValid[T <: StateBase](state: T, stateActionBall: StateBase.Ball, shift: Coordinate): Clause = {
-        And((for (b <- state.balls.filter(f => f != stateActionBall)) yield { // TODO From character
-            Not(applyShiftClause(b, stateActionBall, shift, AND))
-        }): _*)
     }
 
     protected def updateBallSize(actionName: String, state: StateBase, stateActionBall: StateBase.Ball, stateNextActionBall: StateBase.Ball, shift: Coordinate): (Clause, Seq[Expression]) = {
@@ -351,7 +339,7 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
             if (preActionCoordinate - characterLocation != Coordinate(0, 0)) {
                 val allNodes = () => level.map.keys.toList
                 val neighboursRelaxed  = (c: Coordinate) => SnowmanAction.ACTIONS.map(f => c + f.shift).filter(f => {val l = level.map.get(f); l.isDefined && Object.isPlayableArea(l.get.o)})
-                val neighbours = (c: Coordinate) => neighboursRelaxed(c).filter(f => state.balls.exists(b => assignmentsMap(b.x.name).asInstanceOf[ValueInteger].v == c.x && assignmentsMap(b.y.name).asInstanceOf[ValueInteger].v == c.y))
+                val neighbours = (c: Coordinate) => neighboursRelaxed(c).filter(f => !state.balls.exists(b => assignmentsMap(b.x.name).asInstanceOf[ValueInteger].v == f.x && assignmentsMap(b.y.name).asInstanceOf[ValueInteger].v == f.y))
                 val heuristic = (start: Coordinate, goal: Coordinate) => start.euclideanDistance(goal).toFloat
 
                 var path = AStar.aStar(characterLocation, preActionCoordinate, allNodes, neighbours, heuristic)
@@ -392,6 +380,20 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
     private def pathToActions(path: immutable.Seq[Coordinate]): List[SnowmanAction] = {
         val reverse = path.reverse
         reverse.zip(reverse.tail).map(f => SnowmanAction.ACTIONS.find(f2 => f2.shift == (f._2 - f._1)).get).toList
+    }
+
+    private def encodeLocationsRestriction[T <: StateBase](state: T, encoder: Encoding): Unit = {
+        encoder.add(ClauseDeclaration(Or((for (l <- level.map.values.filter(f => Object.isPlayableArea(f.o))) yield {
+            And(Equals(state.character.x, IntegerConstant(l.c.x)), Equals(state.character.y, IntegerConstant(l.c.y)))
+        }).toSeq: _*)))
+        for (b <- state.balls) {
+            encoder.add(ClauseDeclaration(Not(And(Equals(state.character.x, b.x), Equals(state.character.y, b.y)))))
+        }
+        for (b <- state.balls) {
+            encoder.add(ClauseDeclaration(Or((for (l <- level.map.values.filter(f => Object.isPlayableArea(f.o))) yield {
+                And(Equals(b.x, IntegerConstant(l.c.x)), Equals(b.y, IntegerConstant(l.c.y)))
+            }).toSeq: _*)))
+        }
     }
 
     protected def flattenTuple[T,U](l: Iterator[(T, Option[U])]): Iterator[(T, U)] = l.filter(f => f._2.isDefined).map(f => (f._1, f._2.get))

@@ -29,7 +29,6 @@ protected case class EncoderBasic(override val level: Level, override val encode
         expressions.appendAll(updateBallSizeExpressions)
 
         val pre = And(characterNextToBall(state, stateActionBall, shift),
-            noWallInFront(state, stateActionBall, shift),
             noOtherBallsOver(state, stateActionBall),
             Not(And(otherBallInFront(state, stateActionBall, shift), otherBallUnderVar)),
             otherBallsInFrontLarger(state, stateActionBall, shift))
@@ -66,7 +65,7 @@ protected case class EncoderBasic(override val level: Level, override val encode
 
         actionsData.append(EncodingData.ActionData(action, actionVariable, ActionData.NO_BALL))
 
-        val pre = characterLocationValid(state, action.shift)
+        val pre = BooleanConstant(true)
 
         val constantEff = ListBuffer(moveCharacter(state, stateNext, action.shift),
             equalBallsVariables(state, stateNext))
@@ -100,12 +99,6 @@ protected case class EncoderBasic(override val level: Level, override val encode
         }
 
         DecodingData(actions.toList, level.balls, actionsBalls.toList)
-    }
-
-    private def characterLocationValid(state: StateBasic, shift: Coordinate): Clause = {
-        And((for (b <- state.balls) yield {
-            Not(applyShiftClause(state.character, b, shift, AND))
-        }): _*)
     }
 
     private def characterNextToBall[A <: StateBase](state: A, stateActionBll: StateBase.Ball, shift: Coordinate): Clause = {

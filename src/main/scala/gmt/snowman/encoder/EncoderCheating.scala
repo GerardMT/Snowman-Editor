@@ -21,11 +21,9 @@ protected case class EncoderCheating(override val level: Level, override val enc
         val (updateBallSizeClause, updateBallSizeExpressions) = updateBallSize(actionName, state, stateActionBall, stateNextActionBall, shift)
         expressions.appendAll(updateBallSizeExpressions)
 
-        val pre = And(noWallInFront(state, stateActionBall, shift),
-            noOtherBallsOver(state, stateActionBall),
+        val pre = And(noOtherBallsOver(state, stateActionBall),
             Not(And(otherBallInFront(state, stateActionBall, shift), otherBallUnder(state, stateActionBall))),
-            otherBallsInFrontLarger(state, stateActionBall, shift),
-            characterLocationTeleportValid(state, stateActionBall, shift))
+            otherBallsInFrontLarger(state, stateActionBall, shift))
 
         val constantEff = ListBuffer(moveBall(stateActionBall, stateNextActionBall, shift),
             equalOtherBallsVariables(state, stateActionBall, stateNext, stateNextActionBall),
