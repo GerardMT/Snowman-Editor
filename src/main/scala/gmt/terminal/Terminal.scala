@@ -44,9 +44,6 @@ class Terminal {
 
     def parseArguments(arguments: List[String]): Unit = {
         arguments match {
-            case List(settingsPath, _*) =>
-                new TerminalSettings(new File(settingsPath)).parseArguments(arguments.tail)
-
             case List("--help") | List("-h") =>
                 System.out.print("""<snowman editor> <settings path> <option>
                                    |
@@ -58,6 +55,9 @@ class Terminal {
                                    |    adl <level path> <save problem path>
                                    |    adl-grounded <level path> <save domain path> <save problem path>
                                    |    object-fluents <level path> <save problem path>""".stripMargin)
+            case List(settingsPath, _*) =>
+                new TerminalSettings(new File(settingsPath)).parseArguments(arguments.tail)
+
             case _ =>
                 wrongArgumentsError()
         }
@@ -98,11 +98,11 @@ class Terminal {
                     case List("adl", levelPath, problemPath) =>
                         openLevelGeneratePDDLProblem(levelPath, problemPath, EncoderPDDL.encodeAdl)
 
-                    case List("adl-grounded", levelPath, problemPath) =>
-                        openLevelGeneratePDDLProblem(levelPath, problemPath, EncoderPDDL.encodeObjectFluents)
-
-                    case List("object-fluents", levelPath, domainPath, problemPath) =>
+                    case List("adl-grounded", levelPath, domainPath, problemPath) =>
                         openLevelGeneratePDDLDomainProblem(levelPath, domainPath, problemPath, EncoderPDDL.encodeAdlGrounded)
+
+                    case List("object-fluents", levelPath, problemPath) =>
+                        openLevelGeneratePDDLProblem(levelPath, problemPath, EncoderPDDL.encodeObjectFluents)
 
                     case List(_*) =>
                         wrongArgumentsError()
