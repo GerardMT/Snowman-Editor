@@ -179,7 +179,7 @@ object EncoderPDDL {
         for (l0 <- level.map.values.filter(f => Object.isPlayableArea(f.o)); shift <- SnowmanAction.ACTIONS.map(f => f.shift)) {
             (level.map.get(l0.c + shift), level.map.get(l0.c + shift + shift)) match {
                 case (Some(l1), Some(l2)) =>
-                    if (Object.isPlayableArea(l2.o)) {
+                    if (Object.isPlayableArea(l1.o) && Object.isPlayableArea(l2.o)) {
                         val ppos = "loc_" + l0.c.x + "_" + l0.c.y
                         val from = "loc_" + l1.c.x + "_" + l1.c.y
                         val to = "loc_" + l2.c.x + "_" + l2.c.y
