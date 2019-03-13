@@ -31,7 +31,8 @@ protected case class EncoderBasic(override val level: Level, override val encode
         val pre = And(characterNextToBall(state, stateActionBall, shift),
             noOtherBallsOver(state, stateActionBall),
             Not(And(otherBallInFront(state, stateActionBall, shift), otherBallUnderVar)),
-            otherBallsInFrontLarger(state, stateActionBall, shift))
+            otherBallsInFrontLarger(state, stateActionBall, shift),
+            Not(state.emptyAction))
 
         val constantEff = ListBuffer(moveBall(stateActionBall, stateNextActionBall, shift),
             Implies(Not(otherBallUnderVar), moveCharacter(state, stateNext, shift)),
@@ -58,14 +59,29 @@ protected case class EncoderBasic(override val level: Level, override val encode
 
     override def encodeReachability(state: StateBasic, encoding: Encoding): Unit = {}
 
-    override protected def encodeCharacterAction(actionName: String, state: StateBasic, stateNext: StateBasic, action: SnowmanAction, encoding: Encoding, actionVariables: mutable.Buffer[BooleanVariable], actionsData: mutable.Buffer[EncodingData.ActionData]): Unit = {
+    override protected def encodeEmptyAction(state: StateBasic, stateNext: StateBasic, actionVariable: BooleanVariable, encoing: Encoding): (Clause, Clause) = {
+        var eff = And(Equivalent(state.emptyAction, BooleanConstant(true)),
+            equalBallsVariables(state, stateNext),
+            equalSnowVariables(state, stateNext),
+            equalCharacterVariables(state, stateNext))
+
+        if (state.snow.nonEmpty) {
+            eff = And(eff, equalSnowVariables(state, stateNext))
+        }
+
+        (BooleanConstant(true), eff)
+    }
+
+    override protected def encodeCharacterAction(actionName: String, state: StateBasic, stateNext: StateBasic, action: SnowmanAction, encoding: Encoding, actionVariables: mutable.Buffer[BooleanVariable], actionsData: mutable.Buffer[EncodingData.ActionData], declareActionVariable: Boolean): Unit = {
         val actionVariable = BooleanVariable(actionName + "_S" + state.timeStep + "S" + stateNext.timeStep)
-        encoding.add(VariableDeclaration(actionVariable))
+        if (declareActionVariable) {
+            encoding.add(VariableDeclaration(actionVariable))
+        }
         actionVariables.append(actionVariable)
 
         actionsData.append(EncodingData.ActionData(action, actionVariable, ActionData.NO_BALL))
 
-        val pre = BooleanConstant(true)
+        val pre = Not(state.emptyAction)
 
         val constantEff = ListBuffer(moveCharacter(state, stateNext, action.shift),
             equalBallsVariables(state, stateNext))
@@ -107,17 +123,5 @@ protected case class EncoderBasic(override val level: Level, override val encode
 
     private def moveCharacter[A <: StateBase](state: A, stateNext: A, shift: Coordinate): Clause = {
         applyShiftClause(state.character, stateNext.character, shift, AND)
-    }
-
-    private def equalSnowVariables(state: StateBase, stateNext: StateBase): Clause = {
-        Operations.simplify(And((for ((s, sNext) <- state.snow.values.zip(stateNext.snow.values)) yield {
-            Equivalent(s, sNext)
-        }).toSeq: _*))
-    }
-
-    private def equalBallsVariables(state: StateBase, stateNext: StateBase): Clause = {
-        And((for ((b, bNext) <- state.balls.zip(stateNext.balls)) yield {
-            And(Equals(b.x, bNext.x), Equals(b.y, bNext.y), Equals(b.size, bNext.size))
-        }): _*)
     }
 }

@@ -8,15 +8,24 @@ import gmt.planner.translator.Translator
 object SMTLib2 extends Translator {
 
     override def translate(p: Encoding): String = {
-        "(set-option :produce-models true)\n" +
-        "(set-logic QF_LIA)\n" + // TODO QF_LIA Hardcoded. Hauria de deduir-ho de problem
-        p.expressions.map(f => SMTLib2.translateExpression(f) + "\n").mkString +
+        var expressions = ""
+        var clauseAssert = true
+        for (e <- p.expressions) {
+            if (e.isInstanceOf[Custom]) {
+                clauseAssert = false
+            }
+            expressions += SMTLib2.translateExpression(e, clauseAssert) + "\n"
+        }
+
+        "(set-logic LIA)" +
+        p.variables.map(f => SMTLib2.translateExpression(f) + "\n").mkString +
+        expressions +
         "(check-sat)\n" +
         "(get-model)\n" +
         "(exit)"
     }
 
-    private def translateExpression(e: Expression) = {
+    private def translateExpression(e: Expression, clauseAssert: Boolean = true) = {
         e match {
             case Comment(s) =>
                 "; " + s
@@ -30,7 +39,13 @@ object SMTLib2 extends Translator {
 
                 "(declare-const " + s + ")"
             case ClauseDeclaration(c) =>
-                "(assert " + translateClause(c) + ")"
+                if (clauseAssert) {
+                    "(assert " + translateClause(c) + ")"
+                } else {
+                    translateClause(c)
+                }
+            case Custom(f) =>
+                f()
         }
     }
 

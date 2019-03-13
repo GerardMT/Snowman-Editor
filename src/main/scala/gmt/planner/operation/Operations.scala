@@ -4,6 +4,13 @@ import scala.collection.mutable.ListBuffer
 
 
 object Operations {
+    def isVariable(f: Clause): Boolean = f match {
+        case BooleanVariable(_) | IntegerVariable(_) =>
+            true
+        case _ =>
+            false
+    }
+
 
     def isReturnInteger(c: Clause): Boolean = c match {
         case IntegerVariable(_) | IntegerConstant(_) | Add(_, _) | Sub(_, _) =>

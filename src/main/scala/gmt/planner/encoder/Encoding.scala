@@ -9,6 +9,7 @@ class Encoding {
 
     private val _variablesSet = mutable.Set.empty[String]
 
+    private val _variables = ListBuffer.empty[Expression]
     private val _expressions = ListBuffer.empty[Expression]
 
     def add(e: Expression*): Unit = {
@@ -25,7 +26,7 @@ class Encoding {
                     throw new IllegalStateException("Variable already exists: " + name)
                 } else {
                     _variablesSet.add(name)
-                    _expressions.append(f)
+                    _variables.append(f)
                 }
             case f =>
                 _expressions.append(f)
@@ -37,4 +38,6 @@ class Encoding {
     }
 
     def expressions: immutable.Seq[Expression]  = _expressions.toList
+
+    def variables: immutable.Seq[Expression] = _variables.toList
 }

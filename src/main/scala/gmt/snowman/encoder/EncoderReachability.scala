@@ -52,6 +52,7 @@ protected case class EncoderReachability(override val level: Level, override val
 
         val otherBallUnderVar = BooleanVariable(actionName + "_S" + state.timeStep + "OBU")
         expressions.append(VariableDeclaration(otherBallUnderVar))
+
         expressions.append(ClauseDeclaration(Equivalent(otherBallUnderVar, otherBallUnder(state, stateActionBall))))
 
         val (updateBallSizeClause, updateBallSizeExpressions) = updateBallSize(actionName, state, stateActionBall, stateNextActionBall, shift)
@@ -60,7 +61,8 @@ protected case class EncoderReachability(override val level: Level, override val
         val pre = And(noOtherBallsOver(state, stateActionBall),
             Not(And(otherBallInFront(state, stateActionBall, shift), otherBallUnderVar)),
             otherBallsInFrontLarger(state, stateActionBall, shift),
-            reachability(state, stateActionBall, shift))
+            reachability(state, stateActionBall, shift),
+            Not(state.emptyAction))
 
       val constantEff = ListBuffer(moveBall(stateActionBall, stateNextActionBall, shift),
             Implies(Not(otherBallUnderVar), teleportCharacterBall(stateActionBall, stateNext)),
@@ -85,7 +87,19 @@ protected case class EncoderReachability(override val level: Level, override val
         (pre, eff, expressions)
     }
 
-    override protected def encodeCharacterAction(actionName: String, state: StateReachability, stateNext: StateReachability, action: SnowmanAction, encoding: Encoding, actionVariables: mutable.Buffer[BooleanVariable], actionsState: mutable.Buffer[EncodingData.ActionData]): Unit = {}
+    override protected def encodeCharacterAction(actionName: String, state: StateReachability, stateNext: StateReachability, action: SnowmanAction, encoding: Encoding, actionVariables: mutable.Buffer[BooleanVariable], actionsState: mutable.Buffer[EncodingData.ActionData], declareActionVariable: Boolean): Unit = {}
+
+    override protected def encodeEmptyAction(state: StateReachability, stateNext: StateReachability, actionVariable: BooleanVariable, encoing: Encoding): (Clause, Clause) = {
+        var eff = And(Equivalent(state.emptyAction, BooleanConstant(true)),
+            equalBallsVariables(state, stateNext),
+            equalCharacterVariables(state, stateNext))
+
+        if (state.snow.nonEmpty) {
+            eff = And(eff, equalSnowVariables(state, stateNext))
+        }
+
+        (BooleanConstant(true), eff)
+    }
 
     override def decode(assignments: Seq[Assignment], encodingData: EncodingData): DecodingData = {
         println(Report.generateReport(level, encodingData.state0 :: encodingData.statesData.map(f => f.stateNext).toList, assignments)) // TODO Remove println

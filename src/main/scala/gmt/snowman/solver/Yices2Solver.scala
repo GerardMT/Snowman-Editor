@@ -21,7 +21,7 @@ class Yices2Solver(solverBinaryPath: String) extends Solver {
         val inputStream: InputStream = new ByteArrayInputStream(input.getBytes(StandardCharsets.UTF_8.name))
         val outputStream = new ByteArrayOutputStream()
 
-        _process = Some((solverBinaryPath #< inputStream #> outputStream).run())
+        _process = Some(("/home/gerard/software/cvc4-2018-09-18/install/bin/cvc4 --lang smt --produce-models" #< inputStream #> outputStream).run())
         _process.get.exitValue()
 
         if (terminated) {
@@ -31,33 +31,26 @@ class Yices2Solver(solverBinaryPath: String) extends Solver {
 
             val lines = outputStream.toString.split("\n").toList
 
-            val sat = lines.head match {
-                case "sat" =>
-                    true
-                case "unsat" =>
-                    false
-                case _ =>
-                    lines.foreach(f => System.err.println(f))
-                    throw new InvalidParameterException
-                    false
-            }
+            val sat = lines.contains("sat")
 
-            for (l <- lines.tail) {
-                if (l.startsWith("(=")) {
-                    val s = l.drop(3).dropRight(1).split(' ')
-                    val v = s(1) match {
+            for (l <- lines) {
+                if (l.startsWith("(define-fun ")) {
+                    val s = l.split(' ')(1)
+                    val v = l.dropRight(1).split(' ').zipWithIndex.filter(f => f._2 > 3).map(f => f._1).mkString(" ") match {
                         case "true" =>
                             ValueBoolean(true)
                         case "false" =>
                             ValueBoolean(false)
-                        case _ =>
-                            if (s.length == 3) {
-                                ValueInteger(-s(2).dropRight(1).toInt)
+                        case i @ _ =>
+                            if (i(0) == '(') {
+                                ValueInteger(- i.drop(3).dropRight(1).toInt)
                             } else {
-                                ValueInteger(s(1).toInt)
+                                ValueInteger(i.toInt)
                             }
                     }
-                    assignments.append(Assignment(s(0), v))
+                    assignments.append(Assignment(s, v))
+                } else {
+                    System.err.println(l)
                 }
             }
 

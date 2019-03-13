@@ -42,6 +42,7 @@ class StateReachability private (override val timeStep: Int,
                                  override val snow: SortedMap[Coordinate, BooleanVariable],
                                  override val mediumBalls: IntegerVariable,
                                  override val largeBalls: IntegerVariable,
+                                 override val emptyAction: BooleanVariable,
                                  val reachabilityNodes: SortedMap[Coordinate, BooleanVariable],
                                  val reachabilityWeights: SortedMap[Coordinate, IntegerVariable],
                                  val reachabilityEdges: SortedMap[(Coordinate, Coordinate), BooleanVariable])
@@ -50,10 +51,11 @@ class StateReachability private (override val timeStep: Int,
         balls,
         snow,
         mediumBalls,
-        largeBalls) with VariableAdder {
+        largeBalls,
+        emptyAction) with VariableAdder {
 
     def this(stateBase: StateBase, reachabilityNodes: SortedMap[Coordinate, BooleanVariable], reachabilityWeights: SortedMap[Coordinate, IntegerVariable], reachabilityEdges: SortedMap[(Coordinate, Coordinate), BooleanVariable]) {
-        this(stateBase.timeStep, stateBase.character, stateBase.balls, stateBase.snow, stateBase.mediumBalls, stateBase.largeBalls, reachabilityNodes, reachabilityWeights, reachabilityEdges)
+        this(stateBase.timeStep, stateBase.character, stateBase.balls, stateBase.snow, stateBase.mediumBalls, stateBase.largeBalls, stateBase.emptyAction, reachabilityNodes, reachabilityWeights, reachabilityEdges)
     }
 
 
