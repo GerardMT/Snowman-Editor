@@ -1,3 +1,3 @@
 package gmt.planner.operation
 
-case class BooleanVariable(name: String) extends Clause
+case class BooleanVariable(var name: String = "") extends Clause

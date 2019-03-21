@@ -25,6 +25,7 @@ import scala.swing.{Action, Color, Dialog, Dimension, FileChooser, GridBagPanel,
 object GUI {
 
     val BACKGROUND_COLOR: Color = new Color(250, 250, 250)
+    val TITLE = "Snowman Editor"
 }
 
 class GUI(private val settingsFile: File) {
@@ -53,15 +54,15 @@ class GUI(private val settingsFile: File) {
     private val fileChooser = new FileChooser()
 
     val top: MainFrame = new MainFrame {
-        title = "Snowman Editor"
+        title = GUI.TITLE
 
         peer.setIconImage(resourceManager.getIcon)
 
         menuBar = new MenuBar {
             contents += new Menu("File") {
                 contents += new MenuItem(Action("New"){
-                    val widthField = new JTextField(5)
-                    val heightField = new JTextField(5)
+                    val widthField = new JTextField("5", 5)
+                    val heightField = new JTextField("5", 5)
 
                     val panel = new JPanel
                     panel.add(new JLabel("width:"))
@@ -78,6 +79,7 @@ class GUI(private val settingsFile: File) {
                             val width = widthField.getText.toInt
                             val heith = heightField.getText.toInt
 
+                            setTitle("New")
                             uiLevel.reload(MutableLevel.default(width, heith))
                             resize()
                         } catch {
@@ -94,6 +96,7 @@ class GUI(private val settingsFile: File) {
 
                     if (response == FileChooser.Result.Approve) {
                         try {
+                            setTitle(fileChooser.selectedFile.getName)
                             uiLevel.reload(MutableLevel.load(Files.openTextFile(fileChooser.selectedFile)))
                             resize()
                         } catch {
@@ -112,6 +115,7 @@ class GUI(private val settingsFile: File) {
 
                         for (n <- levelsNames) {
                             contents += new MenuItem(Action(n) {
+                                setTitle(n)
                                 uiLevel.reload(MutableLevel.load(game.getLevel(n)))
                                 resize()
                             })
@@ -376,6 +380,10 @@ class GUI(private val settingsFile: File) {
 
             peer.setBounds(new Rectangle(x, y, width, height))
         }
+
+        def setTitle(levelName: String): Unit = {
+            title_=(GUI.TITLE + " - " + levelName)
+        }
     }
 
     if (top.size == new Dimension(0,0)) {
@@ -453,6 +461,7 @@ class GUI(private val settingsFile: File) {
 
         private val ballSizesCheckBox = new JCheckBox("Ball sizes")
         private val ballPositionsCheckBox = new JCheckBox("Ball positions")
+        private val distancesCheckBox = new JCheckBox("Distances")
 
         def component: JComponent = {
             val panel = new JPanel
@@ -460,12 +469,13 @@ class GUI(private val settingsFile: File) {
             panel.setBorder(BorderFactory.createTitledBorder("Invariants"))
             panel.add(ballSizesCheckBox)
             panel.add(ballPositionsCheckBox)
+            panel.add(distancesCheckBox)
 
             panel
         }
 
         def result: EncoderOptions = {
-            EncoderOptions(ballSizesCheckBox.isSelected, ballPositionsCheckBox.isSelected)
+            EncoderOptions(ballSizesCheckBox.isSelected, ballPositionsCheckBox.isSelected, distancesCheckBox.isSelected)
         }
     }
 

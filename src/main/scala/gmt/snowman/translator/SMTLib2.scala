@@ -49,7 +49,7 @@ object SMTLib2 extends Translator {
             case Implies(c1, c2) =>
                 "(=> " + translateClause(c1) + " " + translateClause(c2) + ")"
             case Equivalent(c1, c2) =>
-                "(and (=> " + translateClause(c1) + " " + translateClause(c2) + ") (=> " + translateClause(c2) + " " + translateClause(c1) + "))"
+                "(= " + translateClause(c1) + " " + translateClause(c2) + ")"
             case BooleanVariable(name) =>
                 name
             case BooleanConstant(value) =>
@@ -66,12 +66,20 @@ object SMTLib2 extends Translator {
                 "(- " + translateClause(c1) + " " + translateClause(c2) + ")"
             case Smaller(c1, c2) =>
                 "(< " + translateClause(c1) + " " + translateClause(c2) + ")"
+            case SmallerEqual(c1, c2) =>
+                "(<= " + translateClause(c1) + " " + translateClause(c2) + ")"
             case Greater(c1, c2) =>
                 "(> " + translateClause(c1) + " " + translateClause(c2) + ")"
+            case GreaterEqual(c1, c2) =>
+                "(>= " + translateClause(c1) + " " + translateClause(c2) + ")"
             case IntegerVariable(name) =>
                 name
             case IntegerConstant(value) =>
                 value.toString
+            case Ite(c1, c2, c3) =>
+                "(ite " + translateClause(c1) + " " + translateClause(c2) + " " + translateClause(c3) + ")"
+            case Abs(c) =>
+                "(abs " + translateClause(c) + ")"
         }
     }
 }

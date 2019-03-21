@@ -6,15 +6,19 @@ import scala.collection.mutable.ListBuffer
 object Operations {
 
     def isReturnInteger(c: Clause): Boolean = c match {
-        case IntegerVariable(_) | IntegerConstant(_) | Add(_, _) | Sub(_, _) =>
+        case IntegerVariable(_) | IntegerConstant(_) | Add(_, _) | Sub(_, _) | Abs(_) =>
             true
+        case Ite(_, c1, _) =>
+            isReturnInteger(c1)
         case _ =>
             false
     }
 
     def isReturnBoolean(c: Clause): Boolean = c match {
-        case BooleanVariable(_) | BooleanConstant(_) | And(_*) | Or(_*) | Not(_) | Implies(_,_) | Equivalent(_,_) | Equals(_,_) | Smaller(_,_) | Greater(_,_) =>
+        case BooleanVariable(_) | BooleanConstant(_) | And(_*) | Or(_*) | Not(_) | Implies(_,_) | Equivalent(_,_) | Equals(_,_) | Smaller(_,_) | Greater(_,_)  |  SmallerEqual(_, _) | GreaterEqual(_, _) =>
             true
+        case Ite(_, c1, _) =>
+            isReturnBoolean(c1)
         case _=>
             false
     }
@@ -59,25 +63,6 @@ object Operations {
 
     private def toBinary(i: Int, digits: Int): String = {
         String.format("%" + digits + "s", i.toBinaryString).replace(' ', '0')
-    }
-
-    def addCounter(variables: Seq[BooleanVariable], k: Int, newVariablesPrefix: String, comparator: (Clause, Clause) => Clause): (Clause, Seq[VariableDeclaration]) = {
-        val variableDeclarations = ListBuffer.empty[VariableDeclaration]
-        val ands = ListBuffer.empty[Clause]
-
-        val newVariables = ListBuffer.empty[IntegerVariable]
-
-        for ((v, i) <- variables.zipWithIndex) {
-            val newV = IntegerVariable(newVariablesPrefix + i)
-            newVariables.append(newV)
-            variableDeclarations.append(VariableDeclaration(newV))
-            ands.append(Equivalent(v, Equals(newV, IntegerConstant(1))))
-            ands.append(Equivalent(Not(v), Equals(newV, IntegerConstant(0))))
-        }
-
-        ands.append(comparator(newVariables.reduce(Add.ADD), IntegerConstant(k)))
-
-        (And(ands: _*), variableDeclarations)
     }
 
     def simplify(c: Clause): Clause = {

@@ -31,16 +31,14 @@ object StateBase {
             balls.append(Ball(IntegerVariable("B" + i + "_X_S" + timeStep), IntegerVariable("B" + i + "Y_S" + timeStep), IntegerVariable("B" + i + "T_S" + timeStep)))
         }
 
-        new StateBase(timeStep, Character(IntegerVariable("C_X_S" + timeStep), IntegerVariable("C_Y_S" + timeStep)), balls.toList, snow, IntegerVariable("IMB_I" + timeStep), IntegerVariable("ILB_I" + timeStep))
+        new StateBase(timeStep, Character(IntegerVariable("C_X_S" + timeStep), IntegerVariable("C_Y_S" + timeStep)), balls.toList, snow)
     }
 }
 
 class StateBase (val timeStep: Int,
                  val character: Character,
                  val balls: immutable.Seq[Ball],
-                 val snow: SortedMap[Coordinate, BooleanVariable],
-                 val mediumBalls: IntegerVariable,
-                 val largeBalls: IntegerVariable) extends VariableAdder {
+                 val snow: SortedMap[Coordinate, BooleanVariable]) extends VariableAdder {
 
     override def addVariables(encoding: Encoding, encoderOptions: EncoderOptions): Unit = {
         encoding.add(VariableDeclaration(character.x))
@@ -54,11 +52,6 @@ class StateBase (val timeStep: Int,
 
         for (v <- snow.values) {
             encoding.add(VariableDeclaration(v))
-        }
-
-        if (encoderOptions.invariantBallSizes) {
-            encoding.add(VariableDeclaration(mediumBalls))
-            encoding.add(VariableDeclaration(largeBalls))
         }
     }
 }

@@ -21,10 +21,10 @@ protected case class EncoderReachability(override val level: Level, override val
         encoding.add(Comment("Reachability"))
         for (p <- level.map.values.filter(f => Object.isPlayableArea(f.o))) {
             val or = Or((for (b <- level.balls.indices) yield {
-                And(operation.Equals(state.balls(b).x, IntegerConstant(p.c.x)), operation.Equals(state.balls(b).y, IntegerConstant(p.c.y)))
+                And(Equals(state.balls(b).x, IntegerConstant(p.c.x)), Equals(state.balls(b).y, IntegerConstant(p.c.y)))
             }): _*)
 
-            encoding.add(ClauseDeclaration(Implies(or, operation.Not(state.reachabilityNodes.get(p.c).get))))
+            encoding.add(ClauseDeclaration(Implies(or, Not(state.reachabilityNodes.get(p.c).get))))
         }
 
         for (l <- level.map.values.filter(f => Object.isPlayableArea(f.o))) {
@@ -37,8 +37,8 @@ protected case class EncoderReachability(override val level: Level, override val
 
                 ors.append(edgeInverse)
 
-                encoding.add(ClauseDeclaration(operation.Implies(edgeInverse, state.reachabilityNodes.get(end).get)))
-                encoding.add(ClauseDeclaration(operation.Implies(edgeInverse, operation.Smaller(state.reachabilityWeights.get(end).get, state.reachabilityWeights.get(l.c).get))))
+                encoding.add(ClauseDeclaration(Implies(edgeInverse, state.reachabilityNodes.get(end).get)))
+                encoding.add(ClauseDeclaration(Implies(edgeInverse, Smaller(state.reachabilityWeights.get(end).get, state.reachabilityWeights.get(l.c).get))))
             }
 
             if (ors.nonEmpty) {
@@ -70,14 +70,6 @@ protected case class EncoderReachability(override val level: Level, override val
 
         if (level.hasSnow) {
             constantEff.append(updateSnowVariables(state, stateActionBall, stateNext, shift))
-        }
-
-        if (encoderOptions.invariantBallSizes && level.hasSnow) {
-            constantEff.append(invariantBallSizes(state, stateActionBall, stateNext, stateNextActionBall))
-        }
-
-        if (encoderOptions.invariantBallLocations) {
-            constantEff.append(invariantBallLocatoins(stateNext, stateNextActionBall))
         }
 
         val eff = And(constantEff.toList: _*)

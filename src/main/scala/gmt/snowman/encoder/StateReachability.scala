@@ -2,7 +2,7 @@ package gmt.snowman.encoder
 
 import gmt.planner.encoder.Encoding
 import gmt.planner.operation
-import gmt.planner.operation.{BooleanVariable, IntegerVariable}
+import gmt.planner.operation.{BooleanVariable, IntegerVariable, VariableDeclaration}
 import gmt.snowman.action.SnowmanAction
 import gmt.snowman.collection.SortedMap
 import gmt.snowman.encoder.EncoderBase.EncoderOptions
@@ -40,20 +40,16 @@ class StateReachability private (override val timeStep: Int,
                                  override val character: Character,
                                  override val balls: immutable.Seq[Ball],
                                  override val snow: SortedMap[Coordinate, BooleanVariable],
-                                 override val mediumBalls: IntegerVariable,
-                                 override val largeBalls: IntegerVariable,
                                  val reachabilityNodes: SortedMap[Coordinate, BooleanVariable],
                                  val reachabilityWeights: SortedMap[Coordinate, IntegerVariable],
                                  val reachabilityEdges: SortedMap[(Coordinate, Coordinate), BooleanVariable])
     extends StateBase(timeStep,
         character,
         balls,
-        snow,
-        mediumBalls,
-        largeBalls) with VariableAdder {
+        snow) with VariableAdder {
 
     def this(stateBase: StateBase, reachabilityNodes: SortedMap[Coordinate, BooleanVariable], reachabilityWeights: SortedMap[Coordinate, IntegerVariable], reachabilityEdges: SortedMap[(Coordinate, Coordinate), BooleanVariable]) {
-        this(stateBase.timeStep, stateBase.character, stateBase.balls, stateBase.snow, stateBase.mediumBalls, stateBase.largeBalls, reachabilityNodes, reachabilityWeights, reachabilityEdges)
+        this(stateBase.timeStep, stateBase.character, stateBase.balls, stateBase.snow, reachabilityNodes, reachabilityWeights, reachabilityEdges)
     }
 
 
@@ -61,13 +57,13 @@ class StateReachability private (override val timeStep: Int,
         super.addVariables(encoding, encoderOptions)
 
         for (v <- reachabilityNodes.values) {
-            encoding.add(operation.VariableDeclaration(v))
+            encoding.add(VariableDeclaration(v))
         }
         for (v <- reachabilityWeights.values) {
-            encoding.add(operation.VariableDeclaration(v))
+            encoding.add(VariableDeclaration(v))
         }
         for (v <- reachabilityEdges.values) {
-            encoding.add(operation.VariableDeclaration(v))
+            encoding.add(VariableDeclaration(v))
         }
     }
 }

@@ -33,14 +33,6 @@ protected case class EncoderCheating(override val level: Level, override val enc
             constantEff.append(updateSnowVariables(state, stateActionBall, stateNext, shift))
         }
 
-        if (encoderOptions.invariantBallSizes && level.hasSnow) {
-            constantEff.append(invariantBallSizes(state, stateActionBall, stateNext, stateNextActionBall))
-        }
-
-        if (encoderOptions.invariantBallLocations) {
-            constantEff.append(invariantBallLocatoins(stateNext, stateNextActionBall))
-        }
-
         val eff = And(constantEff.toList: _*)
 
         (pre, eff, expressions)

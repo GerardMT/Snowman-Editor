@@ -20,18 +20,14 @@ object StateBasic {
 class StateBasic private (override val timeStep: Int,
                           override val character: Character,
                           override val balls: immutable.Seq[Ball],
-                          override val snow: SortedMap[Coordinate, BooleanVariable],
-                          override val mediumBalls: IntegerVariable,
-                          override val largeBalls: IntegerVariable)
+                          override val snow: SortedMap[Coordinate, BooleanVariable])
     extends StateBase(timeStep,
         character,
         balls,
-        snow,
-        mediumBalls,
-        largeBalls) {
+        snow) {
 
     def this(stateBase: StateBase) = {
-        this(stateBase.timeStep, stateBase.character, stateBase.balls, stateBase.snow, stateBase.mediumBalls, stateBase.largeBalls)
+        this(stateBase.timeStep, stateBase.character, stateBase.balls, stateBase.snow)
     }
 
     override def addVariables(encoding: Encoding, encoderOptions: EncoderOptions): Unit = {

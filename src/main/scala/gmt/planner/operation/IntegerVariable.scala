@@ -1,3 +1,3 @@
 package gmt.planner.operation
 
-case class IntegerVariable(name: String) extends Clause
+case class IntegerVariable(var name: String = "") extends Clause
