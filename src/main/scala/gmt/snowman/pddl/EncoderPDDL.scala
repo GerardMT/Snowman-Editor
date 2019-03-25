@@ -271,7 +271,6 @@ object EncoderPDDL {
 
                             domain.append(")\n")
                             domain.append("                (goal))\n")
-                            domain.append("            (not (occupancy " + from + "))\n")
                             domain.append("            (occupancy " + to + ")\n")
                             domain.append("            (not (ball_at " + b + " " + from + "))\n")
                             domain.append("            (ball_at " + b + " " + to + ")\n")
@@ -286,7 +285,8 @@ object EncoderPDDL {
 
                             domain.append("                (and\n")
                             domain.append("                    (not (character_at " + ppos + "))\n")
-                            domain.append("                    (character_at " + from + ")))\n")
+                            domain.append("                    (character_at ?from)\n")
+                            domain.append("                    (not (occupancy ?from))))\n")
                             domain.append("            (not (snow " + to + "))\n")
                             domain.append("            (when\n")
                             domain.append("                (and\n")
@@ -355,7 +355,7 @@ object EncoderPDDL {
     private def encodeObjectsLocations(level: Level): String = {
         var encoding = ""
 
-        for (l <- level.map.values.filter(f => f.o != Wall)) {
+        for (l <- level.map.values.filter(f => Object.isPlayableArea(f.o))) {
             encoding += "        loc_" + l.c.x + "_" + l.c.y + " - location\n"
         }
 
@@ -375,7 +375,7 @@ object EncoderPDDL {
     private def encodeInitSnow(level: Level): String = {
         var encoding = ""
 
-        for (l <- level.map.values.filter(f => f.o == Snow)) {
+        for (l <- level.map.values.filter(f => Object.isSnow(f.o))) {
             encoding += "        (snow loc_" + l.c.x + "_" + l.c.y + ")\n"
         }
 

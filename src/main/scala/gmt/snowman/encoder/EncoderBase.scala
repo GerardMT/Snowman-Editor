@@ -287,14 +287,10 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
             throw new NotImplementedException("")
         }
 
-//        val b1 = state.balls(0)
-//        val b2 = state.balls(1)
-//        expressions.append(ClauseDeclaration(SmallerEqual(Add(Abs(Sub(b1.x, b2.x)), Abs(Sub(b1.y, b2.y))), IntegerConstant(encodedTimeSteps - state.timeStep))))
-
         expressions
     }
 
-    protected def invariantBallSizes(state: StateBase): Clause = { // TODO
+    protected def invariantBallSizes(state: StateBase): Clause = { // TODO EK
 //        And(Smaller(state.mediumBalls, IntegerConstant(2 * level.snowmans + 1)),
 //            Smaller(state.largeBalls, IntegerConstant(2 * level.snowmans)))
         And(BooleanConstant(true))
