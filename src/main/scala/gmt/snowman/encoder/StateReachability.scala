@@ -53,8 +53,8 @@ class StateReachability private (override val timeStep: Int,
     }
 
 
-    override def addVariables(encoding: Encoding, encoderOptions: EncoderOptions): Unit = {
-        super.addVariables(encoding, encoderOptions)
+    override def addVariables(encoding: Encoding): Unit = {
+        super.addVariables(encoding)
 
         for (v <- reachabilityNodes.values) {
             encoding.add(VariableDeclaration(v))

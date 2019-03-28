@@ -2,18 +2,17 @@ package gmt.snowman.translator
 
 import gmt.planner.encoder.Encoding
 import gmt.planner.operation._
-import gmt.planner.translator.Translator
 
+object SMTLib2 {
 
-object SMTLib2 extends Translator {
+    def translate(p: Encoding): String = {
+        val stringBuilder = new StringBuilder
 
-    override def translate(p: Encoding): String = {
-        "(set-option :produce-models true)\n" +
-        "(set-logic QF_LIA)\n" + // TODO QF_LIA Hardcoded. Hauria de deduir-ho de problem
-        p.expressions.map(f => SMTLib2.translateExpression(f) + "\n").mkString +
-        "(check-sat)\n" +
-        "(get-model)\n" +
-        "(exit)"
+        while (!p.isEmpty) {
+            stringBuilder.append(translateExpression(p.pop) + "\n")
+        }
+
+        stringBuilder.mkString
     }
 
     private def translateExpression(e: Expression) = {
@@ -31,6 +30,8 @@ object SMTLib2 extends Translator {
                 "(declare-const " + s + ")"
             case ClauseDeclaration(c) =>
                 "(assert " + translateClause(c) + ")"
+            case Custom(s) =>
+                s
         }
     }
 

@@ -5,7 +5,7 @@ import gmt.planner.operation._
 import gmt.planner.solver.Assignment
 import gmt.planner.solver.value.ValueBoolean
 import gmt.snowman.action.{BallAction, SnowmanAction}
-import gmt.snowman.encoder.EncodingData.ActionData
+import gmt.snowman.encoder.EncodingDataSnowman.ActionData
 import gmt.snowman.level.{Coordinate, Level}
 import gmt.snowman.game.`object`.Object
 
@@ -14,7 +14,7 @@ import scala.collection.mutable.ListBuffer
 
 protected case class EncoderBasic(override val level: Level, override val encoderOptions: EncoderBase.EncoderOptions) extends EncoderBase[StateBasic](level, encoderOptions) {
 
-    override def createState(level: Level, timeStep: Int): StateBasic = StateBasic(level, timeStep)
+    override def createState(index: Int, encoding: Encoding, encodingData: EncodingDataSnowman): StateBasic = StateBasic(level, index)
 
     override protected def encodeCharacterState0(state0: StateBasic, encoding: Encoding): Unit = encodeCharacterState(state0, encoding)
 
@@ -50,12 +50,12 @@ protected case class EncoderBasic(override val level: Level, override val encode
 
     override def encodeReachability(state: StateBasic, encoding: Encoding): Unit = {}
 
-    override protected def encodeCharacterAction(actionName: String, state: StateBasic, stateNext: StateBasic, action: SnowmanAction, encoding: Encoding, actionVariables: mutable.Buffer[BooleanVariable], actionsData: mutable.Buffer[EncodingData.ActionData]): Unit = {
+    override protected def encodeCharacterAction(actionName: String, state: StateBasic, stateNext: StateBasic, action: SnowmanAction, encoding: Encoding, actionVariables: mutable.Buffer[BooleanVariable], actionsData: mutable.Buffer[EncodingDataSnowman.ActionData]): Unit = {
         val actionVariable = BooleanVariable(actionName + "_S" + state.timeStep + "S" + stateNext.timeStep)
         encoding.add(VariableDeclaration(actionVariable))
         actionVariables.append(actionVariable)
 
-        actionsData.append(EncodingData.ActionData(action, actionVariable, ActionData.NO_BALL))
+        actionsData.append(EncodingDataSnowman.ActionData(action, actionVariable, ActionData.NO_BALL))
 
         val pre = BooleanConstant(true)
 
@@ -72,8 +72,8 @@ protected case class EncoderBasic(override val level: Level, override val encode
         encoding.add(ClauseDeclaration(Implies(actionVariable, pre)))
     }
 
-    override def decode(assignments: Seq[Assignment], encodingData: EncodingData): DecodingData = {
-        println(Report.generateReport(level, encodingData.state0 :: encodingData.statesData.map(f => f.stateNext).toList, assignments)) // TODO Remove println
+    override def decode(assignments: Seq[Assignment], encodingData: EncodingDataSnowman): DecodingData = {
+        println(Report.generateReport(level, encodingData.initialState :: encodingData.statesData.map(f => f.stateNext).toList, assignments)) // TODO Remove println
 
         val assignmentsMap = assignments.map(f => (f.name, f.value)).toMap
 

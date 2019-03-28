@@ -2,12 +2,13 @@ package gmt.snowman.encoder
 
 import gmt.planner.operation.BooleanVariable
 import gmt.snowman.action.SnowmanAction
-import gmt.snowman.encoder.EncodingData.StateData
+import gmt.snowman.encoder.EncodingDataSnowman.StateData
 import gmt.snowman.level.Level
 
 import scala.collection.immutable
+import scala.collection.mutable.ListBuffer
 
-object EncodingData {
+object EncodingDataSnowman {
     case class StateData(stateNext: StateBase, actionsData: immutable.Seq[ActionData])
 
     object ActionData {
@@ -17,4 +18,8 @@ object EncodingData {
     case class ActionData(action: SnowmanAction, actionVariable: BooleanVariable, ballActionIndex: Int)
 }
 
-case class EncodingData(level: Level, state0: StateBase, statesData: immutable.Seq[StateData])
+class EncodingDataSnowman(val level: Level) {
+
+    var initialState: StateBase = _
+    val statesData: ListBuffer[StateData] = ListBuffer.empty[StateData]
+}

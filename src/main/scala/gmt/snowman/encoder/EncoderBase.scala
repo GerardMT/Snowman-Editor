@@ -1,17 +1,16 @@
 package gmt.snowman.encoder
 
-import gmt.planner.encoder.{Encoder, EncoderResult, Encoding}
-import gmt.planner.operation
+import gmt.planner.encoder.{Encoder, Encoding}
 import gmt.planner.operation._
 import gmt.planner.solver.Assignment
 import gmt.planner.solver.value.{Value, ValueBoolean, ValueInteger}
 import gmt.snowman.action.{BallAction, Down, Left, Right, SnowmanAction, Up}
 import gmt.snowman.encoder.EncoderBase.EncoderOptions
+import gmt.snowman.encoder.EncodingDataSnowman.{ActionData, StateData}
 import gmt.snowman.encoder.StateBase.CoordinateVariables
 import gmt.snowman.game.`object`._
 import gmt.snowman.level.{Coordinate, Level}
 import gmt.util.AStar
-import jdk.jshell.spi.ExecutionControl.NotImplementedException
 
 import scala.collection.mutable.ListBuffer
 import scala.collection.{immutable, mutable}
@@ -27,7 +26,7 @@ object EncoderBase { // TODO Add rule: Can not unmount a snowman once done
         val BASIC, CHEATING, REACHABILITY = Value
     }
 
-    def apply(encoderEnum: EncoderEnum.Value, level: Level, encoderOptions: EncoderOptions): EncoderBase[_] = {
+    def apply(encoderEnum: EncoderEnum.Value, level: Level, encoderOptions: EncoderOptions): EncoderBase[_ <: VariableAdder] = {
         encoderEnum match {
             case EncoderEnum.BASIC =>
                 EncoderBasic(level, encoderOptions)
@@ -40,126 +39,32 @@ object EncoderBase { // TODO Add rule: Can not unmount a snowman once done
         }
     }
 
-    case class EncoderOptions(invariantBallSizes: Boolean, invariantBallLocations: Boolean, invariantDistances: Boolean)
+    case class EncoderOptions(invariantBallSizes: Boolean, invariantBallLocations: Boolean)
 }
 
-abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions: EncoderOptions) extends Encoder[DecodingData, EncodingData] {
+abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions: EncoderOptions) extends Encoder[A, EncodingDataSnowman, DecodingData] {
+
+    override def createEncodingData(): EncodingDataSnowman = new EncodingDataSnowman(level)
 
     override def startTimeStep(): Int = {
         level.balls.combinations(2).toList.map(f => f.head.c.manhattanDistance(f(1).c)).min
     }
 
-    override def encode(timeSteps: Int): EncoderResult[EncodingData] = {
-        val encoding = new Encoding
+    override def goal(state: A, encodingData: EncodingDataSnowman): (Clause, immutable.Seq[Clause]) = {
+        val ands = ListBuffer.empty[Clause]
+        val variables = ListBuffer.empty[Clause]
 
-        val states = ListBuffer.empty[A]
-
-        val statesData = ListBuffer.empty[EncodingData.StateData]
-
-        val state0 = createState(level, 0)
-        state0.addVariables(encoding, encoderOptions)
-        states.append(state0)
-
-        encoding.add(Comment("Initial State"))
-
-        encoding.add(Comment("S0 Character"))
-        encodeCharacterState0(state0, encoding)
-
-        encoding.add(Comment("S0 Balls"))
-        for ((b, levelBall) <- level.balls.indices.map(f => (state0.balls(f), level.balls(f)))) {
-            encoding.add(ClauseDeclaration(Equals(b.x, IntegerConstant(levelBall.c.x))))
-            encoding.add(ClauseDeclaration(Equals(b.y, IntegerConstant(levelBall.c.y))))
-            encoding.add(ClauseDeclaration(Equals(b.size, IntegerConstant(getBallSize(levelBall.o)))))
-        }
-
-        encoding.add(Comment("S0 Snow"))
-        for (s <- state0.snow.values) {
-            encoding.add(ClauseDeclaration(s))
-        }
-
-        encodeReachability(state0, encoding)
-
-        encoding.add(Comment("Middle States"))
-
-        var state = state0
-
-        for (timeStep <- 1 to timeSteps) {
-            val stateNext = createState(level, timeStep)
-            stateNext.addVariables(encoding, encoderOptions)
-            states.append(stateNext)
-
-            val actionsData = ListBuffer.empty[EncodingData.ActionData]
-
-            if (encoderOptions.invariantDistances && timeStep != timeSteps) {
-                encoding.addAll(invariantDistances(stateNext, timeSteps))
-            }
-
-            encodeLocationsRestriction(stateNext, encoding)
-            encodeReachability(stateNext, encoding)
-
-            val actionsVariables = ListBuffer.empty[BooleanVariable]
-
-            val namesCharacterActions = List("AV_MCR", "AV_MCL", "AV_MCU", "AV_MCD")
-
-            for ((action, name) <- SnowmanAction.ACTIONS.zip(namesCharacterActions)) {
-                encodeCharacterAction(name, state, stateNext, action, encoding, actionsVariables, actionsData)
-            }
-
-            val namesBallActions = List("AV_MBR", "AV_MBL", "AV_MBU", "AV_MBD")
-
-            for ((action, name) <- SnowmanAction.ACTIONS.zip(namesBallActions)) {
-                for (((stateActionBall, stateNextActionBall), iB) <- state.balls.zip(stateNext.balls).zipWithIndex) {
-                    val actionName = name + "_B" + iB + "_S" + state.timeStep + "S" + stateNext.timeStep
-
-                    val actionVariable = BooleanVariable(actionName)
-                    encoding.add(VariableDeclaration(actionVariable))
-                    actionsVariables.append(actionVariable)
-
-                    val (pre, eff, returnExpressions) = createBallAction(actionName, state, stateActionBall, stateNext, stateNextActionBall, action.shift)
-                    encoding.addAll(returnExpressions)
-
-                    encoding.add(ClauseDeclaration(Equivalent(eff, actionVariable)))
-                    encoding.add(ClauseDeclaration(Implies(actionVariable, pre)))
-
-                    actionsData.append(EncodingData.ActionData(action, actionVariable, iB))
-                }
-            }
-
-            encoding.addAll(Operations.getEO(actionsVariables, "EO_A" + timeStep))
-
-            statesData.append(EncodingData.StateData(stateNext, actionsData.toList))
-
-            state = stateNext
-        }
-
-        for (middleState <- states.dropRight(1)) {
-            goal(negate = true, encoding, middleState)
-        }
-
-        goal(negate = false, encoding, state)
-
-        EncoderResult(encoding, EncodingData(level, state0, statesData.toList))
-    }
-
-    private def addNot(clause: Clause, negate: Boolean): Clause = if (negate) {
-        Not(clause)
-    } else {
-        clause
-    }
-
-    private def goal(negate: Boolean, encoding: Encoding, state: A) {
-        encoding.add(Comment("Goal"))
         if (level.snowmans == 1) {
-            encoding.add(ClauseDeclaration(addNot(And(Equals(state.balls.head.x, state.balls(1).x), Equals(state.balls.head.y, state.balls(1).y),
-                Equals(state.balls.head.x, state.balls(2).x), Equals(state.balls.head.y, state.balls(2).y)), negate)))
+            ands.append(Equals(state.balls.head.x, state.balls(1).x), Equals(state.balls.head.y, state.balls(1).y))
+            ands.append(Equals(state.balls.head.x, state.balls(2).x), Equals(state.balls.head.y, state.balls(2).y))
         } else {
             val snowmansVariables = ListBuffer.empty[(IntegerVariable, IntegerVariable)]
             for (i <- 0 until level.snowmans) {
                 val x = IntegerVariable("G_X_" + i + "_S" + state.timeStep)
                 val y = IntegerVariable("G_Y_" + i + "_S" + state.timeStep)
                 snowmansVariables.append((x, y))
-                encoding.add(VariableDeclaration(x))
-                encoding.add(VariableDeclaration(y))
+                variables.append(x)
+                variables.append(y)
             }
 
             for (b <- state.balls) {
@@ -167,18 +72,84 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
                     And(Equals(b.x, x), Equals(b.y, y))
                 }
 
-                encoding.add(ClauseDeclaration(addNot(Or(ors.toList: _*), negate)))
+                ands.append(Or(ors.toList: _*))
             }
         }
+
+        (And(ands: _*), variables.toList)
     }
 
-    protected def createState(level: Level, index: Int): A
+    override def initialState(state: A, encoding: Encoding, encodingData: EncodingDataSnowman): Unit = {
+        encoding.add(Comment("Initial State"))
+
+        encoding.add(Comment("S0 Character"))
+        encodeCharacterState0(state, encoding)
+
+        encoding.add(Comment("S0 Balls"))
+        for ((b, levelBall) <- level.balls.indices.map(f => (state.balls(f), level.balls(f)))) {
+            encoding.add(ClauseDeclaration(Equals(b.x, IntegerConstant(levelBall.c.x))))
+            encoding.add(ClauseDeclaration(Equals(b.y, IntegerConstant(levelBall.c.y))))
+            encoding.add(ClauseDeclaration(Equals(b.size, IntegerConstant(getBallSize(levelBall.o)))))
+        }
+
+        encoding.add(Comment("S0 Snow"))
+        for (s <- state.snow.values) {
+            encoding.add(ClauseDeclaration(s))
+        }
+
+        encodeReachability(state, encoding)
+
+        encodingData.initialState = state
+    }
+
+    override def actions(state: A, stateNext: A, encoding: Encoding, encodingData: EncodingDataSnowman): Unit = {
+        val actionsData = ListBuffer.empty[EncodingDataSnowman.ActionData]
+
+        encodeLocationsRestriction(stateNext, encoding)
+        encodeReachability(stateNext, encoding)
+
+        val actionsVariables = ListBuffer.empty[BooleanVariable]
+
+        val namesCharacterActions = List("AV_MCR", "AV_MCL", "AV_MCU", "AV_MCD")
+
+        for ((action, name) <- SnowmanAction.ACTIONS.zip(namesCharacterActions)) {
+            encodeCharacterAction(name, state, stateNext, action, encoding, actionsVariables, actionsData)
+        }
+
+        val namesBallActions = List("AV_MBR", "AV_MBL", "AV_MBU", "AV_MBD")
+
+        for ((action, name) <- SnowmanAction.ACTIONS.zip(namesBallActions)) {
+            for (((stateActionBall, stateNextActionBall), iB) <- state.balls.zip(stateNext.balls).zipWithIndex) {
+                val actionName = name + "_B" + iB + "_S" + state.timeStep + "S" + stateNext.timeStep
+
+                val actionVariable = BooleanVariable(actionName)
+                encoding.add(VariableDeclaration(actionVariable))
+                actionsVariables.append(actionVariable)
+
+                val (pre, eff, returnExpressions) = createBallAction(actionName, state, stateActionBall, stateNext, stateNextActionBall, action.shift)
+                encoding.addAll(returnExpressions)
+
+                encoding.add(ClauseDeclaration(Equivalent(eff, actionVariable)))
+                encoding.add(ClauseDeclaration(Implies(actionVariable, pre)))
+
+                actionsData.append(EncodingDataSnowman.ActionData(action, actionVariable, iB))
+            }
+        }
+
+        encoding.addAll(Operations.getEO(actionsVariables, "EO_A" + stateNext.timeStep))
+
+        encodingData.statesData.append(StateData(stateNext, actionsData.toList))
+
+        actionsData.toList
+    }
+
+    override def createState(index: Int, encoding: Encoding, encodingData: EncodingDataSnowman): A
 
     protected def encodeCharacterState0(state0: A, encoding: Encoding)
 
     protected def encodeReachability(state: A, encoing: Encoding)
 
-    protected def encodeCharacterAction(actionName: String, state: A, stateNext: A, action: SnowmanAction, encoding: Encoding, actionVariables: mutable.Buffer[BooleanVariable], actionsData: mutable.Buffer[EncodingData.ActionData])
+    protected def encodeCharacterAction(actionName: String, state: A, stateNext: A, action: SnowmanAction, encoding: Encoding, actionVariables: mutable.Buffer[BooleanVariable], actionsData: mutable.Buffer[EncodingDataSnowman.ActionData])
 
     protected def createBallAction(actionName: String, state: A, stateActionBall: StateBase.Ball, stateNext: A, stateNextActionBall: StateBase.Ball, shift: Coordinate): (Clause, Clause, Seq[Expression])
 
@@ -253,43 +224,6 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
         }
     }
 
-    protected def invariantDistances(state: StateBase, encodedTimeSteps: Int): Seq[Expression] = {
-        val expressions = ListBuffer.empty[Expression]
-
-        val distances = ListBuffer.empty[IntegerVariable]
-
-        for (c <- state.balls.combinations(2)) {
-            val b1 = c.head
-            val b2 = c(1)
-
-            val distance = IntegerVariable()
-            expressions.append(VariableDeclaration(distance))
-            distances.append(distance)
-
-            expressions.append(ClauseDeclaration(Equals(distance, Add(Abs(Sub(b1.x, b2.x)), Abs(Sub(b1.y, b2.y))))))
-        }
-
-        if (distances.size == 3) {
-            val min1 = IntegerVariable()
-            expressions.append(VariableDeclaration(min1))
-            val min2 = IntegerVariable()
-            expressions.append(VariableDeclaration(min2))
-
-            val a = distances(0)
-            val b = distances(1)
-            val c = distances(2)
-
-            expressions.append(ClauseDeclaration(Implies(And(Smaller(a, c), Smaller(b, c)), And(Equals(min1, a), Equals(min2, b)))))
-            expressions.append(ClauseDeclaration(Implies(And(Smaller(a, b), Smaller(c, b)), And(Equals(min1, a), Equals(min2, c)))))
-            expressions.append(ClauseDeclaration(Implies(And(Smaller(b, a), Smaller(c, a)), And(Equals(min1, b), Equals(min2, c)))))
-            expressions.append(ClauseDeclaration(SmallerEqual(Add(min1, min2), IntegerConstant(encodedTimeSteps - state.timeStep))))
-        } else {
-            throw new NotImplementedException("")
-        }
-
-        expressions
-    }
-
     protected def invariantBallSizes(state: StateBase): Clause = { // TODO EK
 //        And(Smaller(state.mediumBalls, IntegerConstant(2 * level.snowmans + 1)),
 //            Smaller(state.largeBalls, IntegerConstant(2 * level.snowmans)))
@@ -358,7 +292,7 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
             EncoderBase.LARGE_BALL
     }
 
-    protected def decodeTeleport(assignments: Seq[Assignment], encodingData: EncodingData): DecodingData = {
+    protected def decodeTeleport(assignments: Seq[Assignment], encodingData: EncodingDataSnowman): DecodingData = {
         val assignmentsMap = assignments.map(f => (f.name, f.value)).toMap
 
         val actions = ListBuffer.empty[SnowmanAction]
@@ -366,7 +300,7 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
 
         var characterLocation = encodingData.level.character.c
 
-        var state = encodingData.state0
+        var state = encodingData.initialState
         for (stateData <- encodingData.statesData) {
             val stateNext = stateData.stateNext
             val actionData = stateData.actionsData.find(f => assignmentsMap(f.actionVariable.name).asInstanceOf[ValueBoolean].v).get

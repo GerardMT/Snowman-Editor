@@ -50,5 +50,11 @@ class Encoding {
         e.foreach(f => add(f))
     }
 
-    def expressions: immutable.Seq[Expression]  = _expressions.toList
+    def pop: Expression = {
+        val last = _expressions.head
+        _expressions.remove(0)
+        last
+    }
+
+    def isEmpty: Boolean = _expressions.isEmpty
 }

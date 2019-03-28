@@ -1,82 +1,177 @@
 package gmt.planner.planner
 
-import gmt.planner.encoder.Encoder
-import gmt.planner.planner.Planner.{PlannerOptions, PlannerUpdate}
-import gmt.planner.solver.Solver
-import gmt.planner.timestep.{TimeStepResult, TimeStepSolver}
-import gmt.planner.translator.Translator
+import gmt.planner.encoder.{Encoder, Encoding}
+import gmt.planner.operation._
+import gmt.planner.solver.SolverResult
+import gmt.snowman.encoder.VariableAdder
+import gmt.snowman.solver.Yices2
+import gmt.snowman.translator.SMTLib2
 
+import scala.collection.immutable
 import scala.collection.mutable.ListBuffer
 
 object Planner {
 
-    case class PlannerUpdate[A](timeStepResult: TimeStepResult[A], totalMilliseconds: Long)
-    case class PlannerOptions(startTimeSteps: Option[Int], maxTimeSteps: Int, threads: Int)
-}
+    case class Assuming(booleanVariable: BooleanVariable, value: Boolean)
 
-class Planner[A, B](val plannerOptions: PlannerOptions) {
+    case class PlannerUpdate(sat: Boolean, timeSteps: Int, milliseconds: Long, totalMilliseconds: Long)
 
-    private var timeStep = plannerOptions.threads
+    case class PlannerOptions(startTimeSteps: Option[Int], maxTimeSteps: Int)
 
-    private val threads = ListBuffer.empty[Child[A, B]]
+    case class PlannerResult[A](sat: Boolean, timeSteps: Int, milliseconds: Long, result: Option[A])
 
-    private var timeStepResult: Option[TimeStepResult[A]] = None
-
-    def solve(encoder: Encoder[A, B], translator: Translator, solver: Solver, updateFunction: PlannerUpdate[A] => Unit): PlannerResult[A] = {
+    def solve[A <: VariableAdder, B, C](plannerOptions: PlannerOptions, encoder: Encoder[A, B, C], solver: Yices2, updateFunction: PlannerUpdate => Unit): PlannerResult[C] = {
         val startTime = System.currentTimeMillis()
+        var totalTime = 0l
 
-        plannerOptions.startTimeSteps match {
-            case Some(n) =>
-                timeStep = n
-            case None =>
-                timeStep = encoder.startTimeStep()
-        }
+        var solved = false
 
-        val updateSincronized = (t: TimeStepResult[A]) => synchronized { updateFunction(PlannerUpdate(t, System.currentTimeMillis() - startTime)) }
+        val encoding = new Encoding
+        val encodingData = encoder.createEncodingData()
 
-        for (i <- 0 until plannerOptions.threads) {
-            threads.append(new Child[A, B](i, this, new TimeStepSolver[A, B](encoder, translator, solver), updateSincronized))
-        }
+        encoding.add(Custom("(set-option :produce-models true)"))
+        encoding.add(Custom("(set-logic QF_LIA)"))
 
-        threads.foreach(f => f.start())
-        threads.foreach(f => f.join())
+        solver.write(SMTLib2.translate(encoding))
 
-        val time = System.currentTimeMillis() - startTime
+        var iState = Math.max(1, plannerOptions.startTimeSteps.getOrElse(encoder.startTimeStep()))
+        var state = encodeInitialTimeSteps(plannerOptions, encoder, solver, encoding, encodingData, iState - 1)
 
-        timeStepResult match {
-            case Some(r) =>
-                PlannerResult[A](r.sat, r.timeSteps, time, r.result)
-            case None =>
-                PlannerResult[A](sat = false, timeStep - 2, time, None) // TODO BUG Multithread is not -2
-        }
-    }
+        var solverResult: SolverResult = null
 
-    //noinspection AccessorLikeMethodIsEmptyParen
-    // The function has to have parentesis https://docs.scala-lang.org/style/naming-conventions.html
-    def getTimeStepAndIncrement(): Int = synchronized {
-        val previousTimeStep = timeStep
-        timeStep += 1
-        previousTimeStep
-    }
+        val goalsVariables = ListBuffer.empty[Assuming]
 
-    def solutionFound(child: Child[A, B]): Unit = synchronized {
-        for (t <- threads) {
-            if (t != child) {
-                if (t.timeStep > child.timeStep) {
-                    t.interrupt()
-                } else {
-                    t.end()
-                }
+        while (!solved && iState < plannerOptions.maxTimeSteps) {
+            val startStepTime = System.currentTimeMillis()
+
+            if (iState - 1 != 0) {
+                val (goalClause, variables) = encoder.goal(state, encodingData)
+                encoding.add(ClauseDeclaration(Not(goalClause)))
+                declareVariables(variables, encoding)
+            }
+
+            val stateNext = encoder.createState(iState, encoding, encodingData)
+            stateNext.addVariables(encoding)
+
+            encoder.actions(state, stateNext, encoding, encodingData)
+
+            val goalVariable = BooleanVariable()
+            encoding.add(VariableDeclaration(goalVariable))
+            val (goalClause, variables) = encoder.goal(stateNext, encodingData)
+            encoding.add(ClauseDeclaration(Equivalent(goalVariable, goalClause)))
+            declareVariables(variables, encoding)
+
+            goalsVariables.append(Assuming(goalVariable, value = true))
+
+            encoding.add(Custom("(check-sat-assuming " + assumingListToString(goalsVariables.toList) + ")"))
+
+            solver.write(SMTLib2.translate(encoding))
+            solverResult = solver.solve()
+            solved = solverResult.sat
+
+            val time = System.currentTimeMillis()
+            val stepsTime = time - startStepTime
+            totalTime = time - startTime
+
+            updateFunction(PlannerUpdate(solverResult.sat, iState, stepsTime, totalTime))
+
+            if (!solved) {
+                goalsVariables.remove(goalsVariables.size - 1)
+                goalsVariables.append(Assuming(goalVariable, value = false))
+
+                iState += 1
+                state = stateNext
             }
         }
 
-        timeStepResult match {
-            case Some(t) =>
-                if (t.timeSteps > child.timeStep) {
-                    timeStepResult = Some(child.result)
-                }
-            case None =>
-                timeStepResult = Some(child.result)
+
+        if (solved) {
+            PlannerResult(sat = true, iState, totalTime, Some(encoder.decode(solverResult.assignments, encodingData)))
+        } else {
+            PlannerResult(sat = false, iState, totalTime, None)
+        }
+    }
+
+    def encodeInitialTimeSteps[A <: VariableAdder, B, C](plannerOptions: PlannerOptions, encoder: Encoder[A, B, C], solver: Yices2, encoding: Encoding, encodingData: B, timeSteps: Int): A = {
+        var iState = 0
+
+        var state = encoder.createState(iState, encoding, encodingData)
+        state.addVariables(encoding)
+        encoder.initialState(state, encoding, encodingData)
+
+        iState += 1
+
+        while (iState <= timeSteps) {
+            if (iState - 1 != 0) {
+                val (goalClause, variables) = encoder.goal(state, encodingData)
+                encoding.add(ClauseDeclaration(Not(goalClause)))
+                declareVariables(variables, encoding)
+            }
+
+            val stateNext = encoder.createState(iState, encoding, encodingData)
+            stateNext.addVariables(encoding)
+
+            encoder.actions(state, stateNext, encoding, encodingData)
+
+            iState += 1
+            state = stateNext
+        }
+
+        state
+    }
+
+    def generate[A <: VariableAdder, B, C](timeSteps: Int, encoder: Encoder[A, B, C]): Encoding = {
+        val encoding = new Encoding
+        val encodingData = encoder.createEncodingData()
+
+        var state = encoder.createState(0, encoding, encodingData)
+        state.addVariables(encoding)
+
+        val goalsVariables = ListBuffer.empty[Assuming]
+
+        for (i <- 1 to timeSteps) {
+            val stateNext = encoder.createState(i, encoding, encodingData)
+            stateNext.addVariables(encoding)
+
+            encoder.actions(state, stateNext, encoding, encodingData)
+
+            val goalVariable = BooleanVariable()
+            encoding.add(VariableDeclaration(goalVariable))
+            val (goalClause, variables) = encoder.goal(stateNext, encodingData)
+            encoding.add(ClauseDeclaration(Equivalent(goalVariable, goalClause)))
+            declareVariables(variables, encoding)
+
+            goalsVariables.append(Assuming(goalVariable, value = false))
+
+            state = stateNext
+        }
+
+        val goalVariable = BooleanVariable()
+        val (goalClause, variables) = encoder.goal(state, encodingData)
+        encoding.add(ClauseDeclaration(Equivalent(goalVariable, goalClause)))
+        declareVariables(variables, encoding)
+
+
+        goalsVariables.append(Assuming(goalVariable, value = true))
+
+        encoding.add(Custom("(check-sat-assuming " + assumingListToString(goalsVariables.toList) + ")"))
+
+        encoding
+    }
+
+    private def assumingListToString(assuming: immutable.Seq[Assuming]): String = {
+        "(" + assmingToString(assuming.head) + assuming.tail.map(f => " " + assmingToString(f)).mkString + ")"
+    }
+
+    private def assmingToString(assuming: Assuming): String = if (assuming.value) {
+        assuming.booleanVariable.name
+    } else {
+        "(not " + assuming.booleanVariable.name + ")"
+    }
+
+    private def declareVariables(variables: immutable.Seq[Clause], encoding: Encoding): Unit = {
+        for (variable <- variables) {
+            encoding.add(VariableDeclaration(variable))
         }
     }
 }

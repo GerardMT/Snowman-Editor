@@ -201,7 +201,7 @@ class GUI(private val settingsFile: File) {
                         try {
                             showGenerateOptionsDialog() match {
                                 case Some((g, e)) =>
-                                    savePickAndTextFile(SnowmanSolver.encodeSMTLIB2(uiLevel.mutableLevel.toLevel, EncoderEnum.BASIC, e, g), CURRENT_DIRECTORY + "/in_basic-encoding.smtlib2")
+                                    savePickAndTextFile(SnowmanSolver.generateSMTLIB2(uiLevel.mutableLevel.toLevel, EncoderEnum.BASIC, e, g), CURRENT_DIRECTORY + "/in_basic-encoding.smtlib2")
                                 case None =>
                             }
                         } catch {
@@ -229,7 +229,7 @@ class GUI(private val settingsFile: File) {
                         try {
                             showGenerateOptionsDialog() match {
                                 case Some((g, e)) =>
-                                    savePickAndTextFile(SnowmanSolver.encodeSMTLIB2(uiLevel.mutableLevel.toLevel, EncoderEnum.CHEATING, e, g), CURRENT_DIRECTORY + "/in_cheating-encoding.smtlib2")
+                                    savePickAndTextFile(SnowmanSolver.generateSMTLIB2(uiLevel.mutableLevel.toLevel, EncoderEnum.CHEATING, e, g), CURRENT_DIRECTORY + "/in_cheating-encoding.smtlib2")
                                 case None =>
                             }
                         } catch {
@@ -258,7 +258,7 @@ class GUI(private val settingsFile: File) {
                         try {
                             showGenerateOptionsDialog() match {
                                 case Some((g, e)) =>
-                                    savePickAndTextFile(SnowmanSolver.encodeSMTLIB2(uiLevel.mutableLevel.toLevel, EncoderEnum.REACHABILITY, e, g), CURRENT_DIRECTORY + "/in_reachability-encoding.smtlib2")
+                                    savePickAndTextFile(SnowmanSolver.generateSMTLIB2(uiLevel.mutableLevel.toLevel, EncoderEnum.REACHABILITY, e, g), CURRENT_DIRECTORY + "/in_reachability-encoding.smtlib2")
                                 case None =>
                             }
                         } catch {
@@ -461,7 +461,6 @@ class GUI(private val settingsFile: File) {
 
         private val ballSizesCheckBox = new JCheckBox("Ball sizes")
         private val ballPositionsCheckBox = new JCheckBox("Ball positions")
-        private val distancesCheckBox = new JCheckBox("Distances")
 
         def component: JComponent = {
             val panel = new JPanel
@@ -469,13 +468,12 @@ class GUI(private val settingsFile: File) {
             panel.setBorder(BorderFactory.createTitledBorder("Invariants"))
             panel.add(ballSizesCheckBox)
             panel.add(ballPositionsCheckBox)
-            panel.add(distancesCheckBox)
 
             panel
         }
 
         def result: EncoderOptions = {
-            EncoderOptions(ballSizesCheckBox.isSelected, ballPositionsCheckBox.isSelected, distancesCheckBox.isSelected)
+            EncoderOptions(ballSizesCheckBox.isSelected, ballPositionsCheckBox.isSelected)
         }
     }
 
@@ -485,12 +483,10 @@ class GUI(private val settingsFile: File) {
 
         private val startTimeStepTextField = new JTextField(AUTO, 10)
         private val maxTimeStepsTextField = new JTextField("100", 10)
-        private val threadsTextField = new JTextField("1", 10)
 
         def component: JComponent = {
             val startTimeStepLabel = new JLabel("Start time step:")
             val maxTimeStepsLabel = new JLabel("Max time steps:")
-            val threadsLabel = new JLabel("Threads:")
 
             val panel = new JPanel(new GridBagLayout)
             panel.setBorder(BorderFactory.createTitledBorder("Options"))
@@ -520,16 +516,6 @@ class GUI(private val settingsFile: File) {
             c.insets = new Insets(0, 0, BOTTOM_PADDING, 0)
             panel.add(maxTimeStepsTextField, c)
 
-            c.gridx = 0
-            c.gridy = 2
-            c.insets = new Insets(0, 0, 0, RIGHT_PADDING)
-            panel.add(threadsLabel, c)
-
-            c.gridx = 1
-            c.gridy = 2
-            c.insets = new Insets(0, 0, 0, 0)
-            panel.add(threadsTextField, c)
-
             panel
         }
 
@@ -541,8 +527,7 @@ class GUI(private val settingsFile: File) {
             }
 
             PlannerOptions(startTimeSteps,
-                maxTimeStepsTextField.getText.toInt,
-                threadsTextField.getText.toInt)
+                maxTimeStepsTextField.getText.toInt)
         }
     }
 
@@ -551,7 +536,7 @@ class GUI(private val settingsFile: File) {
 
         val timeStepTextField = new JTextField("1", 5)
 
-        val threadsLabel = new JLabel("Time Step:")
+        val timeStepLabel = new JLabel("Time Step:")
 
         val timeStepPanel = new JPanel(new GridBagLayout)
         timeStepPanel.setBorder(BorderFactory.createTitledBorder("Options"))
@@ -563,7 +548,7 @@ class GUI(private val settingsFile: File) {
         timeStepC.gridx = 0
         timeStepC.gridy = 0
         timeStepC.insets = new Insets(0, 0, 0, RIGHT_PADDING)
-        timeStepPanel.add(threadsLabel, timeStepC)
+        timeStepPanel.add(timeStepLabel, timeStepC)
 
         timeStepC.gridx = 1
         timeStepC.gridy = 0

@@ -30,7 +30,7 @@ class StateBasic private (override val timeStep: Int,
         this(stateBase.timeStep, stateBase.character, stateBase.balls, stateBase.snow)
     }
 
-    override def addVariables(encoding: Encoding, encoderOptions: EncoderOptions): Unit = {
-        super.addVariables(encoding, encoderOptions)
+    override def addVariables(encoding: Encoding): Unit = {
+        super.addVariables(encoding)
     }
 }

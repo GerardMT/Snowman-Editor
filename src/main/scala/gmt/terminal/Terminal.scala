@@ -18,8 +18,8 @@ object Terminal {
         new Terminal().parseArguments(args.toList)
     }
 
-    def showSolverUpdate(plannerUpdate: PlannerUpdate[DecodingData]): Unit = {
-        println("Timesteps: " + plannerUpdate.timeStepResult.timeSteps + " sat: " + plannerUpdate.timeStepResult.sat + " Time: " + plannerUpdate.timeStepResult.milliseconds + " TotalTime: " + plannerUpdate.totalMilliseconds + " (ms)")
+    def showSolverUpdate(plannerUpdate: PlannerUpdate): Unit = {
+        println("Timesteps: " + plannerUpdate.timeSteps + " sat: " + plannerUpdate.sat + " Time: " + plannerUpdate.milliseconds + " TotalTime: " + plannerUpdate.totalMilliseconds + " (ms)")
     }
 
     def showResult(snowmanSolverResult: SnowmanSolverResult): Unit = {
@@ -49,9 +49,9 @@ class Terminal {
                                    |
                                    |<option>:
                                    |
-                                   |    smt-basic <level path> <result path> <start time steps (<int> | auto)> <max time steps> <threads> <invariant ball sizes (true | false)> <invariant ball locations (true | false)> <invariant distances (true | false)>
-                                   |    smt-cheating <level path> <result path> <start time steps (<int> | auto)> <max time steps> <threads> <invariant ball sizes (true | false)> <invariant ball locations (true | false)> <invariant distances (true | false)>
-                                   |    smt-reachability <level path> <result path> <start time steps (<int> | auto)> <max time steps> <threads> <invariant ball sizes (true | false)> <invariant ball locations (true | false)> <invariant distances (true | false)>
+                                   |    smt-basic <level path> <result path> <start time steps (<int> | auto)> <max time steps> <threads> <invariant ball sizes (true | false)> <invariant ball locations (true | false)>
+                                   |    smt-cheating <level path> <result path> <start time steps (<int> | auto)> <max time steps> <threads> <invariant ball sizes (true | false)> <invariant ball locations (true | false)>
+                                   |    smt-reachability <level path> <result path> <start time steps (<int> | auto)> <max time steps> <threads> <invariant ball sizes (true | false)> <invariant ball locations (true | false)>
                                    |    adl <level path> <save problem path>
                                    |    adl-grounded <level path> <save domain path> <save problem path>
                                    |    object-fluents <level path> <save problem path>""".stripMargin)
@@ -86,14 +86,14 @@ class Terminal {
                     case List("gui") =>
                         new gmt.gui.GUI(settingsFile)
 
-                    case List("smt-basic", levelPath, resultsPath, startTimeStepsStr, maxTimeSteps, threads, invaraintBallSizes, invariantBallLocations, invariantDistances) =>
-                        openLevelSolveSMT(levelPath, resultsPath, startTimeStepsStr, maxTimeSteps, threads, invaraintBallSizes, invariantBallLocations, invariantDistances, EncoderEnum.BASIC)
+                    case List("smt-basic", levelPath, resultsPath, startTimeStepsStr, maxTimeSteps, invaraintBallSizes, invariantBallLocations) =>
+                        openLevelSolveSMT(levelPath, resultsPath, startTimeStepsStr, maxTimeSteps, invaraintBallSizes, invariantBallLocations, EncoderEnum.BASIC)
 
-                    case List("smt-cheating", levelPath, resultsPath, startTimeStepsStr, maxTimeSteps, threads, invaraintBallSizes, invariantBallLocations, invariantDistances) =>
-                        openLevelSolveSMT(levelPath, resultsPath, startTimeStepsStr, maxTimeSteps, threads, invaraintBallSizes, invariantBallLocations, invariantDistances, EncoderEnum.CHEATING)
+                    case List("smt-cheating", levelPath, resultsPath, startTimeStepsStr, maxTimeSteps, invaraintBallSizes, invariantBallLocations) =>
+                        openLevelSolveSMT(levelPath, resultsPath, startTimeStepsStr, maxTimeSteps, invaraintBallSizes, invariantBallLocations, EncoderEnum.CHEATING)
 
-                    case List("smt-reachability", levelPath, resultsPath, startTimeStepsStr, maxTimeSteps, threads, invaraintBallSizes, invariantBallLocations, invariantDistances) =>
-                        openLevelSolveSMT(levelPath, resultsPath, startTimeStepsStr, maxTimeSteps, threads, invaraintBallSizes, invariantBallLocations, invariantDistances, EncoderEnum.REACHABILITY)
+                    case List("smt-reachability", levelPath, resultsPath, startTimeStepsStr, maxTimeSteps, invaraintBallSizes, invariantBallLocations) =>
+                        openLevelSolveSMT(levelPath, resultsPath, startTimeStepsStr, maxTimeSteps, invaraintBallSizes, invariantBallLocations, EncoderEnum.REACHABILITY)
 
                     case List("adl", levelPath, problemPath) =>
                         openLevelGeneratePDDLProblem(levelPath, problemPath, EncoderPDDL.encodeAdl)
@@ -117,7 +117,7 @@ class Terminal {
             }
         }
 
-        private def openLevelSolveSMT(levelPath: String, resultsPath: String, startTimeStepsStr: String, maxTimeSteps: String, threads: String, invaraintBallSizes: String, invariantBallLocations: String, invariantDistances: String, encoderEnum: EncoderEnum.Value): Unit = {
+        private def openLevelSolveSMT(levelPath: String, resultsPath: String, startTimeStepsStr: String, maxTimeSteps: String, invaraintBallSizes: String, invariantBallLocations: String, encoderEnum: EncoderEnum.Value): Unit = {
             val startTimeSteps = startTimeStepsStr match {
                 case "auto" =>
                     None
@@ -127,8 +127,8 @@ class Terminal {
 
             val level = MutableLevel.load(Files.openTextFile(new File(levelPath))).toLevel
 
-            val plannerOptions = PlannerOptions(startTimeSteps, maxTimeSteps.toInt, threads.toInt)
-            val encoderOptions = EncoderOptions(invaraintBallSizes.toBoolean, invariantBallLocations.toBoolean, invariantDistances.toBoolean)
+            val plannerOptions = PlannerOptions(startTimeSteps, maxTimeSteps.toInt)
+            val encoderOptions = EncoderOptions(invaraintBallSizes.toBoolean, invariantBallLocations.toBoolean)
             val result = SnowmanSolver.solveSMTYics2(settings.solverPath.get, level, encoderEnum, encoderOptions, plannerOptions, Terminal.showSolverUpdate)
 
             Terminal.showResult(result)

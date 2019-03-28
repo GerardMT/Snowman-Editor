@@ -40,7 +40,7 @@ class StateBase (val timeStep: Int,
                  val balls: immutable.Seq[Ball],
                  val snow: SortedMap[Coordinate, BooleanVariable]) extends VariableAdder {
 
-    override def addVariables(encoding: Encoding, encoderOptions: EncoderOptions): Unit = {
+    override def addVariables(encoding: Encoding): Unit = {
         encoding.add(VariableDeclaration(character.x))
         encoding.add(VariableDeclaration(character.y))
 

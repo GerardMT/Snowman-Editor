@@ -5,5 +5,5 @@ import gmt.snowman.encoder.EncoderBase.EncoderOptions
 
 trait VariableAdder {
 
-    def addVariables(encoding: Encoding, encoderOptions: EncoderOptions): Unit
+    def addVariables(encoding: Encoding): Unit
 }
