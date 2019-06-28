@@ -46,20 +46,22 @@ object Planner {
 
             if (iState - 1 != 0) {
                 val (goalClause, variables) = encoder.goal(state, encodingData)
-                encoding.add(ClauseDeclaration(Not(goalClause)))
                 declareVariables(variables, encoding)
+                encoding.add(ClauseDeclaration(Not(goalClause)))
             }
 
             val stateNext = encoder.createState(iState, encoding, encodingData)
             stateNext.addVariables(encoding)
+            encoder.otherStates(stateNext, encoding, encodingData)
+
 
             encoder.actions(state, stateNext, encoding, encodingData)
 
             val goalVariable = BooleanVariable()
             encoding.add(VariableDeclaration(goalVariable))
             val (goalClause, variables) = encoder.goal(stateNext, encodingData)
-            encoding.add(ClauseDeclaration(Equivalent(goalVariable, goalClause)))
             declareVariables(variables, encoding)
+            encoding.add(ClauseDeclaration(Equivalent(goalVariable, goalClause)))
 
             goalsVariables.append(Assuming(goalVariable, value = true))
 
@@ -104,12 +106,13 @@ object Planner {
         while (iState <= timeSteps) {
             if (iState - 1 != 0) {
                 val (goalClause, variables) = encoder.goal(state, encodingData)
-                encoding.add(ClauseDeclaration(Not(goalClause)))
                 declareVariables(variables, encoding)
+                encoding.add(ClauseDeclaration(Not(goalClause)))
             }
 
             val stateNext = encoder.createState(iState, encoding, encodingData)
             stateNext.addVariables(encoding)
+            encoder.otherStates(stateNext, encoding, encodingData)
 
             encoder.actions(state, stateNext, encoding, encodingData)
 
@@ -138,8 +141,8 @@ object Planner {
             val goalVariable = BooleanVariable()
             encoding.add(VariableDeclaration(goalVariable))
             val (goalClause, variables) = encoder.goal(stateNext, encodingData)
-            encoding.add(ClauseDeclaration(Equivalent(goalVariable, goalClause)))
             declareVariables(variables, encoding)
+            encoding.add(ClauseDeclaration(Equivalent(goalVariable, goalClause)))
 
             goalsVariables.append(Assuming(goalVariable, value = false))
 
@@ -148,8 +151,8 @@ object Planner {
 
         val goalVariable = BooleanVariable()
         val (goalClause, variables) = encoder.goal(state, encodingData)
-        encoding.add(ClauseDeclaration(Equivalent(goalVariable, goalClause)))
         declareVariables(variables, encoding)
+        encoding.add(ClauseDeclaration(Equivalent(goalVariable, goalClause)))
 
 
         goalsVariables.append(Assuming(goalVariable, value = true))

@@ -7,6 +7,7 @@
         :disjunctive-preconditions
         :conditional-effects
         :object-fluents
+        :action-costs
     )
 
     (:types 
@@ -26,6 +27,7 @@
         (next_down ?l - location) - location
         (next_right ?l - location) - location
         (next_left ?l - location) - location
+        (total-cost) - number
     )
     
     (:action move_up_character
@@ -127,7 +129,6 @@
                     (or (= ?o ?b)
                     (= (ball_at ?o) (next_up (ball_at ?b)))))
                 (goal))
-            (not (occupancy (ball_at ?b)))
             (occupancy (next_up (ball_at ?b)))
             (assign (ball_at ?b) (next_up (ball_at ?b)))
             (when
@@ -135,7 +136,9 @@
                     (or 
                         (= ?o ?b)
                         (not (= (ball_at ?o) (ball_at ?b)))))
-                (assign (character_at) (ball_at ?b)))
+                (and
+                    (assign (character_at) (ball_at ?b))
+                    (not (occupancy (ball_at ?b)))))
             (not (snow (next_up (ball_at ?b))))
             (when
                 (and
@@ -204,7 +207,6 @@
                     (or (= ?o ?b)
                     (= (ball_at ?o) (next_down (ball_at ?b)))))
                 (goal))
-            (not (occupancy (ball_at ?b)))
             (occupancy (next_down (ball_at ?b)))
             (assign (ball_at ?b) (next_down (ball_at ?b)))
             (when
@@ -212,7 +214,9 @@
                     (or 
                         (= ?o ?b)
                         (not (= (ball_at ?o) (ball_at ?b)))))
-                (assign (character_at) (ball_at ?b)))
+                (and
+                    (assign (character_at) (ball_at ?b))
+                    (not (occupancy (ball_at ?b)))))
             (not (snow (next_down (ball_at ?b))))
             (when
                 (and
@@ -281,7 +285,6 @@
                     (or (= ?o ?b)
                     (= (ball_at ?o (next_right (ball_at ?b))))))
                 (goal))
-            (not (occupancy (ball_at ?b)))
             (occupancy (next_right (ball_at ?b)))
             (assign (ball_at ?b) (next_right (ball_at ?b)))
             (when
@@ -289,7 +292,9 @@
                     (or 
                         (= ?o ?b)
                         (not (= (ball_at ?o) (ball_at ?b)))))
-                (assign (character_at) (ball_at ?b)))
+                (and
+                    (assign (character_at) (ball_at ?b))
+                    (not (occupancy (ball_at ?b)))))
             (not (snow (next_right (ball_at ?b))))
             (when
                 (and
@@ -358,7 +363,6 @@
                     (or (= ?o ?b)
                     (= (ball_at ?o) (next_left (ball_at ?b)))))
                 (goal))
-            (not (occupancy (ball_at ?b)))
             (occupancy (next_left (ball_at ?b)))
             (assign (ball_at ?b) (next_left (ball_at ?b)))
             (when
@@ -366,7 +370,9 @@
                     (or 
                         (= ?o ?b)
                         (not (= (ball_at ?o) (ball_at ?b)))))
-                (assign (character_at) (ball_at ?b)))
+                (and
+                    (assign (character_at) (ball_at ?b))
+                    (not (occupancy (ball_at ?b)))))
             (not (snow (next_left (ball_at ?b))))
             (when
                 (and

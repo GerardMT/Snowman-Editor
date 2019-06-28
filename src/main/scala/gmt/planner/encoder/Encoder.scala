@@ -17,6 +17,8 @@ trait Encoder[A, B, C] {
 
     def createState(index: Int, encoding: Encoding, encodingData: B): A
 
+    def otherStates(state: A, encoding: Encoding, encodingData: B): Unit
+
     def decode(assignments: Seq[Assignment], encodingData: B): C
 
     def startTimeStep(): Int

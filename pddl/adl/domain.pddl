@@ -6,6 +6,7 @@
         :equality
         :disjunctive-preconditions
         :conditional-effects
+        :action-costs
     )
 
     (:types 
@@ -21,9 +22,12 @@
         (ball_size_small ?b - ball)
         (ball_size_medium ?b - ball)
         (ball_size_large ?b - ball)
-        (goal)
     )
-    
+
+    (:functions
+        (total-cost) - number
+    )
+
     (:action move_character
     
      :parameters
@@ -89,12 +93,6 @@
                                 (ball_size_large ?o))))))
       :effect
         (and
-            (when
-                (forall (?o - ball)
-                    (or (= ?o ?b)
-                    (ball_at ?o ?to)))
-                (goal))
-            (not (occupancy ?from))
             (occupancy ?to)
             (not (ball_at ?b ?from))
             (ball_at ?b ?to)
@@ -105,7 +103,8 @@
                         (not (ball_at ?o ?from))))
                 (and
                     (not (character_at ?ppos))
-                    (character_at ?from)))
+                    (character_at ?from)
+                    (not (occupancy ?from))))
             (not (snow ?to))
             (when
                 (and
@@ -120,6 +119,7 @@
                     (ball_size_medium ?b))
                 (and
                     (not (ball_size_medium ?b))
-                    (ball_size_large ?b))))
+                    (ball_size_large ?b)))
+            (increase (total-cost) 1))
     )
 )

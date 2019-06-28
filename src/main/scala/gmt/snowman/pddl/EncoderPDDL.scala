@@ -2,7 +2,7 @@ package gmt.snowman.pddl
 
 import gmt.snowman.action.SnowmanAction
 import gmt.snowman.game.`object`.{Object, _}
-import gmt.snowman.level.Level
+import gmt.snowman.level.{Coordinate, Level}
 
 object EncoderPDDL {
 
@@ -53,7 +53,9 @@ object EncoderPDDL {
 
         encoding += "    )\n"
 
-        encoding += encodeGoal()
+        encoding += encodeGoal(level)
+
+        encoding += "(:metric minimize (total-cost))\n"
 
         encoding += ")"
 
@@ -104,7 +106,9 @@ object EncoderPDDL {
 
         encoding += "    )\n"
 
-        encoding += encodeGoal()
+        encoding += encodeGoal(level)
+
+        encoding += "(:metric minimize (total-cost))\n"
 
         encoding += ")"
 
@@ -122,6 +126,7 @@ object EncoderPDDL {
         domain.append("        :equality\n")
         domain.append("        :disjunctive-preconditions\n")
         domain.append("        :conditional-effects\n")
+        domain.append("        :action-costs\n")
         domain.append("    )\n")
         domain.append("\n")
         domain.append("    (:types\n")
@@ -146,6 +151,10 @@ object EncoderPDDL {
         domain.append("        (ball_size_medium ?b - ball)\n")
         domain.append("        (ball_size_large ?b - ball)\n")
         domain.append("        (goal)\n")
+        domain.append("    )\n")
+
+        domain.append("    (:functions\n")
+        domain.append("        (total-cost) - number\n")
         domain.append("    )\n")
 
         for (l <- level.map.values.filter(f => Object.isPlayableArea(f.o)); o <- SnowmanAction.ACTIONS.map(f => f.shift)) {
@@ -285,8 +294,8 @@ object EncoderPDDL {
 
                             domain.append("                (and\n")
                             domain.append("                    (not (character_at " + ppos + "))\n")
-                            domain.append("                    (character_at ?from)\n")
-                            domain.append("                    (not (occupancy ?from))))\n")
+                            domain.append("                    (character_at " + from + ")\n")
+                            domain.append("                    (not (occupancy " + from + "))))\n")
                             domain.append("            (not (snow " + to + "))\n")
                             domain.append("            (when\n")
                             domain.append("                (and\n")
@@ -336,7 +345,9 @@ object EncoderPDDL {
         problem.append(encodeInitOccupancy(level))
         problem.append("    )\n")
         problem.append("\n")
-        problem.append(encodeGoal())
+        problem.append(encodeGoal(level))
+        problem.append("(:metric minimize (total-cost))\n")
+
         problem.append(")")
 
         (domain.toString(), problem.toString())
@@ -386,12 +397,31 @@ object EncoderPDDL {
         "        (ball_size_" + getBallSize(o) + " ball_" + index + ")\n"
     }
 
-    private def encodeGoal(): String = {
-        """|    (:goal
-           |        (goal)
-           |    )
-           |""".stripMargin
+    private def encodeGoal(level: Level): String = {
+        var goal = "    (:goal"
+        if (level.snowmans == 1) {
+            goal += "(or "
+            goal += "(and " + level.map.values.filter(f => Object.isPlayableArea(f.o)).map(f => equalBallPositions(f.c, level.balls.indices.toList)).mkString(" ") + ")"
+            goal += ")"
+        } else {
+            goal += "(or "
+            for (snowman <- level.balls.indices.toSet.subsets(3)) { // Combinations 3, resta combinations 3 until size == 0
+                for (p <- level.map.values.filter(f => Object.isPlayableArea(f.o))) {
+                    goal += "(and " + equalBallPositions(p.c, snowman.toList) + " (or"
+                }
+            }
+            goal += ")"
+        }
+        goal += "    )"
+
+        goal
     }
+
+    private def equalBallPositions(c: Coordinate , balls: List[Int]): String = "(ball_at ball_" + balls(0) + " " + coordinateToLocation(c) +
+        " (ball_at ball_" + balls(1) + " " + coordinateToLocation(c) + ")" +
+        " (ball_at ball_ " + balls(2) + " " + coordinateToLocation(c) + ")"
+
+    private def coordinateToLocation(c: Coordinate) = "loc_" + c.x + "_" + c.y
 
     def getBallSize(o: gmt.snowman.game.`object`.Object): String = o match {
         case SmallBall =>
