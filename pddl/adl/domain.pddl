@@ -91,7 +91,7 @@
                             (and
                                 (ball_size_medium ?b)
                                 (ball_size_large ?o))))))
-      :effect
+     :effect
         (and
             (occupancy ?to)
             (not (ball_at ?b ?from))

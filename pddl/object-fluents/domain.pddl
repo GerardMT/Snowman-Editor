@@ -122,7 +122,7 @@
                                 (ball-size-medium ?b)
                                 (ball-size-large ?o))))))
 
-      :effect
+     :effect
         (and
             (when
                 (forall (?o - ball)
@@ -153,7 +153,8 @@
                     (ball-size-medium ?b))
                 (and
                     (not (ball-size-medium ?b))
-                    (ball-size-large ?b))))
+                    (ball-size-large ?b)))
+            (increase (total-cost) 1))
     )
 
     (:action move_down_ball
@@ -200,7 +201,7 @@
                                 (ball-size-medium ?b)
                                 (ball-size-large ?o))))))
 
-      :effect
+     :effect
         (and
             (when
                 (forall (?o - ball)
@@ -231,7 +232,8 @@
                     (ball-size-medium ?b))
                 (and
                     (not (ball-size-medium ?b))
-                    (ball-size-large ?b))))
+                    (ball-size-large ?b)))
+            (increase (total-cost) 1))
     )
 
     (:action move_right_ball
@@ -278,7 +280,7 @@
                                 (ball-size-medium ?b)
                                 (ball-size-large ?o))))))
 
-      :effect
+     :effect
         (and
             (when
                 (forall (?o - ball)
@@ -309,7 +311,8 @@
                     (ball-size-medium ?b))
                 (and
                     (not (ball-size-medium ?b))
-                    (ball-size-large ?b))))
+                    (ball-size-large ?b)))
+            (increase (total-cost) 1))
     )
 
     (:action move_left_ball
@@ -356,7 +359,7 @@
                                 (ball-size-medium ?b)
                                 (ball-size-large ?o))))))
 
-      :effect
+     :effect
         (and
             (when
                 (forall (?o - ball)
@@ -387,6 +390,7 @@
                     (ball-size-medium ?b))
                 (and
                     (not (ball-size-medium ?b))
-                    (ball-size-large ?b))))
+                    (ball-size-large ?b)))
+            (increase (total-cost) 1))
     )
 )

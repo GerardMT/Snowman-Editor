@@ -461,6 +461,7 @@ class GUI(private val settingsFile: File) {
 
         private val ballSizesCheckBox = new JCheckBox("Ball sizes")
         private val ballPositionsCheckBox = new JCheckBox("Ball positions")
+        private val invariantWallUCheckBox = new JCheckBox("Wall U")
 
         def component: JComponent = {
             val panel = new JPanel
@@ -468,12 +469,13 @@ class GUI(private val settingsFile: File) {
             panel.setBorder(BorderFactory.createTitledBorder("Invariants"))
             panel.add(ballSizesCheckBox)
             panel.add(ballPositionsCheckBox)
+            panel.add(invariantWallUCheckBox)
 
             panel
         }
 
         def result: EncoderOptions = {
-            EncoderOptions(ballSizesCheckBox.isSelected, ballPositionsCheckBox.isSelected)
+            EncoderOptions(ballSizesCheckBox.isSelected, ballPositionsCheckBox.isSelected, invariantWallUCheckBox.isSelected)
         }
     }
 
