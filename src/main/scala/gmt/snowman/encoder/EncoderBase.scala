@@ -9,7 +9,7 @@ import gmt.snowman.encoder.EncoderBase.EncoderOptions
 import gmt.snowman.encoder.EncodingDataSnowman.StateData
 import gmt.snowman.encoder.StateBase.CoordinateVariables
 import gmt.snowman.game.`object`._
-import gmt.snowman.level.{Coordinate, Level, Location}
+import gmt.snowman.level.{Coordinate, CoordinateMask, Level, Location}
 import gmt.util.AStar
 
 import scala.collection.mutable.ListBuffer
@@ -264,10 +264,10 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
         val invalidLocationsMutable = ListBuffer.empty[Coordinate]
 
         for (l <- level.map.values.filter(f => Object.isPlayableArea(f.o))) {
-            val up = level.map.get(l.c + Up.shift).get.o
-            val down = level.map.get(l.c + Down.shift).get.o
-            val right = level.map.get(l.c + Right.shift).get.o
-            val left = level.map.get(l.c + Left.shift).get.o
+            val up = level.map(l.c + Up.shift).o
+            val down = level.map(l.c + Down.shift).o
+            val right = level.map(l.c + Right.shift).o
+            val left = level.map(l.c + Left.shift).o
 
             val invalid = !Object.isPlayableArea(up) && !Object.isPlayableArea(right) ||
                 !Object.isPlayableArea(right) && !Object.isPlayableArea(down) ||
@@ -290,68 +290,75 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
         }
     }
 
-    private case class CoordinateFixedDimension(value: Int, dimension: Int)
+    def tupleSort[A](t: (A, A))(implicit ordering: A => Ordered[A]): (A, A) = if (t._1 < t._2) {
+        (t._1, t._2)
+    } else {
+        (t._2, t._1)
+    }
+
+    private case class CoordinateFixedDimension(value: Int, fiexedCoordinate: CoordinateMask, rangeFrom: Int, rangeTo: Int)
 
     private case class LocationVisited(location: Location) {
-        var visited: Boolean = false
+        var visited = CoordinateMask(x = false, y = false)
     }
 
-    private def findU(location: Coordinate, direction: Coordinate, wall: Coordinate, visitedMap: immutable.Map[Coordinate, LocationVisited]): Boolean = {
+    private def checkForU(startCoordinate: Coordinate, direction: Coordinate, wall: Coordinate, dimension: CoordinateMask, visitedMap: immutable.Map[Coordinate, LocationVisited]): Option[CoordinateFixedDimension] = {
+        var currentCoordinate = startCoordinate
+        var search = true
+        var nextPlayable = true
 
+        visitedMap(currentCoordinate).visited |= dimension
+
+        while (search) {
+            currentCoordinate += direction
+
+            val currentVisitedLocation = visitedMap(currentCoordinate)
+            nextPlayable = Object.isPlayableArea(currentVisitedLocation.location.o)
+            search = (currentVisitedLocation.visited.isEmpty && currentVisitedLocation.visited != dimension) &&  nextPlayable  && !Object.isPlayableArea(visitedMap(currentCoordinate + wall).location.o)
+
+            currentVisitedLocation.visited |= dimension
+        }
+
+        if (!nextPlayable) {
+            val (from, to) = tupleSort((startCoordinate.getDimensionValue(!dimension), (currentCoordinate - direction).getDimensionValue(!dimension)))
+            Some(CoordinateFixedDimension(startCoordinate.getDimensionValue(dimension), dimension, from, to))
+        } else {
+            None
+        }
     }
 
-    private lazy val wallU: Iterable[CoordinateFixedDimension] = {
+    private lazy val findU: Iterable[CoordinateFixedDimension] = {
         val mutableWallU = ListBuffer.empty[CoordinateFixedDimension]
 
-        val visitedMap = level.map.filter(f => Object.isPlayableArea(f._2.o)).map(f => (f._1, LocationVisited(f._2))).toMap
+        val visitedMap = level.map.map(f => (f._1, LocationVisited(f._2))).toMap
 
-        for ((_, v) <- visitedMap) {
-            if (!v.visited) {
-                val up = level.map.get(v.location.c + Up.shift).get.o
-                val down = level.map.get(v.location.c + Down.shift).get.o
-                val right = level.map.get(v.location.c + Right.shift).get.o
-                val left = level.map.get(v.location.c + Left.shift).get.o
+        val x = CoordinateMask(x = true, y = false)
+        val y = CoordinateMask(x = false, y = true)
 
-                val xDim = if (!Object.isPlayableArea(up) && !Object.isPlayableArea(right)) {
-                    if(findU(v.location.c, Left.shift, Up.shift, visitedMap)) {
-                        Some(0)
-                    } else if (findU(v.location.c, Down.shift, Right.shift, visitedMap)) {
-                        Some(1)
-                    } else {
-                        None
-                    }
-                } else if (!Object.isPlayableArea(right) && !Object.isPlayableArea(down)) {
-                    if(findU(v.location.c, Left.shift, Down.shift, visitedMap)) {
-                        Some(0)
-                    } else if (findU(v.location.c, Up.shift, Right.shift, visitedMap)) {
-                        Some(1)
-                    } else {
-                        None
-                    }
-                } else if (!Object.isPlayableArea(down) && !Object.isPlayableArea(left)) {
-                    if(findU(v.location.c, Right.shift, Down.shift, visitedMap)) {
-                        Some(0)
-                    } else if (findU(v.location.c, Up.shift, Left.shift, visitedMap)) {
-                        Some(1)
-                    } else {
-                        None
-                    }
-                } else if (!Object.isPlayableArea(left) && !Object.isPlayableArea(up)) {
-                    if(findU(v.location.c, Right.shift, Up.shift, visitedMap)) {
-                        Some(0)
-                    } else if (findU(v.location.c, Down.shift, Left.shift, visitedMap)) {
-                        Some(1)
-                    } else {
-                        None
-                    }
+        for ((_, v) <- visitedMap.filter(f => Object.isPlayableArea(f._2.location.o))) {
+            if (v.visited.isAnyEmpty) {
+                val up = level.map(v.location.c + Up.shift).o
+                val down = level.map(v.location.c + Down.shift).o
+                val right = level.map(v.location.c + Right.shift).o
+                val left = level.map(v.location.c + Left.shift).o
+
+                val addToMutableWallU = (f: CoordinateFixedDimension) => {
+                    mutableWallU.append(f)
+                    true
                 }
 
-                xDim match {
-                    case Some(0) =>
-                        mutableWallU.append(CoordinateFixedDimension(v.location.c.x, 0))
-                    case Some(1) =>
-                        mutableWallU.append(CoordinateFixedDimension(v.location.c.y, 1))
-                    case _ =>
+                if (!Object.isPlayableArea(up) && !Object.isPlayableArea(right)) {
+                    checkForU(v.location.c, Down.shift, Right.shift, x, visitedMap).exists(addToMutableWallU)
+                    checkForU(v.location.c, Left.shift, Up.shift, y, visitedMap).exists(addToMutableWallU)
+                } else if (!Object.isPlayableArea(right) && !Object.isPlayableArea(down)) {
+                    checkForU(v.location.c, Up.shift, Right.shift, x, visitedMap).exists(addToMutableWallU)
+                    checkForU(v.location.c, Left.shift, Down.shift, y, visitedMap).exists(addToMutableWallU)
+                } else if (!Object.isPlayableArea(down) && !Object.isPlayableArea(left)) {
+                    checkForU(v.location.c, Up.shift, Left.shift, x, visitedMap).exists(addToMutableWallU)
+                    checkForU(v.location.c, Right.shift, Down.shift, y, visitedMap).exists(addToMutableWallU)
+                } else if (!Object.isPlayableArea(left) && !Object.isPlayableArea(up)) {
+                    checkForU(v.location.c, Down.shift, Left.shift, x, visitedMap).exists(addToMutableWallU)
+                    checkForU(v.location.c, Right.shift, Up.shift, y, visitedMap).exists(addToMutableWallU)
                 }
             }
         }
@@ -359,8 +366,9 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
         mutableWallU.to[immutable.Seq]
     }
 
-    private def invariantWallU(): Unit = {
-
+    private def invariantWallU(state: StateBase, encoding: Encoding): Unit = {
+        val a = findU
+        val b = true
     }
 
     protected trait ApplyShiftClauseOperation {

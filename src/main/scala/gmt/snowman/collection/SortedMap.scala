@@ -27,6 +27,8 @@ class SortedMap[K, V] extends Iterable[(K, V)] {
 
     def get(key: K): Option[V] = _map.get(key)
 
+    def apply(key: K): V = _map(key)
+
     def contains(key: K): Boolean = _map.contains(key)
 
     def remove(key: K): Option[V] = {

@@ -129,12 +129,14 @@ object Planner {
 
         var state = encoder.createState(0, encoding, encodingData)
         state.addVariables(encoding)
+        encoder.initialState(state, encoding, encodingData)
 
         val goalsVariables = ListBuffer.empty[Assuming]
 
         for (i <- 1 to timeSteps) {
             val stateNext = encoder.createState(i, encoding, encodingData)
             stateNext.addVariables(encoding)
+            encoder.otherStates(stateNext, encoding, encodingData)
 
             encoder.actions(state, stateNext, encoding, encodingData)
 
@@ -153,7 +155,6 @@ object Planner {
         val (goalClause, variables) = encoder.goal(state, encodingData)
         declareVariables(variables, encoding)
         encoding.add(ClauseDeclaration(Equivalent(goalVariable, goalClause)))
-
 
         goalsVariables.append(Assuming(goalVariable, value = true))
 
