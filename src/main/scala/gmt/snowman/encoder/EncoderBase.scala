@@ -314,7 +314,7 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
 
             val currentVisitedLocation = visitedMap(currentCoordinate)
             nextPlayable = Object.isPlayableArea(currentVisitedLocation.location.o)
-            search = (currentVisitedLocation.visited.isEmpty && currentVisitedLocation.visited != dimension) &&  nextPlayable  && !Object.isPlayableArea(visitedMap(currentCoordinate + wall).location.o)
+            search = (currentVisitedLocation.visited & dimension) == CoordinateMask(x = false, y = false) &&  nextPlayable  && !Object.isPlayableArea(visitedMap(currentCoordinate + wall).location.o)
 
             currentVisitedLocation.visited |= dimension
         }
@@ -367,8 +367,12 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
     }
 
     private def invariantWallU(state: StateBase, encoding: Encoding): Unit = {
-        val a = findU
-        val b = true
+        throw new NotImplementedError()
+//        for (f <- findU) {
+//            for (b <- state.balls) {
+//                encoding.add(ClauseDeclaration(Implies(, )))
+//            }
+//        }
     }
 
     protected trait ApplyShiftClauseOperation {

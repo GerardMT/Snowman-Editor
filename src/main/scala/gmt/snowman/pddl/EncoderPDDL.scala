@@ -159,7 +159,7 @@ object EncoderPDDL {
         domain.append("        (ball_size_large ?b - ball)\n")
         domain.append("        (goal)\n")
         domain.append("    )\n")
-
+        domain.append("\n")
         domain.append("    (:functions\n")
         domain.append("        (total-cost) - number\n")
         domain.append("    )\n")
@@ -200,9 +200,9 @@ object EncoderPDDL {
                         val from = "loc_" + l1.c.x + "_" + l1.c.y
                         val to = "loc_" + l2.c.x + "_" + l2.c.y
 
-                        val allBalls = level.balls.indices.map(f => "ball_" + f)
+                        for ((bI, otherBalls) <- level.balls.indices.map(f => (f, level.balls.indices.patch(f, Nil, 1).map(f => "ball_" + f)))) {
+                            val b = "ball_" + bI
 
-                        for ((b, otherBalls) <- level.balls.indices.map(f => ("ball_" + f, allBalls.patch(f, Nil, 1)))) {
                             domain.append("\n")
                             domain.append("    (:action move_ball__" + b + "__" + ppos + "__" + from + "__" + to)
 
@@ -277,16 +277,7 @@ object EncoderPDDL {
                             domain.append("\n")
                             domain.append("     :effect\n")
                             domain.append("        (and\n")
-                            domain.append("            (when\n")
-                            domain.append("                (and")
-
-                            for (o <- otherBalls) {
-                                domain.append("\n")
-                                domain.append("                    (ball_at " + o + " " + to + ")")
-                            }
-
-                            domain.append(")\n")
-                            domain.append("                (goal))\n")
+                            domain.append(encodeEffectGoal("            ", level, bI, l2.c))
                             domain.append("            (occupancy " + to + ")\n")
                             domain.append("            (not (ball_at " + b + " " + from + "))\n")
                             domain.append("            (ball_at " + b + " " + to + ")\n")
@@ -353,7 +344,10 @@ object EncoderPDDL {
         problem.append(encodeInitOccupancy(level))
         problem.append("    )\n")
         problem.append("\n")
-        problem.append(encodeGoal(level))
+        problem.append("    (:goal\n")
+        problem.append("        (and\n")
+        problem.append("            (goal))\n")
+        problem.append("    )\n")
         problem.append("\n")
         problem.append("    (:metric minimize (total-cost))\n")
 
@@ -445,6 +439,34 @@ object EncoderPDDL {
             goal.append("        )\n")
         }
         goal.append("    )\n")
+
+        goal.mkString
+    }
+
+    private def encodeEffectGoal(padding: String, level: Level, actionBall: Int, toCoordinate: Coordinate): String = {
+        val goal = new StringBuilder
+        goal.append(padding + "(when\n")
+        if (level.snowmen == 1) {
+            goal.append(padding + "    (and\n")
+            goal.append(padding + "        " + level.balls.indices.patch(actionBall, Nil, 1).map(f => "(ball_at ball_" + f + " " + coordinateToLocation(toCoordinate) + ")").mkString(" ") + ")\n")
+        } else {
+            goal.append(padding + "    (or\n")
+            for (snowmenBalls <- setPartitionBalls(level)) {
+                goal.append(padding + "            (or \n")
+                for (c <- level.map.values.filter(f => Object.isPlayableArea(f.o)).toSeq.combinations(level.snowmen)) {
+                    for ((location, iSnowman) <- c.zipWithIndex) {
+                        goal.append(padding + "                (and ")
+                        goal.append(snowmenBalls(iSnowman).filter(f => f != actionBall).map(ballIndex => {"(ball_at ball_" + ballIndex + " " + coordinateToLocation(location.c) + ")"}).mkString(" "))
+                        goal.append(")\n")
+                    }
+                }
+                goal.append(padding + "            )\n")
+            }
+            goal.append(padding + "        )\n")
+        }
+
+        goal.append(padding + "    (and\n")
+        goal.append(padding + "        (goal)))\n")
 
         goal.mkString
     }

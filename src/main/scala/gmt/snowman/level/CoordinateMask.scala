@@ -9,4 +9,6 @@ case class CoordinateMask(x: Boolean, y: Boolean) {
     def unary_! = CoordinateMask(!x, !y)
 
     def |(that: CoordinateMask): CoordinateMask = CoordinateMask(x | that.x, y | that.y)
+
+    def &(that: CoordinateMask): CoordinateMask = CoordinateMask(x & that.x, y & that.y)
 }
