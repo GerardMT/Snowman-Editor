@@ -5,7 +5,7 @@ import gmt.planner.operation._
 import gmt.planner.solver.Assignment
 import gmt.planner.solver.value.{Value, ValueBoolean, ValueInteger}
 import gmt.snowman.action.{BallAction, Down, Left, Right, SnowmanAction, Up}
-import gmt.snowman.encoder.EncoderBase.EncoderOptions
+import gmt.snowman.encoder.EncoderBase.{EncoderOptions, InvalidCoordinateFixedDimensionException}
 import gmt.snowman.encoder.EncodingDataSnowman.StateData
 import gmt.snowman.encoder.StateBase.CoordinateVariables
 import gmt.snowman.game.`object`._
@@ -21,6 +21,8 @@ object EncoderBase { // TODO Add rule: Can not unmount a snowman once done
     protected val SMALL_BALL = 1
     protected val MEDIUM_BALL = 2
     protected val LARGE_BALL = 4
+
+    case class InvalidCoordinateFixedDimensionException() extends Exception
 
     object EncoderEnum extends Enumeration {
         val BASIC, CHEATING, REACHABILITY = Value
@@ -127,9 +129,6 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
         if (encoderOptions.invariantBallSizes) {
             invariantBallSizes(state, encoding)
         }
-        if (encoderOptions.invariantWallsU) {
-            invariantWallU(state, encoding)
-        }
     }
 
     override def actions(state: A, stateNext: A, encoding: Encoding, encodingData: EncodingDataSnowman): Unit = {
@@ -170,7 +169,9 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
 
         encodingData.statesData.append(StateData(stateNext, actionsData.toList))
 
-        actionsData.toList
+        if (encoderOptions.invariantWallsU) {
+            invariantWallU(state, stateNext, encoding)
+        }
     }
 
     override def createState(index: Int, encoding: Encoding, encodingData: EncodingDataSnowman): A
@@ -284,8 +285,27 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
 
     private  def invariantBallLocatoins(state: StateBase, encoding: Encoding): Unit = {
         for (c <- invalidLocations) {
-            for (ball <- state.balls) {
-                encoding.add(ClauseDeclaration(Implies(And(Equals(ball.x, IntegerConstant(c.x)), Equals(ball.y, IntegerConstant(c.y))), Not(Or(Equals(ball.size, IntegerConstant(EncoderBase.SMALL_BALL)), Equals(ball.size, IntegerConstant(EncoderBase.MEDIUM_BALL)))))))
+            for ((ball, otherBalls )<- state.balls.zipWithIndex.map(f => (f._1, state.balls.patch(f._2, Nil, 1)))) {
+                encoding.add(ClauseDeclaration(
+                    Implies(
+                        And(
+                            Equals(ball.x, IntegerConstant(c.x)),
+                            Equals(ball.y, IntegerConstant(c.y)),
+                            Equals(ball.size, IntegerConstant(EncoderBase.SMALL_BALL))),
+                        Or(otherBalls.map(f => And(
+                            Equals(f.x, IntegerConstant(c.x)),
+                            Equals(f.y, IntegerConstant(c.y)),
+                            Equals(f.size, IntegerConstant(EncoderBase.MEDIUM_BALL)))): _*))))
+                encoding.add(ClauseDeclaration(
+                    Implies(
+                        And(
+                            Equals(ball.x, IntegerConstant(c.x)),
+                            Equals(ball.y, IntegerConstant(c.y)),
+                            Equals(ball.size, IntegerConstant(EncoderBase.MEDIUM_BALL))),
+                        Or(otherBalls.map(f => And(
+                            Equals(f.x, IntegerConstant(c.x)),
+                            Equals(f.y, IntegerConstant(c.y)),
+                            Equals(f.size, IntegerConstant(EncoderBase.LARGE_BALL)))): _*))))
             }
         }
     }
@@ -366,13 +386,26 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
         mutableWallU.to[immutable.Seq]
     }
 
-    private def invariantWallU(state: StateBase, encoding: Encoding): Unit = {
-        throw new NotImplementedError()
-//        for (f <- findU) {
-//            for (b <- state.balls) {
-//                encoding.add(ClauseDeclaration(Implies(, )))
-//            }
-//        }
+    private def applyCoordinateFixedDimension(state: StateBase, coordinateFixedDimension: CoordinateFixedDimension, coordinateVariables: CoordinateVariables): Clause = {
+        if (coordinateFixedDimension.fiexedCoordinate.x) {
+            And(Equals(coordinateVariables.x, IntegerConstant(coordinateFixedDimension.value)),
+                GreaterEqual(coordinateVariables.y, IntegerConstant(coordinateFixedDimension.rangeFrom)),
+                SmallerEqual(coordinateVariables.y, IntegerConstant(coordinateFixedDimension.rangeTo)))
+        } else if (coordinateFixedDimension.fiexedCoordinate.y) {
+            And(Equals(coordinateVariables.y, IntegerConstant(coordinateFixedDimension.value)),
+                GreaterEqual(coordinateVariables.x, IntegerConstant(coordinateFixedDimension.rangeFrom)),
+                SmallerEqual(coordinateVariables.x, IntegerConstant(coordinateFixedDimension.rangeTo)))
+        } else {
+            throw InvalidCoordinateFixedDimensionException()
+        }
+    }
+
+    private def invariantWallU(state: StateBase, stateNext: StateBase, encoding: Encoding): Unit = {
+        for (f <- findU) {
+            for (b <- state.balls) {
+                encoding.add(ClauseDeclaration(Implies(applyCoordinateFixedDimension(state, f, b), applyCoordinateFixedDimension(stateNext, f, b))))
+            }
+        }
     }
 
     protected trait ApplyShiftClauseOperation {

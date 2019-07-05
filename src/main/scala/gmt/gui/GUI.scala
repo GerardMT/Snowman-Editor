@@ -111,7 +111,7 @@ class GUI(private val settingsFile: File) {
                 contents += new Separator
                 contents += new Menu("Load") {
                     if (settings.gamePath.isDefined) {
-                        val levelsNames: List[String] = game.levelsNames
+                        val levelsNames: List[String] = game.levelsNames.sorted
 
                         for (n <- levelsNames) {
                             contents += new MenuItem(Action(n) {
@@ -152,7 +152,6 @@ class GUI(private val settingsFile: File) {
                         case e: LevelParserValidateException =>
                             showErrorValidateLevel(e, "Validator", Dialog.Message.Info)
                     }
-
                 })
             }
             contents += new Menu("Game") {
