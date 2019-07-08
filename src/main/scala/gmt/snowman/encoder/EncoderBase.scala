@@ -258,7 +258,7 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
     private  def invariantBallSizes(state: StateBase, encoding: Encoding): Unit = {
         encoding.add(ClauseDeclaration(SmallerEqual(state.balls.map(f => f.size).reduce(Add.ADD), IntegerConstant(7 * level.snowmen))))
 
-        encoding.add(ClauseDeclaration(SmallerEqual(state.balls.map(f => Ite(Equals(f.size, IntegerConstant(EncoderBase.MEDIUM_BALL)), IntegerConstant(1), IntegerConstant(0))).reduce(Add.ADD), IntegerConstant(level.snowmen))))
+        encoding.add(ClauseDeclaration(SmallerEqual(state.balls.map(f => Ite(Equals(f.size, IntegerConstant(EncoderBase.MEDIUM_BALL)), IntegerConstant(1), IntegerConstant(0))).reduce(Add.ADD), IntegerConstant(level.snowmen * 2))))
     }
 
     private lazy val invalidLocations: Iterable[Coordinate] = {
