@@ -41,7 +41,7 @@ object Planner {
 
         val goalsVariables = ListBuffer.empty[Assuming]
 
-        while (!solved && iState < plannerOptions.maxTimeSteps) {
+        while (!solved && iState <= plannerOptions.maxTimeSteps) {
             val startStepTime = System.currentTimeMillis()
 
             if (iState - 1 != 0) {
@@ -127,6 +127,9 @@ object Planner {
         val encoding = new Encoding
         val encodingData = encoder.createEncodingData()
 
+        encoding.add(Custom("(set-option :produce-models true)"))
+        encoding.add(Custom("(set-logic QF_LIA)"))
+
         var state = encoder.createState(0, encoding, encodingData)
         state.addVariables(encoding)
         encoder.initialState(state, encoding, encodingData)
@@ -146,19 +149,14 @@ object Planner {
             declareVariables(variables, encoding)
             encoding.add(ClauseDeclaration(Equivalent(goalVariable, goalClause)))
 
-            goalsVariables.append(Assuming(goalVariable, value = false))
+            goalsVariables.append(Assuming(goalVariable, value = i == timeSteps))
 
             state = stateNext
         }
 
-        val goalVariable = BooleanVariable()
-        val (goalClause, variables) = encoder.goal(state, encodingData)
-        declareVariables(variables, encoding)
-        encoding.add(ClauseDeclaration(Equivalent(goalVariable, goalClause)))
-
-        goalsVariables.append(Assuming(goalVariable, value = true))
-
         encoding.add(Custom("(check-sat-assuming " + assumingListToString(goalsVariables.toList) + ")"))
+        encoding.add(Custom("(get-model)"))
+        encoding.add(Custom("(exit)"))
 
         encoding
     }
