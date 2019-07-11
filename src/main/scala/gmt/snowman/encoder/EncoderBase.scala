@@ -5,7 +5,7 @@ import gmt.planner.operation._
 import gmt.planner.solver.Assignment
 import gmt.planner.solver.value.{Value, ValueBoolean, ValueInteger}
 import gmt.snowman.action.{BallAction, Down, Left, Right, SnowmanAction, Up}
-import gmt.snowman.encoder.EncoderBase.{EncoderOptions, InvalidCoordinateFixedDimensionException}
+import gmt.snowman.encoder.EncoderBase.EncoderOptions
 import gmt.snowman.encoder.EncodingDataSnowman.StateData
 import gmt.snowman.encoder.StateBase.CoordinateVariables
 import gmt.snowman.game.`object`._
@@ -41,7 +41,7 @@ object EncoderBase { // TODO Add rule: Can not unmount a snowman once done
         }
     }
 
-    case class EncoderOptions(invariantBallSizes: Boolean, invariantBallLocations: Boolean, invariantWallsU: Boolean)
+    case class EncoderOptions(invariantBallSizes: Boolean, invariantBallLocations: Boolean, invariantWallsU: Boolean, snowMonotonicity: Boolean)
 }
 
 abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions: EncoderOptions) extends Encoder[A, EncodingDataSnowman, DecodingData] {
@@ -57,21 +57,19 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
         val variables = ListBuffer.empty[Clause]
 
         if (level.snowmen == 1) {
-            ands.append(Equals(state.balls.head.x, state.balls(1).x), Equals(state.balls.head.y, state.balls(1).y))
-            ands.append(Equals(state.balls.head.x, state.balls(2).x), Equals(state.balls.head.y, state.balls(2).y))
+            ands.append(Equals(state.balls.head.x, state.balls(1).x))
+            ands.append(Equals(state.balls.head.x, state.balls(2).x))
         } else {
-            val snowmansVariables = ListBuffer.empty[(IntegerVariable, IntegerVariable)]
-            for (i <- 0 until level.snowmen) {
+            val snowmansVariables = ListBuffer.empty[IntegerVariable]
+            for (_ <- 0 until level.snowmen) {
                 val x = IntegerVariable()
-                val y = IntegerVariable()
-                snowmansVariables.append((x, y))
+                snowmansVariables.append(x)
                 variables.append(x)
-                variables.append(y)
             }
 
             for (b <- state.balls) {
-                val ors = for ((x, y) <- snowmansVariables) yield {
-                    And(Equals(b.x, x), Equals(b.y, y))
+                val ors = for (x <- snowmansVariables) yield {
+                    Equals(b.x, x)
                 }
 
                 ands.append(Or(ors.toList: _*))
@@ -107,8 +105,7 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
 
         encoding.add(Comment("S0 Balls"))
         for ((b, levelBall) <- level.balls.indices.map(f => (state.balls(f), level.balls(f)))) {
-            encoding.add(ClauseDeclaration(Equals(b.x, IntegerConstant(levelBall.c.x))))
-            encoding.add(ClauseDeclaration(Equals(b.y, IntegerConstant(levelBall.c.y))))
+            encoding.add(ClauseDeclaration(Equals(b.x, IntegerConstant(levelBall.c.x + level.width * levelBall.c.y))))
             encoding.add(ClauseDeclaration(Equals(b.size, IntegerConstant(getBallSize(levelBall.o)))))
         }
 
@@ -172,6 +169,12 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
         if (encoderOptions.invariantWallsU) {
             invariantWallU(state, stateNext, encoding)
         }
+
+        if (encoderOptions.snowMonotonicity) {
+            for ((c, s) <- state.snow) {
+                encoding.add(ClauseDeclaration(Implies(Not(s), Not(stateNext.snow(c)))))
+            }
+        }
     }
 
     override def createState(index: Int, encoding: Encoding, encodingData: EncodingDataSnowman): A
@@ -185,51 +188,50 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
     protected def createBallAction(actionName: String, state: A, stateActionBall: StateBase.Ball, stateNext: A, stateNextActionBall: StateBase.Ball, shift: Coordinate): (Clause, Clause, Seq[Expression])
 
     protected def encodeCharacterState[T <: StateBase](state: T, encoding: Encoding): Unit = {
-        encoding.add(ClauseDeclaration(Equals(state.character.x, IntegerConstant(level.character.c.x))))
-        encoding.add(ClauseDeclaration(Equals(state.character.y, IntegerConstant(level.character.c.y))))
+        encoding.add(ClauseDeclaration(Equals(state.character.x, IntegerConstant(level.character.c.x + level.width * level.character.c.y))))
     }
 
     protected def noOtherBallsOver(state: StateBase, stateActionBall: StateBase.Ball): Clause = {
         And((for (b <- state.balls.filter(f => f != stateActionBall)) yield {
-            Or(Not(Equals(stateActionBall.x, b.x)), Not(Equals(stateActionBall.y, b.y)), Smaller(stateActionBall.size, b.size))
+            Or(Not(Equals(stateActionBall.x, b.x)), Smaller(stateActionBall.size, b.size))
         }): _*)
     }
 
     protected def otherBallUnder(state: StateBase, stateActionBall: StateBase.Ball): Clause = {
         Or((for (b <- state.balls.filter(f => f != stateActionBall)) yield {
-            And(Equals(stateActionBall.x, b.x), Equals(stateActionBall.y, b.y), Smaller(stateActionBall.size, b.size))
+            And(Equals(stateActionBall.x, b.x), Smaller(stateActionBall.size, b.size))
         }): _*)
     }
 
     protected def otherBallInFront(state: StateBase, stateActionBall: StateBase.Ball, shift: Coordinate): Clause = {
         Or((for (b <- state.balls.filter(f => f != stateActionBall)) yield {
-            applyShiftClause(stateActionBall, b, shift, AND)
+            applyShiftClause(stateActionBall, b, shift)
         }): _*)
     }
 
     protected def otherBallsInFrontLarger(state: StateBase, stateActionBall: StateBase.Ball, shift: Coordinate): Clause = {
         And((for (b <- state.balls.filter(f => f != stateActionBall)) yield {
-            Or(applyShiftClause(stateActionBall, b, shift, OR), Smaller(stateActionBall.size, b.size))
+            Implies(applyShiftClause(stateActionBall, b, shift), Smaller(stateActionBall.size, b.size))
         }): _*)
     }
 
     protected def moveBall(stateActionBall: StateBase.Ball, stateNextActionBall: StateBase.Ball, shift: Coordinate): Clause = {
-        applyShiftClause(stateActionBall, stateNextActionBall, shift, AND)
+        applyShiftClause(stateActionBall, stateNextActionBall, shift)
     }
 
     protected def equalCharacterVariables[T <: StateBase](state: T, stateNext: T): Clause = {
-        And(Equals(state.character.x, stateNext.character.x), Equals(state.character.y, stateNext.character.y))
+        Equals(state.character.x, stateNext.character.x)
     }
 
     protected def equalOtherBallsVariables(state: StateBase, stateActionBall: StateBase.Ball, stateNext: StateBase, stateNextActionBall: StateBase.Ball): Clause = {
         And((for ((b, bNext) <- state.balls.filter(f => f != stateActionBall).zip(stateNext.balls.filter(f => f != stateNextActionBall))) yield {
-            And(Equals(b.x, bNext.x), Equals(b.y, bNext.y), Equals(b.size, bNext.size))
+            And(Equals(b.x, bNext.x), Equals(b.size, bNext.size))
         }): _*)
     }
 
     protected def updateSnowVariables(state: StateBase, stateActionBall: StateBase.Ball, stateNext: StateBase, shift: Coordinate): Clause = {
         Operations.simplify(And((for ((c, s) <- flattenTuple(level.map.keys.map(f => (f, state.snow.get(f + shift))))) yield {
-            Equivalent(And(s, Or(Not(Equals(stateActionBall.x, IntegerConstant(c.x))), Not(Equals(stateActionBall.y, IntegerConstant(c.y))))), stateNext.snow.get(c + shift).get)
+            Equivalent(And(s, Not(Equals(stateActionBall.x, IntegerConstant(c.x + level.width * c.y)))), stateNext.snow.get(c + shift).get)
         }).toSeq: _*))
     }
 
@@ -238,7 +240,7 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
             val expressions = ListBuffer.empty[Expression]
 
             val theresSnow = Operations.simplify(Or((for ((c, s) <- flattenTuple(level.map.keys.map(f => (f, state.snow.get(f + shift))))) yield {
-                    And(Equals(stateActionBall.x, IntegerConstant(c.x)), Equals(stateActionBall.y, IntegerConstant(c.y)), s)
+                    And(Equals(stateActionBall.x, IntegerConstant(c.x + level.width * c.y)), s)
             }).toSeq: _*))
 
             val theresSnowVar = BooleanVariable(actionName + "_TS")
@@ -256,7 +258,7 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
     }
 
     private  def invariantBallSizes(state: StateBase, encoding: Encoding): Unit = {
-        encoding.add(ClauseDeclaration(SmallerEqual(state.balls.map(f => f.size).reduce(Add.ADD), IntegerConstant(7 * level.snowmen))))
+        encoding.add(ClauseDeclaration(SmallerEqual(state.balls.map(f => f.size).reduce(Add.ADD), IntegerConstant((EncoderBase.SMALL_BALL + EncoderBase.MEDIUM_BALL + EncoderBase.LARGE_BALL) * level.snowmen))))
 
         encoding.add(ClauseDeclaration(SmallerEqual(state.balls.map(f => Ite(Equals(f.size, IntegerConstant(EncoderBase.MEDIUM_BALL)), IntegerConstant(1), IntegerConstant(0))).reduce(Add.ADD), IntegerConstant(level.snowmen * 2))))
     }
@@ -289,28 +291,24 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
                 encoding.add(ClauseDeclaration(
                     Implies(
                         And(
-                            Equals(ball.x, IntegerConstant(c.x)),
-                            Equals(ball.y, IntegerConstant(c.y)),
+                            Equals(ball.x, IntegerConstant(c.x + level.width * c.y)),
                             Equals(ball.size, IntegerConstant(EncoderBase.SMALL_BALL))),
                         Or(otherBalls.map(f => And(
-                            Equals(f.x, IntegerConstant(c.x)),
-                            Equals(f.y, IntegerConstant(c.y)),
+                            Equals(f.x, IntegerConstant(c.x + level.width * c.y)),
                             Equals(f.size, IntegerConstant(EncoderBase.MEDIUM_BALL)))): _*))))
                 encoding.add(ClauseDeclaration(
                     Implies(
                         And(
-                            Equals(ball.x, IntegerConstant(c.x)),
-                            Equals(ball.y, IntegerConstant(c.y)),
+                            Equals(ball.x, IntegerConstant(c.x + level.width * c.y)),
                             Equals(ball.size, IntegerConstant(EncoderBase.MEDIUM_BALL))),
                         Or(otherBalls.map(f => And(
-                            Equals(f.x, IntegerConstant(c.x)),
-                            Equals(f.y, IntegerConstant(c.y)),
+                            Equals(f.x, IntegerConstant(c.x + level.width * c.y)),
                             Equals(f.size, IntegerConstant(EncoderBase.LARGE_BALL)))): _*))))
             }
         }
     }
 
-    def tupleSort[A](t: (A, A))(implicit ordering: A => Ordered[A]): (A, A) = if (t._1 < t._2) {
+    def tupleSort[T](t: (T, T))(implicit ordering: T => Ordered[T]): (T, T) = if (t._1 < t._2) {
         (t._1, t._2)
     } else {
         (t._2, t._1)
@@ -322,90 +320,91 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
         var visited = CoordinateMask(x = false, y = false)
     }
 
-    private def checkForU(startCoordinate: Coordinate, direction: Coordinate, wall: Coordinate, dimension: CoordinateMask, visitedMap: immutable.Map[Coordinate, LocationVisited]): Option[CoordinateFixedDimension] = {
-        var currentCoordinate = startCoordinate
-        var search = true
-        var nextPlayable = true
+//    private def checkForU(startCoordinate: Coordinate, direction: Coordinate, wall: Coordinate, dimension: CoordinateMask, visitedMap: immutable.Map[Coordinate, LocationVisited]): Option[CoordinateFixedDimension] = {
+//        var currentCoordinate = startCoordinate
+//        var search = true
+//        var nextPlayable = true
+//
+//        visitedMap(currentCoordinate).visited |= dimension
+//
+//        while (search) {
+//            currentCoordinate += direction
+//
+//            val currentVisitedLocation = visitedMap(currentCoordinate)
+//            nextPlayable = Object.isPlayableArea(currentVisitedLocation.location.o)
+//            search = (currentVisitedLocation.visited & dimension) == CoordinateMask(x = false, y = false) &&  nextPlayable  && !Object.isPlayableArea(visitedMap(currentCoordinate + wall).location.o)
+//
+//            currentVisitedLocation.visited |= dimension
+//        }
+//
+//        if (!nextPlayable) {
+//            val (from, to) = tupleSort((startCoordinate.getDimensionValue(!dimension), (currentCoordinate - direction).getDimensionValue(!dimension)))
+//            Some(CoordinateFixedDimension(startCoordinate.getDimensionValue(dimension), dimension, from, to))
+//        } else {
+//            None
+//        }
+//    }
 
-        visitedMap(currentCoordinate).visited |= dimension
+//    private lazy val findU: Iterable[CoordinateFixedDimension] = {
+//        val mutableWallU = ListBuffer.empty[CoordinateFixedDimension]
+//
+//        val visitedMap = level.map.map(f => (f._1, LocationVisited(f._2))).toMap
+//
+//        val x = CoordinateMask(x = true, y = false)
+//        val y = CoordinateMask(x = false, y = true)
+//
+//        for ((_, v) <- visitedMap.filter(f => Object.isPlayableArea(f._2.location.o))) {
+//            if (v.visited.isAnyEmpty) {
+//                val up = level.map(v.location.c + Up.shift).o
+//                val down = level.map(v.location.c + Down.shift).o
+//                val right = level.map(v.location.c + Right.shift).o
+//                val left = level.map(v.location.c + Left.shift).o
+//
+//                val addToMutableWallU = (f: CoordinateFixedDimension) => {
+//                    mutableWallU.append(f)
+//                    true
+//                }
+//
+//                if (!Object.isPlayableArea(up) && !Object.isPlayableArea(right)) {
+//                    checkForU(v.location.c, Down.shift, Right.shift, x, visitedMap).exists(addToMutableWallU)
+//                    checkForU(v.location.c, Left.shift, Up.shift, y, visitedMap).exists(addToMutableWallU)
+//                } else if (!Object.isPlayableArea(right) && !Object.isPlayableArea(down)) {
+//                    checkForU(v.location.c, Up.shift, Right.shift, x, visitedMap).exists(addToMutableWallU)
+//                    checkForU(v.location.c, Left.shift, Down.shift, y, visitedMap).exists(addToMutableWallU)
+//                } else if (!Object.isPlayableArea(down) && !Object.isPlayableArea(left)) {
+//                    checkForU(v.location.c, Up.shift, Left.shift, x, visitedMap).exists(addToMutableWallU)
+//                    checkForU(v.location.c, Right.shift, Down.shift, y, visitedMap).exists(addToMutableWallU)
+//                } else if (!Object.isPlayableArea(left) && !Object.isPlayableArea(up)) {
+//                    checkForU(v.location.c, Down.shift, Left.shift, x, visitedMap).exists(addToMutableWallU)
+//                    checkForU(v.location.c, Right.shift, Up.shift, y, visitedMap).exists(addToMutableWallU)
+//                }
+//            }
+//        }
+//
+//        mutableWallU.to[immutable.Seq]
+//    }
 
-        while (search) {
-            currentCoordinate += direction
-
-            val currentVisitedLocation = visitedMap(currentCoordinate)
-            nextPlayable = Object.isPlayableArea(currentVisitedLocation.location.o)
-            search = (currentVisitedLocation.visited & dimension) == CoordinateMask(x = false, y = false) &&  nextPlayable  && !Object.isPlayableArea(visitedMap(currentCoordinate + wall).location.o)
-
-            currentVisitedLocation.visited |= dimension
-        }
-
-        if (!nextPlayable) {
-            val (from, to) = tupleSort((startCoordinate.getDimensionValue(!dimension), (currentCoordinate - direction).getDimensionValue(!dimension)))
-            Some(CoordinateFixedDimension(startCoordinate.getDimensionValue(dimension), dimension, from, to))
-        } else {
-            None
-        }
-    }
-
-    private lazy val findU: Iterable[CoordinateFixedDimension] = {
-        val mutableWallU = ListBuffer.empty[CoordinateFixedDimension]
-
-        val visitedMap = level.map.map(f => (f._1, LocationVisited(f._2))).toMap
-
-        val x = CoordinateMask(x = true, y = false)
-        val y = CoordinateMask(x = false, y = true)
-
-        for ((_, v) <- visitedMap.filter(f => Object.isPlayableArea(f._2.location.o))) {
-            if (v.visited.isAnyEmpty) {
-                val up = level.map(v.location.c + Up.shift).o
-                val down = level.map(v.location.c + Down.shift).o
-                val right = level.map(v.location.c + Right.shift).o
-                val left = level.map(v.location.c + Left.shift).o
-
-                val addToMutableWallU = (f: CoordinateFixedDimension) => {
-                    mutableWallU.append(f)
-                    true
-                }
-
-                if (!Object.isPlayableArea(up) && !Object.isPlayableArea(right)) {
-                    checkForU(v.location.c, Down.shift, Right.shift, x, visitedMap).exists(addToMutableWallU)
-                    checkForU(v.location.c, Left.shift, Up.shift, y, visitedMap).exists(addToMutableWallU)
-                } else if (!Object.isPlayableArea(right) && !Object.isPlayableArea(down)) {
-                    checkForU(v.location.c, Up.shift, Right.shift, x, visitedMap).exists(addToMutableWallU)
-                    checkForU(v.location.c, Left.shift, Down.shift, y, visitedMap).exists(addToMutableWallU)
-                } else if (!Object.isPlayableArea(down) && !Object.isPlayableArea(left)) {
-                    checkForU(v.location.c, Up.shift, Left.shift, x, visitedMap).exists(addToMutableWallU)
-                    checkForU(v.location.c, Right.shift, Down.shift, y, visitedMap).exists(addToMutableWallU)
-                } else if (!Object.isPlayableArea(left) && !Object.isPlayableArea(up)) {
-                    checkForU(v.location.c, Down.shift, Left.shift, x, visitedMap).exists(addToMutableWallU)
-                    checkForU(v.location.c, Right.shift, Up.shift, y, visitedMap).exists(addToMutableWallU)
-                }
-            }
-        }
-
-        mutableWallU.to[immutable.Seq]
-    }
-
-    private def applyCoordinateFixedDimension(state: StateBase, coordinateFixedDimension: CoordinateFixedDimension, coordinateVariables: CoordinateVariables): Clause = {
-        if (coordinateFixedDimension.fiexedCoordinate.x) {
-            And(Equals(coordinateVariables.x, IntegerConstant(coordinateFixedDimension.value)),
-                GreaterEqual(coordinateVariables.y, IntegerConstant(coordinateFixedDimension.rangeFrom)),
-                SmallerEqual(coordinateVariables.y, IntegerConstant(coordinateFixedDimension.rangeTo)))
-        } else if (coordinateFixedDimension.fiexedCoordinate.y) {
-            And(Equals(coordinateVariables.y, IntegerConstant(coordinateFixedDimension.value)),
-                GreaterEqual(coordinateVariables.x, IntegerConstant(coordinateFixedDimension.rangeFrom)),
-                SmallerEqual(coordinateVariables.x, IntegerConstant(coordinateFixedDimension.rangeTo)))
-        } else {
-            throw InvalidCoordinateFixedDimensionException()
-        }
-    }
+//    private def applyCoordinateFixedDimension(state: StateBase, coordinateFixedDimension: CoordinateFixedDimension, coordinateVariables: CoordinateVariables): Clause = {
+//        if (coordinateFixedDimension.fiexedCoordinate.x) {
+//            And(Equals(coordinateVariables.x, IntegerConstant(coordinateFixedDimension.value)),
+//                GreaterEqual(coordinateVariables.y, IntegerConstant(coordinateFixedDimension.rangeFrom)),
+//                SmallerEqual(coordinateVariables.y, IntegerConstant(coordinateFixedDimension.rangeTo)))
+//        } else if (coordinateFixedDimension.fiexedCoordinate.y) {
+//            And(Equals(coordinateVariables.y, IntegerConstant(coordinateFixedDimension.value)),
+//                GreaterEqual(coordinateVariables.x, IntegerConstant(coordinateFixedDimension.rangeFrom)),
+//                SmallerEqual(coordinateVariables.x, IntegerConstant(coordinateFixedDimension.rangeTo)))
+//        } else {
+//            throw InvalidCoordinateFixedDimensionException()
+//        }
+//    }
 
     private def invariantWallU(state: StateBase, stateNext: StateBase, encoding: Encoding): Unit = {
-        for (f <- findU) {
-            for (b <- state.balls) {
-                encoding.add(ClauseDeclaration(Implies(applyCoordinateFixedDimension(state, f, b), applyCoordinateFixedDimension(stateNext, f, b))))
-            }
-        }
+        throw new NotImplementedError()
+//        for (f <- findU) {
+//            for (b <- state.balls) {
+//                encoding.add(ClauseDeclaration(Implies(applyCoordinateFixedDimension(state, f, b), applyCoordinateFixedDimension(stateNext, f, b))))
+//            }
+//        }
     }
 
     protected trait ApplyShiftClauseOperation {
@@ -418,23 +417,20 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
         override def apply(c1: Clause, c2: Clause): Clause = Or(Not(c1), Not(c2))
     }
 
-    protected def applyShiftClause(applyVariables: StateBase.CoordinateVariables, variables: StateBase.CoordinateVariables, shift: Coordinate, operation: ApplyShiftClauseOperation): Clause = {
+    protected def applyShiftClause(applyVariables: StateBase.CoordinateVariables, variables: StateBase.CoordinateVariables, shift: Coordinate): Clause = {
         val newX = if (shift.x > 0) {
             Add(applyVariables.x, IntegerConstant(shift.x))
         } else if (shift.x < 0){
             Sub(applyVariables.x, IntegerConstant(-shift.x))
-        } else {
-            applyVariables.x
-        }
-        val newY = if (shift.y > 0) {
-            Add(applyVariables.y, IntegerConstant(shift.y))
+        } else if (shift.y > 0) {
+            Add(applyVariables.x, IntegerConstant(shift.y * level.width))
         } else if (shift.y < 0){
-            Sub(applyVariables.y, IntegerConstant(-shift.y))
+            Sub(applyVariables.x, IntegerConstant(-shift.y * level.width))
         } else {
-            applyVariables.y
+            throw InvalidClauseException()
         }
 
-        operation(Equals(newX, variables.x), Equals(newY, variables.y))
+        Equals(newX, variables.x)
     }
 
     protected def getBallSize(o: gmt.snowman.game.`object`.Object): Int = o match {
@@ -476,7 +472,7 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
             if (preActionCoordinate - characterLocation != Coordinate(0, 0)) {
                 val allNodes = () => level.map.keys.toList
                 val neighboursRelaxed  = (c: Coordinate) => SnowmanAction.ACTIONS.map(f => c + f.shift).filter(f => {val l = level.map.get(f); l.isDefined && Object.isPlayableArea(l.get.o)})
-                val neighbours = (c: Coordinate) => neighboursRelaxed(c).filter(f => !state.balls.exists(b => assignmentsMap(b.x.name).asInstanceOf[ValueInteger].v == f.x && assignmentsMap(b.y.name).asInstanceOf[ValueInteger].v == f.y))
+                val neighbours = (c: Coordinate) => neighboursRelaxed(c).filter(f => !state.balls.exists(b => f == coordinateFromCoordinateVariables(b, assignmentsMap)))
                 val heuristic = (start: Coordinate, goal: Coordinate) => start.euclideanDistance(goal).toFloat
 
                 var path = AStar.aStar(characterLocation, preActionCoordinate, allNodes, neighbours, heuristic)
@@ -511,7 +507,7 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
     }
 
     private def coordinateFromCoordinateVariables(coordinateVariables: CoordinateVariables, assignmentsMap: immutable.Map[String, Value]): Coordinate = {
-        Coordinate(assignmentsMap(coordinateVariables.x.name).asInstanceOf[ValueInteger].v, assignmentsMap(coordinateVariables.y.name).asInstanceOf[ValueInteger].v)
+        Coordinate(assignmentsMap(coordinateVariables.x.name).asInstanceOf[ValueInteger].v % level.width, assignmentsMap(coordinateVariables.x.name).asInstanceOf[ValueInteger].v / level.width)
     }
 
     private def pathToActions(path: immutable.Seq[Coordinate]): List[SnowmanAction] = {
@@ -521,14 +517,14 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
 
     private def encodeLocationsRestriction[T <: StateBase](state: T, encoder: Encoding): Unit = {
         encoder.add(ClauseDeclaration(Or((for (l <- level.map.values.filter(f => Object.isPlayableArea(f.o))) yield {
-            And(Equals(state.character.x, IntegerConstant(l.c.x)), Equals(state.character.y, IntegerConstant(l.c.y)))
+            Equals(state.character.x, IntegerConstant(l.c.x + level.width * l.c.y))
         }).toSeq: _*)))
         for (b <- state.balls) {
-            encoder.add(ClauseDeclaration(Not(And(Equals(state.character.x, b.x), Equals(state.character.y, b.y)))))
+            encoder.add(ClauseDeclaration(Not(Equals(state.character.x, b.x))))
         }
         for (b <- state.balls) {
             encoder.add(ClauseDeclaration(Or((for (l <- level.map.values.filter(f => Object.isPlayableArea(f.o))) yield {
-                And(Equals(b.x, IntegerConstant(l.c.x)), Equals(b.y, IntegerConstant(l.c.y)))
+                Equals(b.x, IntegerConstant(l.c.x + level.width * l.c.y))
             }).toSeq: _*)))
         }
     }

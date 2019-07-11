@@ -46,6 +46,7 @@ class Yices2(solverBinaryPath: String) {
                 false
             case l @ _ =>
                 System.err.print(l)
+                System.err.print("\n")
                 throw new InvalidParameterException
         }
 

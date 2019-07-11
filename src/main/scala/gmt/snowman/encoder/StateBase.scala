@@ -14,9 +14,9 @@ import scala.collection.mutable.ListBuffer
 
 object StateBase {
 
-    abstract class CoordinateVariables(val x: IntegerVariable, val y: IntegerVariable)
-    case class Ball(override val x: IntegerVariable, override  val y: IntegerVariable, size: IntegerVariable) extends CoordinateVariables(x, y)
-    case class Character(override val x: IntegerVariable, override  val y: IntegerVariable) extends CoordinateVariables(x, y)
+    abstract class CoordinateVariables(val x: IntegerVariable)
+    case class Ball(override val x: IntegerVariable, size: IntegerVariable) extends CoordinateVariables(x)
+    case class Character(override val x: IntegerVariable) extends CoordinateVariables(x)
 
 
     def apply(level: Level, timeStep: Int): StateBase = {
@@ -28,10 +28,10 @@ object StateBase {
         }
 
         for(i <- level.balls.indices) {
-            balls.append(Ball(IntegerVariable("B" + i + "_X_S" + timeStep), IntegerVariable("B" + i + "Y_S" + timeStep), IntegerVariable("B" + i + "T_S" + timeStep)))
+            balls.append(Ball(IntegerVariable("B" + i + "_X_S" + timeStep), IntegerVariable("B" + i + "T_S" + timeStep)))
         }
 
-        new StateBase(timeStep, Character(IntegerVariable("C_X_S" + timeStep), IntegerVariable("C_Y_S" + timeStep)), balls.toList, snow)
+        new StateBase(timeStep, Character(IntegerVariable("C_X_S" + timeStep)), balls.toList, snow)
     }
 }
 
@@ -42,11 +42,9 @@ class StateBase (val timeStep: Int,
 
     override def addVariables(encoding: Encoding): Unit = {
         encoding.add(VariableDeclaration(character.x))
-        encoding.add(VariableDeclaration(character.y))
 
         for (b <- balls) {
             encoding.add(VariableDeclaration(b.x))
-            encoding.add(VariableDeclaration(b.y))
             encoding.add(VariableDeclaration(b.size))
         }
 

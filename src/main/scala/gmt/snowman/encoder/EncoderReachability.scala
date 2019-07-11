@@ -21,7 +21,7 @@ protected case class EncoderReachability(override val level: Level, override val
         encoding.add(Comment("Reachability"))
         for (p <- level.map.values.filter(f => Object.isPlayableArea(f.o))) {
             val or = Or((for (b <- level.balls.indices) yield {
-                And(Equals(state.balls(b).x, IntegerConstant(p.c.x)), Equals(state.balls(b).y, IntegerConstant(p.c.y)))
+                Equals(state.balls(b).x, IntegerConstant(p.c.x + level.width * p.c.y))
             }): _*)
 
             encoding.add(ClauseDeclaration(Implies(or, Not(state.reachabilityNodes.get(p.c).get))))
@@ -42,7 +42,7 @@ protected case class EncoderReachability(override val level: Level, override val
             }
 
             if (ors.nonEmpty) {
-                encoding.add(ClauseDeclaration(Implies(And(Or(Not(Equals(state.character.x, IntegerConstant(l.c.x))), Not(Equals(state.character.y, IntegerConstant(l.c.y)))), nodeStart), Operations.simplify(Or(ors: _*)))))
+                encoding.add(ClauseDeclaration(Implies(And(Not(Equals(state.character.x, IntegerConstant(l.c.x + level.width * l.c.y))), nodeStart), Operations.simplify(Or(ors: _*)))))
             }
         }
     }
@@ -62,7 +62,7 @@ protected case class EncoderReachability(override val level: Level, override val
             otherBallsInFrontLarger(state, stateActionBall, shift),
             reachability(state, stateActionBall, shift))
 
-      val constantEff = ListBuffer(moveBall(stateActionBall, stateNextActionBall, shift),
+        val constantEff = ListBuffer(moveBall(stateActionBall, stateNextActionBall, shift),
             Implies(Not(otherBallUnderVar), teleportCharacterBall(stateActionBall, stateNext)),
             Implies(otherBallUnderVar, teleportCharacter(stateActionBall, stateNext, shift)),
             equalOtherBallsVariables(state, stateActionBall, stateNext, stateNextActionBall),
@@ -86,15 +86,15 @@ protected case class EncoderReachability(override val level: Level, override val
 
     private def reachability(state: StateReachability, stateActionBall: StateBase.Ball, shift: Coordinate): Clause = {
         Or((for ((c, rn) <- flattenTuple(level.map.keys.map(f => (f, state.reachabilityNodes.get(f - shift))))) yield {
-            And(Equals(stateActionBall.x, IntegerConstant(c.x)), Equals(stateActionBall.y, IntegerConstant(c.y)), rn)
+            And(Equals(stateActionBall.x, IntegerConstant(c.x + level.width * c.y)), rn)
         }).toSeq: _*)
     }
 
     private def teleportCharacterBall[T <: StateBase](stateActionBall: StateBase.Ball, stateNext: T): Clause = {
-        And(Equals(stateNext.character.x, stateActionBall.x), Equals(stateNext.character.y, stateActionBall.y))
+        Equals(stateNext.character.x, stateActionBall.x)
     }
 
     private def teleportCharacter[T <: StateBase](stateActionBall: StateBase.Ball, stateNext: T, shift: Coordinate): Clause = {
-        applyShiftClause(stateActionBall, stateNext.character, -shift, AND)
+        applyShiftClause(stateActionBall, stateNext.character, -shift)
     }
 }

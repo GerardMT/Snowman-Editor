@@ -116,11 +116,9 @@ object Report {
 
         // Character
         val pXA = assignmentsMap.get(state.character.x.name)
-        val pYA = assignmentsMap.get(state.character.y.name)
 
-        if(pXA.isDefined && pYA.isDefined) {
-            val pX = pXA.get match { case Assignment(_, ValueInteger(v)) => v }
-            val pY = pYA.get match { case Assignment(_, ValueInteger(v)) => v }
+        if(pXA.isDefined) {
+            val (pX, pY) = pXA.get match { case Assignment(_, ValueInteger(v)) => (v % level.width, v / level.width) }
 
             if (mapLines(pY)(pX) == '.') {
                 mapLines(pY)(pX) = 'q'
@@ -132,12 +130,10 @@ object Report {
         // Balls
         for (b <- state.balls) {
             val bXA = assignmentsMap.get(b.x.name)
-            val bYA = assignmentsMap.get(b.y.name)
             val bTA = assignmentsMap.get(b.size.name)
 
-            if(bXA.isDefined && bYA.isDefined && bTA.isDefined) {
-                val bX = bXA.get match { case Assignment(_, ValueInteger(v)) => v }
-                val bY = bYA.get match { case Assignment(_, ValueInteger(v)) => v }
+            if(bXA.isDefined && bTA.isDefined) {
+                val (bX, bY)= bXA.get match { case Assignment(_, ValueInteger(v)) => (v % level.width, v / level.width) }
                 val bT = bTA.get match { case Assignment(_, ValueInteger(v)) => v }
 
                 val c = mapLines(bY)(bX)

@@ -68,7 +68,7 @@ protected case class EncoderBasic(override val level: Level, override val encode
 
         val eff = And(constantEff.toList: _*)
 
-        encoding.add(ClauseDeclaration(Equivalent(eff, actionVariable)))
+        encoding.add(ClauseDeclaration(Implies(actionVariable, eff)))
         encoding.add(ClauseDeclaration(Implies(actionVariable, pre)))
     }
 
@@ -94,11 +94,11 @@ protected case class EncoderBasic(override val level: Level, override val encode
     }
 
     private def characterNextToBall[A <: StateBase](state: A, stateActionBll: StateBase.Ball, shift: Coordinate): Clause = {
-        applyShiftClause(stateActionBll, state.character, -shift, AND)
+        applyShiftClause(stateActionBll, state.character, -shift)
     }
 
     private def moveCharacter[A <: StateBase](state: A, stateNext: A, shift: Coordinate): Clause = {
-        applyShiftClause(state.character, stateNext.character, shift, AND)
+        applyShiftClause(state.character, stateNext.character, shift)
     }
 
     private def equalSnowVariables(state: StateBase, stateNext: StateBase): Clause = {
@@ -109,7 +109,7 @@ protected case class EncoderBasic(override val level: Level, override val encode
 
     private def equalBallsVariables(state: StateBase, stateNext: StateBase): Clause = {
         And((for ((b, bNext) <- state.balls.zip(stateNext.balls)) yield {
-            And(Equals(b.x, bNext.x), Equals(b.y, bNext.y), Equals(b.size, bNext.size))
+            And(Equals(b.x, bNext.x), Equals(b.size, bNext.size))
         }): _*)
     }
 }
