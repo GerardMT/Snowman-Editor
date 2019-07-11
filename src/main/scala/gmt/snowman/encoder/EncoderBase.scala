@@ -516,16 +516,22 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
     }
 
     private def encodeLocationsRestriction[T <: StateBase](state: T, encoder: Encoding): Unit = {
-        encoder.add(ClauseDeclaration(Or((for (l <- level.map.values.filter(f => Object.isPlayableArea(f.o))) yield {
-            Equals(state.character.x, IntegerConstant(l.c.x + level.width * l.c.y))
-        }).toSeq: _*)))
+        encoder.add(ClauseDeclaration(GreaterEqual(state.character.x, IntegerConstant(0))))
+        encoder.add(ClauseDeclaration(SmallerEqual(state.character.x, IntegerConstant(level.width * level.height - 1))))
+        for (l <- level.map.values.filter(f => !Object.isPlayableArea(f.o))) {
+            encoder.add(ClauseDeclaration(Not(Equals(state.character.x, IntegerConstant(l.c.x + level.width * l.c.y)))))
+        }
+
+        for (b <- state.balls) {
+            encoder.add(ClauseDeclaration(GreaterEqual(b.x, IntegerConstant(0))))
+            encoder.add(ClauseDeclaration(SmallerEqual(b.x, IntegerConstant(level.width * level.height - 1))))
+            for (l <- level.map.values.filter(f => !Object.isPlayableArea(f.o))) {
+                encoder.add(ClauseDeclaration(Not(Equals(b.x, IntegerConstant(l.c.x + level.width * l.c.y)))))
+            }
+        }
+
         for (b <- state.balls) {
             encoder.add(ClauseDeclaration(Not(Equals(state.character.x, b.x))))
-        }
-        for (b <- state.balls) {
-            encoder.add(ClauseDeclaration(Or((for (l <- level.map.values.filter(f => Object.isPlayableArea(f.o))) yield {
-                Equals(b.x, IntegerConstant(l.c.x + level.width * l.c.y))
-            }).toSeq: _*)))
         }
     }
 

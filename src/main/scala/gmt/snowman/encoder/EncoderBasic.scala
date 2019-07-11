@@ -68,7 +68,7 @@ protected case class EncoderBasic(override val level: Level, override val encode
 
         val eff = And(constantEff.toList: _*)
 
-        encoding.add(ClauseDeclaration(Implies(actionVariable, eff)))
+        encoding.add(ClauseDeclaration(Equivalent(actionVariable, eff)))
         encoding.add(ClauseDeclaration(Implies(actionVariable, pre)))
     }
 
