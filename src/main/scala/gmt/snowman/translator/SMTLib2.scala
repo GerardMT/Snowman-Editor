@@ -22,12 +22,12 @@ object SMTLib2 {
             case VariableDeclaration(v) =>
                 val s = v match {
                     case BooleanVariable(name) =>
-                        name + " Bool"
+                        name + "::bool"
                     case IntegerVariable(name) =>
-                        name + " Int"
+                        name + "::int"
                 }
 
-                "(declare-const " + s + ")"
+                "(define " + s + ")"
             case ClauseDeclaration(c) =>
                 "(assert " + translateClause(c) + ")"
             case Custom(s) =>

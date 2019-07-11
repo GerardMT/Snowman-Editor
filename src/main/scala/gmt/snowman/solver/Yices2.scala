@@ -15,7 +15,7 @@ class Yices2(solverBinaryPath: String) {
 
     private val CHARSET = StandardCharsets.UTF_8.name
 
-    private val processBuilder = new ProcessBuilder(solverBinaryPath, "--incremental")
+    private val processBuilder = new ProcessBuilder("yices", "--logic=QF_LIA", "--mode=interactive")
     processBuilder.redirectErrorStream(true)
     private val process = processBuilder.start()
 
@@ -46,6 +46,7 @@ class Yices2(solverBinaryPath: String) {
                 false
             case l @ _ =>
                 System.err.print(l)
+                System.err.print("\n")
                 throw new InvalidParameterException
         }
 

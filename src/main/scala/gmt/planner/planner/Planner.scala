@@ -29,8 +29,8 @@ object Planner {
         val encoding = new Encoding
         val encodingData = encoder.createEncodingData()
 
-        encoding.add(Custom("(set-option :produce-models true)"))
-        encoding.add(Custom("(set-logic QF_LIA)"))
+        encoding.add(Custom("(set-param icheck true)"))
+        encoding.add(Custom("(set-param icheck-period 10000)"))
 
         solver.write(SMTLib2.translate(encoding))
 
@@ -65,7 +65,7 @@ object Planner {
 
             goalsVariables.append(Assuming(goalVariable, value = true))
 
-            encoding.add(Custom("(check-sat-assuming " + assumingListToString(goalsVariables.toList) + ")"))
+            encoding.add(Custom("(check-assuming " + assumingListToString(goalsVariables.toList) + ")"))
 
             solver.write(SMTLib2.translate(encoding))
             solverResult = solver.solve()
@@ -127,8 +127,8 @@ object Planner {
         val encoding = new Encoding
         val encodingData = encoder.createEncodingData()
 
-        encoding.add(Custom("(set-option :produce-models true)"))
-        encoding.add(Custom("(set-logic QF_LIA)"))
+        encoding.add(Custom("(set-param icheck true)"))
+        encoding.add(Custom("(set-param icheck-period 1)"))
 
         var state = encoder.createState(0, encoding, encodingData)
         state.addVariables(encoding)
@@ -154,7 +154,7 @@ object Planner {
             state = stateNext
         }
 
-        encoding.add(Custom("(check-sat-assuming " + assumingListToString(goalsVariables.toList) + ")"))
+        encoding.add(Custom("(check-assuming " + assumingListToString(goalsVariables.toList) + ")"))
         encoding.add(Custom("(get-model)"))
         encoding.add(Custom("(exit)"))
 
@@ -162,7 +162,7 @@ object Planner {
     }
 
     private def assumingListToString(assuming: immutable.Seq[Assuming]): String = {
-        "(" + assmingToString(assuming.head) + assuming.tail.map(f => " " + assmingToString(f)).mkString + ")"
+        assmingToString(assuming.head) + assuming.tail.map(f => " " + assmingToString(f)).mkString
     }
 
     private def assmingToString(assuming: Assuming): String = if (assuming.value) {
