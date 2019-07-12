@@ -12,6 +12,8 @@ object Report {
     private val CHAR_UNDEFINED = '-'
     private val CHAR_UNKNOWN = '?'
 
+    case class DecodeException() extends Exception()
+
     def generateReport(level: Level, states: Seq[StateBase], assignments: Seq[Assignment]): String = {
         val sb = new StringBuilder
 
@@ -133,18 +135,30 @@ object Report {
         for (b <- state.balls) {
             val bXA = assignmentsMap.get(b.x.name)
             val bYA = assignmentsMap.get(b.y.name)
-            val bTA = assignmentsMap.get(b.size.name)
+            val bSA = assignmentsMap.get(b.sizeA.name)
+            val bSB = assignmentsMap.get(b.sizeB.name)
 
-            if(bXA.isDefined && bYA.isDefined && bTA.isDefined) {
+            if(bXA.isDefined && bYA.isDefined && bSA.isDefined && bSB.isDefined) {
                 val bX = bXA.get match { case Assignment(_, ValueInteger(v)) => v }
                 val bY = bYA.get match { case Assignment(_, ValueInteger(v)) => v }
-                val bT = bTA.get match { case Assignment(_, ValueInteger(v)) => v }
+                val bA = bSA.get match { case Assignment(_, ValueBoolean(v)) => v }
+                val bB = bSB.get match { case Assignment(_, ValueBoolean(v)) => v }
+
+                val bS = if (!bA && !bB) {
+                    1
+                } else if (bA && !bB) {
+                    2
+                } else if (bA && bB) {
+                    4
+                } else {
+                    throw DecodeException()
+                }
 
                 val c = mapLines(bY)(bX)
                 if (c.isDigit) {
-                    mapLines(bY)(bX) = (c.asDigit + bT).toString.charAt(0)
+                    mapLines(bY)(bX) = (c.asDigit + bS).toString.charAt(0)
                 } else {
-                    mapLines(bY)(bX) = bT.toString.charAt(0)
+                    mapLines(bY)(bX) = bS.toString.charAt(0)
                 }
             }
         }
