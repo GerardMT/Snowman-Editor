@@ -6,9 +6,7 @@ import gmt.planner.solver.Assignment
 import gmt.planner.solver.value.ValueBoolean
 import gmt.snowman.action.{BallAction, SnowmanAction}
 import gmt.snowman.encoder.EncodingDataSnowman.ActionData
-import gmt.snowman.encoder.StateBase.Ball
 import gmt.snowman.level.{Coordinate, Level}
-import gmt.snowman.game.`object`.{LargeBall, MediumBall, Object, SmallBall}
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer

@@ -41,7 +41,7 @@ object Planner {
 
         val goalsVariables = ListBuffer.empty[Assuming]
 
-        while (!solved && iState <= plannerOptions.maxTimeSteps) {
+        while (!solved && iState < plannerOptions.maxTimeSteps) {
             val startStepTime = System.currentTimeMillis()
 
             if (iState - 1 != 0) {

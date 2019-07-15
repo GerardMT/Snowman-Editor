@@ -1,9 +1,11 @@
 package gmt.planner.operation
 
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
 
 object Operations {
+
+    case class MeaninglessEncodingException() extends Exception()
 
     def isReturnInteger(c: Clause): Boolean = c match {
         case IntegerVariable(_) | IntegerConstant(_) | Add(_, _) | Sub(_, _) | Abs(_) =>
@@ -59,6 +61,66 @@ object Operations {
 
     def getALO(v: Seq[BooleanVariable]): Expression = {
         ClauseDeclaration(Or(v.map(f => f): _*))
+    }
+
+    def getALKTotalizer(input: Seq[Clause], k: Int): Seq[Expression] = {
+        val (variables, expressions) = totalizer(input)
+        expressions :+ ClauseDeclaration(variables(k - 1))
+    }
+
+    def getAMKTotalizer(input: Seq[Clause], k: Int): Seq[Expression] = {
+        val (variables, expressions) = totalizer(input)
+        expressions :+ ClauseDeclaration(Not(variables(k)))
+    }
+
+    def getEKTotalizer(input: Seq[Clause], k: Int): Seq[Expression] = {
+        val (variables, expressions) = totalizer(input)
+        expressions ++ List(ClauseDeclaration(variables(k - 1)), ClauseDeclaration(Not(variables(k))))
+    }
+
+    private def totalizer(input: Seq[Clause]): (Vector[Clause], Seq[Expression]) = {
+        if (input.length <= 1) {
+            throw MeaninglessEncodingException()
+        }
+
+        val expressions = ListBuffer.empty[Expression]
+
+        val leftChild = (i: Int) => i * 2 + 1
+        val rightChild = (i: Int) => i * 2 + 2
+
+        val tree = new Array[Array[Clause]](2 * input.length - 1)
+
+        for (i <- input.indices) {
+            val array = new Array[Clause](1)
+            array(0) = input(i)
+            tree(input.length - 1 + i) = array
+        }
+
+        for (i <- input.length - 2 to 0 by -1) {
+            val ls = tree(leftChild(i)).length
+            val rs = tree(rightChild(i)).length
+
+            tree(i) = new Array(ls + rs)
+
+            for (j <- 0 until ls + rs) {
+                val b = BooleanVariable()
+                expressions.append(VariableDeclaration(b))
+                tree(i)(j) = b
+            }
+
+            for (j <- 0 until ls) {
+                expressions.append(ClauseDeclaration(Or(Not(tree(leftChild(i))(j)), tree(i)(j))))
+                for (k <- 0 until rs) {
+                    expressions.append(ClauseDeclaration(Or(Not(tree(leftChild(i))(j)), tree(rightChild(i))(k), tree(i)(j + k + 1))))
+                }
+            }
+
+            for (k <- 0 until rs) {
+                expressions.append(ClauseDeclaration(Or(Not(tree(rightChild(i))(k)), tree(i)(k))))
+            }
+        }
+
+        (tree(0).toVector , expressions)
     }
 
     private def toBinary(i: Int, digits: Int): String = {

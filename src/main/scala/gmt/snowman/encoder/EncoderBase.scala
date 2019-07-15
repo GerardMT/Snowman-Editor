@@ -37,7 +37,7 @@ object EncoderBase { // TODO Add rule: Can not unmount a snowman once done
         }
     }
 
-    case class EncoderOptions(invariantBallSizes: Boolean, invariantBallLocations: Boolean, invariantWallsU: Boolean)
+    case class EncoderOptions(invariantBallSizes: Boolean, invariantBallLocations: Boolean, invariantWallsU: Boolean, snowMonotonicity: Boolean)
 }
 
 abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions: EncoderOptions) extends Encoder[A, EncodingDataSnowman, DecodingData] {
@@ -75,24 +75,6 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
         }
 
         (And(ands: _*), variables.toList)
-
-        // Jessica & Amelia // 6 min // With combinations 20.8 days
-//        val and1 = And(Equals(state.balls(0).x, IntegerConstant(4)),
-//            Equals(state.balls(0).y, IntegerConstant(1)),
-//            Equals(state.balls(1).x, IntegerConstant(4)),
-//            Equals(state.balls(1).y, IntegerConstant(5)),
-//            Equals(state.balls(2).x, IntegerConstant(4)),
-//            Equals(state.balls(2).y, IntegerConstant(1)),
-//            Equals(state.balls(3).x, IntegerConstant(4)),
-//            Equals(state.balls(3).y, IntegerConstant(5)),
-//            Equals(state.balls(4).x, IntegerConstant(4)),
-//            Equals(state.balls(4).y, IntegerConstant(1)),
-//            Equals(state.balls(5).x, IntegerConstant(4)),
-//            Equals(state.balls(5).y, IntegerConstant(5)))
-//
-//        val and2 = And(state.balls.zip(level.balls).map(f => Equals(f._1.size, IntegerConstant(getBallSize(f._2.o)))): _*)
-//
-//        (And(and1, and2), Nil)
     }
 
     override def initialState(state: A, encoding: Encoding, encodingData: EncodingDataSnowman): Unit = {
@@ -171,6 +153,12 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
 
         if (encoderOptions.invariantWallsU) {
             invariantWallU(state, stateNext, encoding)
+        }
+
+        if (encoderOptions.snowMonotonicity) {
+            for ((c, s) <- state.snow) {
+                encoding.add(ClauseDeclaration(Implies(Not(s), Not(stateNext.snow(c)))))
+            }
         }
     }
 
@@ -256,10 +244,17 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
     }
 
     private  def invariantBallSizes(state: StateBase, encoding: Encoding): Unit = {
-        throw new NotImplementedError()
-        //encoding.add(ClauseDeclaration(SmallerEqual(state.balls.map(f => f.size).reduce(Add.ADD), IntegerConstant(7 * level.snowmen))))
+        encoding.addAll(Operations.getAMKTotalizer(state.balls.map(f => List(f.sizeA, f.sizeB)).reduce((a, b) => a ++ b), 3 * level.snowmen))
 
-        encoding.add(ClauseDeclaration(SmallerEqual(state.balls.map(f => Ite(encodeBallEquals(f, MediumBall), IntegerConstant(1), IntegerConstant(0))).reduce(Add.ADD), IntegerConstant(level.snowmen * 2))))
+        val mediumBallsCounter = ListBuffer.empty[BooleanVariable]
+        for (b <- state.balls) {
+            val v = BooleanVariable()
+            encoding.add(VariableDeclaration(v))
+            encoding.add(ClauseDeclaration(Equivalent(And(b.sizeA, Not(b.sizeB)), v)))
+            mediumBallsCounter.append(v)
+        }
+
+        encoding.addAll(Operations.getAMKTotalizer(mediumBallsCounter, level.snowmen * 2))
     }
 
     private lazy val invalidLocations: Iterable[Coordinate] = {
