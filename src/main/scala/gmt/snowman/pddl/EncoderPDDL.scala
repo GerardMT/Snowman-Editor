@@ -33,6 +33,8 @@ object EncoderPDDL {
 
         encoding += "    )\n"
         encoding += "    (:init\n"
+        encoding += "        (= (total_cost) 0)\n"
+
 
         for (l <- level.map.values.filter(f => Object.isPlayableArea(f.o)); (o, d) <- SnowmanAction.ACTIONS.map(f => f.shift).zip(directions) ) {
             level.map.get(l.c + o) match {
@@ -60,7 +62,7 @@ object EncoderPDDL {
 
         encoding += "\n"
 
-        encoding += "    (:metric minimize (total-cost))\n"
+        encoding += "    (:metric minimize (total_cost))\n"
 
         encoding += ")"
 
@@ -115,7 +117,7 @@ object EncoderPDDL {
 
         encoding += "\n"
 
-        encoding += "    (:metric minimize (total-cost))\n"
+        encoding += "    (:metric minimize (total_cost))\n"
 
         encoding += ")"
 
@@ -161,7 +163,7 @@ object EncoderPDDL {
         domain.append("    )\n")
         domain.append("\n")
         domain.append("    (:functions\n")
-        domain.append("        (total-cost) - number\n")
+        domain.append("        (total_cost) - number\n")
         domain.append("    )\n")
 
         for (l <- level.map.values.filter(f => Object.isPlayableArea(f.o)); o <- SnowmanAction.ACTIONS.map(f => f.shift)) {
@@ -309,7 +311,7 @@ object EncoderPDDL {
                             domain.append("                (and")
                             domain.append("                    (not (ball_size_medium " + b + "))\n")
                             domain.append("                    (ball_size_large " + b + ")))\n")
-                            domain.append("            (increase (total-cost) 1))\n")
+                            domain.append("            (increase (total_cost) 1))\n")
                             domain.append("    )\n")
                         }
                     }
@@ -333,6 +335,7 @@ object EncoderPDDL {
         problem.append("    (:domain snowman_adl_grounded)\n")
         problem.append("\n")
         problem.append("    (:init\n")
+        problem.append("        (= (total_cost) 0)\n")
         problem.append("        (character_at loc_" + level.character.c.x + "_" + level.character.c.y + ")\n")
 
         for ((l, i) <- level.balls.zipWithIndex) {
@@ -349,7 +352,7 @@ object EncoderPDDL {
         problem.append("            (goal))\n")
         problem.append("    )\n")
         problem.append("\n")
-        problem.append("    (:metric minimize (total-cost))\n")
+        problem.append("    (:metric minimize (total_cost))\n")
 
         problem.append(")")
 

@@ -25,7 +25,7 @@
     )
 
     (:functions
-        (total-cost) - number
+        (total_cost) - number
     )
 
     (:action move_character
@@ -120,6 +120,6 @@
                 (and
                     (not (ball_size_medium ?b))
                     (ball_size_large ?b)))
-            (increase (total-cost) 1))
+            (increase (total_cost) 1))
     )
 )
