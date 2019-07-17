@@ -25,11 +25,48 @@ object Operations {
             false
     }
 
-    def getEO(v: Seq[BooleanVariable], newVariablesPrefix: String): Seq[Expression] = {
-        getAMOLog(v, newVariablesPrefix) :+ getALO(v)
+    def getEOLog(v: Seq[BooleanVariable]): (Clause, Seq[Expression]) = {
+        val (cAMO, eAMO) = getAMOLog(v)
+        val cALO = getALO(v)
+
+        (And(cAMO :+ cALO: _*), eAMO)
     }
 
-    def getAMOLog(v: Seq[BooleanVariable], newVariablesPrefix: String): Seq[Expression]= {
+    @deprecated
+    def getEOExpression(v: Seq[BooleanVariable], newVariablesPrefix: String): Seq[Expression] = {
+        getAMOLogExpression(v, newVariablesPrefix) :+ getALOExpression(v)
+    }
+
+    def getAMOLog(v: Seq[BooleanVariable]): (Seq[Clause], Seq[Expression]) = {
+        val ands = ListBuffer.empty[Clause]
+
+        val nBits = (Math.log(v.length) / Math.log(2)).ceil.toInt
+
+        val newVariables = ArrayBuffer.empty[BooleanVariable]
+
+        for(i <- 0 until nBits) {
+            newVariables.append(BooleanVariable())
+        }
+
+        for (i <- v.indices) {
+            val binaryString = toBinary(i, nBits)
+
+            for (j <- 0 until binaryString.length) {
+                var c: Clause = newVariables(j)
+
+                if (binaryString(j) == '0') {
+                    c = Not(c)
+                }
+
+                ands.append(Or(Not(v(i)), c))
+            }
+        }
+
+        (ands, newVariables.map(f => VariableDeclaration(f)))
+    }
+
+    @deprecated
+    def getAMOLogExpression(v: Seq[BooleanVariable], newVariablesPrefix: String): Seq[Expression]= {
         val expressions = ListBuffer.empty[Expression]
 
         val nBits = (Math.log(v.length) / Math.log(2)).ceil.toInt
@@ -59,7 +96,12 @@ object Operations {
         expressions
     }
 
-    def getALO(v: Seq[BooleanVariable]): Expression = {
+    def getALO(v: Seq[BooleanVariable]): Clause = {
+        Or(v.map(f => f): _*)
+    }
+
+    @deprecated
+    def getALOExpression(v: Seq[BooleanVariable]): Expression = {
         ClauseDeclaration(Or(v.map(f => f): _*))
     }
 
@@ -78,7 +120,7 @@ object Operations {
         expressions ++ List(ClauseDeclaration(variables(k - 1)), ClauseDeclaration(Not(variables(k))))
     }
 
-    private def totalizer(input: Seq[Clause]): (Vector[Clause], Seq[Expression]) = {
+    def totalizer(input: Seq[Clause]): (Vector[Clause], Seq[Expression]) = {
         if (input.length <= 1) {
             throw MeaninglessEncodingException()
         }

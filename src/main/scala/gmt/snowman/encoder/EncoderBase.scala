@@ -95,8 +95,6 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
             encoding.add(ClauseDeclaration(s))
         }
 
-        encodeReachability(state, encoding)
-
         encodingData.initialState = state
     }
 
@@ -117,7 +115,7 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
         val actionsData = ListBuffer.empty[EncodingDataSnowman.ActionData]
 
         encodeLocationsRestriction(stateNext, encoding)
-        encodeReachability(stateNext, encoding)
+        encodeReachability(state, encoding)
 
         val actionsVariables = ListBuffer.empty[BooleanVariable]
 
@@ -147,7 +145,7 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
             }
         }
 
-        encoding.addAll(Operations.getEO(actionsVariables, "EO_A" + stateNext.timeStep))
+        encoding.addAll(Operations.getEOExpression(actionsVariables, "EO_A" + stateNext.timeStep))
 
         encodingData.statesData.append(StateData(stateNext, actionsData.toList))
 
@@ -166,7 +164,7 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
 
     protected def encodeCharacterState0(state0: A, encoding: Encoding)
 
-    protected def encodeReachability(state: A, encoing: Encoding)
+    protected def encodeReachability(state: A, encoing: Encoding): Unit = {}
 
     protected def encodeCharacterAction(actionName: String, state: A, stateNext: A, action: SnowmanAction, encoding: Encoding, actionVariables: mutable.Buffer[BooleanVariable], actionsData: mutable.Buffer[EncodingDataSnowman.ActionData])
 

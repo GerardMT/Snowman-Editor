@@ -47,8 +47,6 @@ protected case class EncoderBasic(override val level: Level, override val encode
         (pre, eff, expressions)
     }
 
-    override def encodeReachability(state: StateBasic, encoding: Encoding): Unit = {}
-
     override protected def encodeCharacterAction(actionName: String, state: StateBasic, stateNext: StateBasic, action: SnowmanAction, encoding: Encoding, actionVariables: mutable.Buffer[BooleanVariable], actionsData: mutable.Buffer[EncodingDataSnowman.ActionData]): Unit = {
         val actionVariable = BooleanVariable(actionName + "_S" + state.timeStep + "S" + stateNext.timeStep)
         encoding.add(VariableDeclaration(actionVariable))

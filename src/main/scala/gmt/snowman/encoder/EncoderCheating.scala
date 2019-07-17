@@ -38,8 +38,6 @@ protected case class EncoderCheating(override val level: Level, override val enc
         (pre, eff, expressions)
     }
 
-    override def encodeReachability(state: StateCheating, encoding: Encoding): Unit = {}
-
     override protected def encodeCharacterAction(actionName: String, state: StateCheating, stateNext: StateCheating, action: SnowmanAction, encoding: Encoding, actionVariables: mutable.Buffer[BooleanVariable], actionsState: mutable.Buffer[EncodingDataSnowman.ActionData]): Unit = {}
 
     override def decode(assignments: Seq[Assignment], encodingData: EncodingDataSnowman): DecodingData = {

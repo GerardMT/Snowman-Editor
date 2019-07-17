@@ -14,7 +14,7 @@ import scala.collection.mutable.ListBuffer
 
 object StateBase {
 
-    abstract class CoordinateVariables(val x: IntegerVariable, val y: IntegerVariable)
+    class CoordinateVariables(val x: IntegerVariable, val y: IntegerVariable)
     case class Ball(override val x: IntegerVariable, override  val y: IntegerVariable, sizeA: BooleanVariable, sizeB: BooleanVariable) extends CoordinateVariables(x, y)
     case class Character(override val x: IntegerVariable, override  val y: IntegerVariable) extends CoordinateVariables(x, y)
 

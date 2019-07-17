@@ -24,27 +24,37 @@ protected case class EncoderReachability(override val level: Level, override val
                 And(Equals(state.balls(b).x, IntegerConstant(p.c.x)), Equals(state.balls(b).y, IntegerConstant(p.c.y)))
             }): _*)
 
-            encoding.add(ClauseDeclaration(Implies(or, Not(state.reachabilityNodes.get(p.c).get))))
+            encoding.add(ClauseDeclaration(Implies(or, Not(state.reachabilityNodes(p.c)))))
         }
 
         for (l <- level.map.values.filter(f => Object.isPlayableArea(f.o))) {
-            val nodeStart = state.reachabilityNodes.get(l.c).get
+            val node = state.reachabilityNodes(l.c)
+            val neighbours = SnowmanAction.ACTIONS.flatMap(f => level.map.get(l.c + f.shift)).filter(f => Object.isPlayableArea(f.o)).map(f => f.c)
 
-            val ors = ListBuffer.empty[Clause]
+            val sourceOrTarget = Or(And(Equals(state.character.x, IntegerConstant(l.c.x)), Equals(state.character.y, IntegerConstant(l.c.y))), And(Equals(state.target.x, IntegerConstant(l.c.x)), Equals(state.target.y, IntegerConstant(l.c.y))))
 
-            for (end <- SnowmanAction.ACTIONS.flatMap(f => level.map.get(l.c + f.shift)).filter(f => Object.isPlayableArea(f.o)).map(f => f.c)) {
-                val edgeInverse = state.reachabilityEdges.get((end, l.c)).get
+            if (neighbours.size == 1) {
+                encoding.add(ClauseDeclaration(Implies(sourceOrTarget, And(node, state.reachabilityNodes(neighbours.head)))))
+            } else if (neighbours.size == 2) {
+                val n1 = state.reachabilityNodes(neighbours(0))
+                val n2 = state.reachabilityNodes(neighbours(1))
 
-                ors.append(edgeInverse)
+                encoding.add(ClauseDeclaration(Implies(sourceOrTarget, And(node, Or(And(n1, Not(n2)), And(Not(n1), n2))))))
+                encoding.add(ClauseDeclaration(Implies(Not(sourceOrTarget), Or(And(n1, n2), And(Not(n1), Not(n2))))))
+            } else {
+                val neighboursVars = neighbours.map(f => state.reachabilityNodes(f))
+                val (sortedClauses, expressions) = Operations.totalizer(neighboursVars)
+                encoding.addAll(expressions)
 
-                encoding.add(ClauseDeclaration(Implies(edgeInverse, state.reachabilityNodes.get(end).get)))
-                encoding.add(ClauseDeclaration(Implies(edgeInverse, Smaller(state.reachabilityWeights.get(end).get, state.reachabilityWeights.get(l.c).get))))
-            }
-
-            if (ors.nonEmpty) {
-                encoding.add(ClauseDeclaration(Implies(And(Or(Not(Equals(state.character.x, IntegerConstant(l.c.x))), Not(Equals(state.character.y, IntegerConstant(l.c.y)))), nodeStart), Operations.simplify(Or(ors: _*)))))
+                encoding.add(ClauseDeclaration(Implies(sourceOrTarget, And(node, sortedClauses(0), Not(sortedClauses(1))))))
+                encoding.add(ClauseDeclaration(Implies(Not(sourceOrTarget), Equivalent(sortedClauses(0), sortedClauses(1)))))
+                encoding.add(ClauseDeclaration(Not(sortedClauses(2))))
             }
         }
+
+        encoding.add(ClauseDeclaration(Or((for (l <- level.map.values.filter(f => Object.isPlayableArea(f.o))) yield {
+            And(Equals(state.target.x, IntegerConstant(l.c.x)), Equals(state.target.y, IntegerConstant(l.c.y)))
+        }).toSeq: _*)))
     }
 
     override def createBallAction(actionName: String, state: StateReachability, stateActionBall: StateBase.Ball, stateNext: StateReachability, stateNextActionBall: StateBase.Ball, shift: Coordinate): (Clause, Clause, Seq[Expression]) = {
@@ -85,9 +95,7 @@ protected case class EncoderReachability(override val level: Level, override val
     }
 
     private def reachability(state: StateReachability, stateActionBall: StateBase.Ball, shift: Coordinate): Clause = {
-        Or((for ((c, rn) <- flattenTuple(level.map.keys.map(f => (f, state.reachabilityNodes.get(f - shift))))) yield {
-            And(Equals(stateActionBall.x, IntegerConstant(c.x)), Equals(stateActionBall.y, IntegerConstant(c.y)), rn)
-        }).toSeq: _*)
+        applyShiftClause(stateActionBall, state.target, -shift, AND)
     }
 
     private def teleportCharacterBall[T <: StateBase](stateActionBall: StateBase.Ball, stateNext: T): Clause = {
