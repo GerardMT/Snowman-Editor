@@ -111,7 +111,7 @@ object Operations {
             for (j <- 0 until ls) {
                 expressions.append(ClauseDeclaration(Or(Not(tree(leftChild(i))(j)), tree(i)(j))))
                 for (k <- 0 until rs) {
-                    expressions.append(ClauseDeclaration(Or(Not(tree(leftChild(i))(j)), tree(rightChild(i))(k), tree(i)(j + k + 1))))
+                    expressions.append(ClauseDeclaration(Or(Not(tree(leftChild(i))(j)), Not(tree(rightChild(i))(k)), tree(i)(j + k + 1))))
                 }
             }
 
