@@ -32,23 +32,26 @@ protected case class EncoderReachability(override val level: Level, override val
             val neighbours = SnowmanAction.ACTIONS.flatMap(f => level.map.get(l.c + f.shift)).filter(f => Object.isPlayableArea(f.o)).map(f => f.c)
 
             val sourceOrTarget = Or(And(Equals(state.character.x, IntegerConstant(l.c.x)), Equals(state.character.y, IntegerConstant(l.c.y))), And(Equals(state.target.x, IntegerConstant(l.c.x)), Equals(state.target.y, IntegerConstant(l.c.y))))
+            val sourceDifferentTarget = Or(Not(Equals(state.character.x, state.target.x)), Not(Equals(state.character.y, state.target.y)))
 
             if (neighbours.size == 1) {
-                encoding.add(ClauseDeclaration(Implies(sourceOrTarget, And(node, state.reachabilityNodes(neighbours.head)))))
+                encoding.add(ClauseDeclaration(Implies(And(sourceOrTarget, sourceDifferentTarget), And(node, state.reachabilityNodes(neighbours.head)))))
             } else if (neighbours.size == 2) {
                 val n1 = state.reachabilityNodes(neighbours(0))
                 val n2 = state.reachabilityNodes(neighbours(1))
 
-                encoding.add(ClauseDeclaration(Implies(sourceOrTarget, And(node, Or(And(n1, Not(n2)), And(Not(n1), n2))))))
-                encoding.add(ClauseDeclaration(Implies(Not(sourceOrTarget), Or(And(n1, n2), And(Not(n1), Not(n2))))))
+                encoding.add(ClauseDeclaration(Implies(And(sourceOrTarget, sourceDifferentTarget), And(node, Or(And(n1, Not(n2)), And(Not(n1), n2))))))
+                encoding.add(ClauseDeclaration(Implies(And(Not(sourceOrTarget), node), Or(And(n1, n2), And(Not(n1), Not(n2))))))
             } else {
                 val neighboursVars = neighbours.map(f => state.reachabilityNodes(f))
-                val (sortedClauses, expressions) = Operations.totalizer(neighboursVars)
-                encoding.addAll(expressions)
+                val (c, e) = Operations.getEOLog(neighboursVars)
+                encoding.addAll(e)
 
-                encoding.add(ClauseDeclaration(Implies(sourceOrTarget, And(node, sortedClauses(0), Not(sortedClauses(1))))))
-                encoding.add(ClauseDeclaration(Implies(Not(sourceOrTarget), Equivalent(sortedClauses(0), sortedClauses(1)))))
-                encoding.add(ClauseDeclaration(Not(sortedClauses(2))))
+                val none = And(neighboursVars.map(f => Not(f)): _*)
+                val two = neighboursVars.combinations(2).map(f => { val others = neighboursVars.diff(f); And(List(f(0), f(1)) ++ others.map(n => Not(n)): _*) }).toSeq
+
+                encoding.add(ClauseDeclaration(Implies(And(sourceOrTarget, sourceDifferentTarget), c)))
+                encoding.add(ClauseDeclaration(Implies(And(Not(sourceOrTarget), node), Or(two :+ none: _*))))
             }
         }
 
