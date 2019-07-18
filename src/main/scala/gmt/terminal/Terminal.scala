@@ -18,7 +18,7 @@ object Terminal {
     }
 
     def showSolverUpdate(plannerUpdate: PlannerUpdate): Unit = {
-        println("Timesteps: " + plannerUpdate.timeSteps + " sat: " + plannerUpdate.sat + " Time: " + plannerUpdate.milliseconds + " TotalTime: " + plannerUpdate.totalMilliseconds + " (ms)")
+        println("Timesteps: " + plannerUpdate.timeSteps + " sat: " + plannerUpdate.sat + " Time: " + plannerUpdate.milliseconds / 1000.0 + " TotalTime: " + plannerUpdate.totalMilliseconds / 1000.0 + " (s)")
     }
 
     def showResult(snowmanSolverResult: SnowmanSolverResult): Unit = {
@@ -29,11 +29,11 @@ object Terminal {
             case Some(r) =>
                 println("Valid: " + snowmanSolverResult.valid)
                 println("Actions: " + r.actions.size)
-                r.actions.foreach(f => println("    " + f.toString))
+                println("    " + r.actions.mkString)
                 println("Ball references from initial state:")
                 r.balls.zipWithIndex.foreach(f => println("    Ball (" + f._2 + "): " + f._1))
                 println("Ball Actions: " + r.actionsBall.size)
-                r.actionsBall   .foreach(f => println("    " + f.toString))
+                println("    " + r.actionsBall.map(f => f.toStringRef).mkString)
 
             case None =>
         }
@@ -45,16 +45,28 @@ class Terminal {
     def parseArguments(arguments: List[String]): Unit = {
         arguments match {
             case List("--help") | List("-h") =>
-                System.out.print("""<snowman editor> <settings path> <option>
+                System.out.print("""<snowman_editor> <settings_path> <option>
                                    |
                                    |<option>:
+                                   |    gui
                                    |
-                                   |    smt-basic <level path> <result path> <start time steps (<int> | auto)> <max time steps> <threads> <invariant ball sizes (true | false)> <invariant ball locations (true | false)> <invariant wall u (true | false)>
-                                   |    smt-cheating <level path> <result path> <start time steps (<int> | auto)> <max time steps> <threads> <invariant ball sizes (true | false)> <invariant ball locations (true | false)> <invariant wall u (true | false)>
-                                   |    smt-reachability <level path> <result path> <start time steps (<int> | auto)> <max time steps> <threads> <invariant ball sizes (true | false)> <invariant ball locations (true | false)> <invariant wall u (true | false)>
-                                   |    adl <level path> <save problem path>
-                                   |    adl-grounded <level path> <save domain path> <save problem path>
-                                   |    object-fluents <level path> <save problem path>""".stripMargin)
+                                   |    smt-basic <level_path> <results_path> <start_time_steps (<int> | auto)>
+                                   |        <max_time_steps> <threads> <invariant_ball_sizes (true | false)>
+                                   |        <invariant_ball_locations (true | false)> <invariant_wall_u (true | false)>
+                                   |
+                                   |    smt-cheating <level_path> <results_path> <start_time_steps (<int> | auto)>
+                                   |        <max_time_steps> <threads> <invariant_ball_sizes (true | false)>
+                                   |        <invariant_ball_locations (true | false)> <invariant_wall_u (true | false)>
+                                   |
+                                   |    smt-reachability <level_path> <results_path> <start_time_steps (<int> | auto)>
+                                   |        <max_time_steps> <threads> <invariant_ball_sizes (true | false)>
+                                   |        <invariant_ball_locations (true | false)> <invariant_wall_u (true | false)>
+                                   |
+                                   |    adl <level_path> <save_directory>
+                                   |
+                                   |    adl-grounded <level_path> <save_directory>
+                                   |
+                                   |    object-fluents <level_path> <save_directory>""".stripMargin)
             case List(settingsPath, _*) =>
                 new TerminalSettings(new File(settingsPath)).parseArguments(arguments.tail)
 
@@ -95,14 +107,12 @@ class Terminal {
                     case List("smt-reachability", levelPath, resultsPath, startTimeStepsStr, maxTimeSteps, invaraintBallSizes, invariantBallLocations, invariantWallU, invariantSnowMonotonicity) =>
                         openLevelSolveSMT(levelPath, resultsPath, startTimeStepsStr, maxTimeSteps, invaraintBallSizes, invariantBallLocations, invariantWallU, invariantSnowMonotonicity, EncoderEnum.REACHABILITY)
 
-                    case List("adl", levelPath, problemPath) =>
-                        openLevelGeneratePDDLProblem(levelPath, problemPath, EncoderPDDL.encodeAdl)
+                    case List("adl-grounded", levelPath, directoryPath) =>
+                        openLevelGeneratePDDL(levelPath, directoryPath, EncoderPDDL.encodeAdlGrounded)
 
-                    case List("adl-grounded", levelPath, domainPath, problemPath) =>
-                        openLevelGeneratePDDLDomainProblem(levelPath, domainPath, problemPath, EncoderPDDL.encodeAdlGrounded)
-
-                    case List("object-fluents", levelPath, problemPath) =>
-                        openLevelGeneratePDDLProblem(levelPath, problemPath, EncoderPDDL.encodeObjectFluents)
+                    case List("object-fluents", levelPath, directoryPath) =>
+                        System.out.println("Warning: Experimental")
+                        openLevelGeneratePDDL(levelPath, directoryPath, EncoderPDDL.encodeObjectFluents)
 
                     case List(_*) =>
                         wrongArgumentsError()
@@ -148,15 +158,13 @@ class Terminal {
             }
         }
 
-        private def openLevelGeneratePDDLProblem(levelPath: String, problemPath: String, generator: Level => String): Unit = {
-            Files.saveTextFile(new File(problemPath), generator(MutableLevel.load(Files.openTextFile(new File(levelPath))).toLevel))
-        }
-
-        private def openLevelGeneratePDDLDomainProblem(levelPath: String, domainPath: String, problemPath: String, generator: Level => (String, String)): Unit = {
+        private def openLevelGeneratePDDL(levelPath: String, directoryPath: String, generator: Level => (String, String)): Unit = {
             val (domain, problem) = generator(MutableLevel.load(Files.openTextFile(new File(levelPath))).toLevel)
 
-            Files.saveTextFile(new File(domainPath), domain)
-            Files.saveTextFile(new File(problemPath), problem)
+            val modifiedDirectory = Files.removeSlash(directoryPath)
+
+            Files.saveTextFile(new File(modifiedDirectory + "/domain.pddl"), domain)
+            Files.saveTextFile(new File(modifiedDirectory + "/problem.pddl"), problem)
         }
     }
 }

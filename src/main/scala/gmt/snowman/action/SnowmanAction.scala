@@ -4,7 +4,9 @@ import gmt.snowman.level.Coordinate
 
 object SnowmanAction {
 
-    val ACTIONS = List(Right, Left, Up, Down)
+    val CHARACTER_ACTIONS = List(CharacterRight, CharacterLeft, CharacterUp, CharacterDown)
+
+    val BALL_ACTIONS = List(BallRight, BallLeft, BallUp, BallDown)
 }
 
 trait SnowmanAction {

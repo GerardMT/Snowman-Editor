@@ -24,4 +24,10 @@ object Files {
 
         stringBuilder.toString()
     }
+
+    def removeSlash(directory: String): String = if (directory.last == '/') {
+        directory.dropRight(1)
+    } else {
+        directory
+    }
 }

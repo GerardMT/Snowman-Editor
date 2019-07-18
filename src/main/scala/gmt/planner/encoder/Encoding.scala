@@ -41,6 +41,12 @@ class Encoding {
                     _variablesSet.add(name)
                     _expressions.append(variableDeclaration)
                 }
+            case ClauseDeclaration(And(c1 @ _*)) =>
+                for (c <- c1) {
+                    _expressions.append(ClauseDeclaration(Operations.simplify(c)))
+                }
+            case ClauseDeclaration(c1) =>
+                _expressions.append(ClauseDeclaration(Operations.simplify(c1)))
             case f =>
                 _expressions.append(f)
         }

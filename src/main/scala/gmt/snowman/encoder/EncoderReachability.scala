@@ -25,13 +25,16 @@ protected case class EncoderReachability(override val level: Level, override val
             }): _*)
 
             encoding.add(ClauseDeclaration(Implies(or, Not(state.reachabilityNodes(p.c)))))
+
+            encoding.add(ClauseDeclaration(Implies(And(Equals(state.target.x, IntegerConstant(p.c.x)), Equals(state.target.y, IntegerConstant(p.c.y))), state.reachabilityNodes(p.c))))
+            encoding.add(ClauseDeclaration(Implies(And(Equals(state.character.x, IntegerConstant(p.c.x)), Equals(state.character.y, IntegerConstant(p.c.y))), state.reachabilityNodes(p.c))))
         }
 
-        for (l <- level.map.values.filter(f => Object.isPlayableArea(f.o))) {
-            val node = state.reachabilityNodes(l.c)
-            val neighbours = SnowmanAction.ACTIONS.flatMap(f => level.map.get(l.c + f.shift)).filter(f => Object.isPlayableArea(f.o)).map(f => f.c)
+        for (p <- level.map.values.filter(f => Object.isPlayableArea(f.o))) {
+            val node = state.reachabilityNodes(p.c)
+            val neighbours = SnowmanAction.CHARACTER_ACTIONS.flatMap(f => level.map.get(p.c + f.shift)).filter(f => Object.isPlayableArea(f.o)).map(f => f.c)
 
-            val sourceOrTarget = Or(And(Equals(state.character.x, IntegerConstant(l.c.x)), Equals(state.character.y, IntegerConstant(l.c.y))), And(Equals(state.target.x, IntegerConstant(l.c.x)), Equals(state.target.y, IntegerConstant(l.c.y))))
+            val sourceOrTarget = Or(And(Equals(state.character.x, IntegerConstant(p.c.x)), Equals(state.character.y, IntegerConstant(p.c.y))), And(Equals(state.target.x, IntegerConstant(p.c.x)), Equals(state.target.y, IntegerConstant(p.c.y))))
             val sourceDifferentTarget = Or(Not(Equals(state.character.x, state.target.x)), Not(Equals(state.character.y, state.target.y)))
 
             if (neighbours.size == 1) {
@@ -93,7 +96,7 @@ protected case class EncoderReachability(override val level: Level, override val
     override protected def encodeCharacterAction(actionName: String, state: StateReachability, stateNext: StateReachability, action: SnowmanAction, encoding: Encoding, actionVariables: mutable.Buffer[BooleanVariable], actionsState: mutable.Buffer[EncodingDataSnowman.ActionData]): Unit = {}
 
     override def decode(assignments: Seq[Assignment], encodingData: EncodingDataSnowman): DecodingData = {
-        println(Report.generateReport(level, encodingData.initialState :: encodingData.statesData.map(f => f.stateNext).toList, assignments)) // TODO Remove println
+        print(Report.generateReport(level, encodingData.initialState :: encodingData.statesData.map(f => f.stateNext).toList, assignments)) // TODO Remove println
         decodeTeleport(assignments, encodingData)
     }
 

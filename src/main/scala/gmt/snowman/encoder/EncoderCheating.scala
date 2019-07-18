@@ -41,8 +41,7 @@ protected case class EncoderCheating(override val level: Level, override val enc
     override protected def encodeCharacterAction(actionName: String, state: StateCheating, stateNext: StateCheating, action: SnowmanAction, encoding: Encoding, actionVariables: mutable.Buffer[BooleanVariable], actionsState: mutable.Buffer[EncodingDataSnowman.ActionData]): Unit = {}
 
     override def decode(assignments: Seq[Assignment], encodingData: EncodingDataSnowman): DecodingData = {
-        println(Report.generateReport(level, encodingData.initialState :: encodingData.statesData.map(f => f.stateNext).toList, assignments)) // TODO Remove println
+        print(Report.generateReport(level, encodingData.initialState :: encodingData.statesData.map(f => f.stateNext).toList, assignments)) // TODO Remove println
         decodeTeleport(assignments, encodingData)
     }
-
 }

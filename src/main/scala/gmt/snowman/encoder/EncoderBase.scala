@@ -4,7 +4,7 @@ import gmt.planner.encoder.{Encoder, Encoding}
 import gmt.planner.operation._
 import gmt.planner.solver.Assignment
 import gmt.planner.solver.value.{Value, ValueBoolean, ValueInteger}
-import gmt.snowman.action.{BallAction, Down, Left, Right, SnowmanAction, Up}
+import gmt.snowman.action.{BallAction, CharacterDown, CharacterLeft, CharacterRight, CharacterUp, SnowmanAction}
 import gmt.snowman.encoder.EncoderBase.{EncoderOptions, InvalidCoordinateFixedDimensionException}
 import gmt.snowman.encoder.EncodingDataSnowman.StateData
 import gmt.snowman.encoder.StateBase.{Ball, CoordinateVariables}
@@ -121,13 +121,13 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
 
         val namesCharacterActions = List("AV_MCR", "AV_MCL", "AV_MCU", "AV_MCD")
 
-        for ((action, name) <- SnowmanAction.ACTIONS.zip(namesCharacterActions)) {
+        for ((action, name) <- SnowmanAction.CHARACTER_ACTIONS.zip(namesCharacterActions)) {
             encodeCharacterAction(name, state, stateNext, action, encoding, actionsVariables, actionsData)
         }
 
         val namesBallActions = List("AV_MBR", "AV_MBL", "AV_MBU", "AV_MBD")
 
-        for ((action, name) <- SnowmanAction.ACTIONS.zip(namesBallActions)) {
+        for ((action, name) <- SnowmanAction.BALL_ACTIONS.zip(namesBallActions)) {
             for (((stateActionBall, stateNextActionBall), iB) <- state.balls.zip(stateNext.balls).zipWithIndex) {
                 val actionName = name + "_B" + iB + "_S" + state.timeStep + "S" + stateNext.timeStep
 
@@ -135,13 +135,13 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
                 encoding.add(VariableDeclaration(actionVariable))
                 actionsVariables.append(actionVariable)
 
-                val (pre, eff, returnExpressions) = createBallAction(actionName, state, stateActionBall, stateNext, stateNextActionBall, action.shift)
+                val (pre, eff, returnExpressions) = createBallAction(actionName, state, stateActionBall, stateNext, stateNextActionBall, action(iB).shift)
                 encoding.addAll(returnExpressions)
 
                 encoding.add(ClauseDeclaration(Equivalent(eff, actionVariable)))
                 encoding.add(ClauseDeclaration(Implies(actionVariable, pre)))
 
-                actionsData.append(EncodingDataSnowman.ActionData(action, actionVariable, iB))
+                actionsData.append(EncodingDataSnowman.ActionData(action(iB), actionVariable, iB))
             }
         }
 
@@ -259,10 +259,10 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
         val invalidLocationsMutable = ListBuffer.empty[Coordinate]
 
         for (l <- level.map.values.filter(f => Object.isPlayableArea(f.o))) {
-            val up = level.map(l.c + Up.shift).o
-            val down = level.map(l.c + Down.shift).o
-            val right = level.map(l.c + Right.shift).o
-            val left = level.map(l.c + Left.shift).o
+            val up = level.map(l.c + CharacterUp.shift).o
+            val down = level.map(l.c + CharacterDown.shift).o
+            val right = level.map(l.c + CharacterRight.shift).o
+            val left = level.map(l.c + CharacterLeft.shift).o
 
             val invalid = !Object.isPlayableArea(up) && !Object.isPlayableArea(right) ||
                 !Object.isPlayableArea(right) && !Object.isPlayableArea(down) ||
@@ -351,10 +351,10 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
 
         for ((_, v) <- visitedMap.filter(f => Object.isPlayableArea(f._2.location.o))) {
             if (v.visited.isAnyEmpty) {
-                val up = level.map(v.location.c + Up.shift).o
-                val down = level.map(v.location.c + Down.shift).o
-                val right = level.map(v.location.c + Right.shift).o
-                val left = level.map(v.location.c + Left.shift).o
+                val up = level.map(v.location.c + CharacterUp.shift).o
+                val down = level.map(v.location.c + CharacterDown.shift).o
+                val right = level.map(v.location.c + CharacterRight.shift).o
+                val left = level.map(v.location.c + CharacterLeft.shift).o
 
                 val addToMutableWallU = (f: CoordinateFixedDimension) => {
                     mutableWallU.append(f)
@@ -362,17 +362,17 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
                 }
 
                 if (!Object.isPlayableArea(up) && !Object.isPlayableArea(right)) {
-                    checkForU(v.location.c, Down.shift, Right.shift, x, visitedMap).exists(addToMutableWallU)
-                    checkForU(v.location.c, Left.shift, Up.shift, y, visitedMap).exists(addToMutableWallU)
+                    checkForU(v.location.c, CharacterDown.shift, CharacterRight.shift, x, visitedMap).exists(addToMutableWallU)
+                    checkForU(v.location.c, CharacterLeft.shift, CharacterUp.shift, y, visitedMap).exists(addToMutableWallU)
                 } else if (!Object.isPlayableArea(right) && !Object.isPlayableArea(down)) {
-                    checkForU(v.location.c, Up.shift, Right.shift, x, visitedMap).exists(addToMutableWallU)
-                    checkForU(v.location.c, Left.shift, Down.shift, y, visitedMap).exists(addToMutableWallU)
+                    checkForU(v.location.c, CharacterUp.shift, CharacterRight.shift, x, visitedMap).exists(addToMutableWallU)
+                    checkForU(v.location.c, CharacterLeft.shift, CharacterDown.shift, y, visitedMap).exists(addToMutableWallU)
                 } else if (!Object.isPlayableArea(down) && !Object.isPlayableArea(left)) {
-                    checkForU(v.location.c, Up.shift, Left.shift, x, visitedMap).exists(addToMutableWallU)
-                    checkForU(v.location.c, Right.shift, Down.shift, y, visitedMap).exists(addToMutableWallU)
+                    checkForU(v.location.c, CharacterUp.shift, CharacterLeft.shift, x, visitedMap).exists(addToMutableWallU)
+                    checkForU(v.location.c, CharacterRight.shift, CharacterDown.shift, y, visitedMap).exists(addToMutableWallU)
                 } else if (!Object.isPlayableArea(left) && !Object.isPlayableArea(up)) {
-                    checkForU(v.location.c, Down.shift, Left.shift, x, visitedMap).exists(addToMutableWallU)
-                    checkForU(v.location.c, Right.shift, Up.shift, y, visitedMap).exists(addToMutableWallU)
+                    checkForU(v.location.c, CharacterDown.shift, CharacterLeft.shift, x, visitedMap).exists(addToMutableWallU)
+                    checkForU(v.location.c, CharacterRight.shift, CharacterUp.shift, y, visitedMap).exists(addToMutableWallU)
                 }
             }
         }
@@ -449,37 +449,27 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
             val preActionCoordinate = ballCoordinate - actionData.action.shift
 
             val assigmentsReport = assignments.map(f => (f.name, f)).toMap
-            println("STATE") // TODO Remove println
-            print(Report.generateMap(level, state, assigmentsReport))
-            println("STATE NEXT")
-            print(Report.generateMap(level, stateNext, assigmentsReport))
-
-
-            println("Path Start: " +  characterLocation)
-            println("Path End: " + preActionCoordinate)
 
             if (preActionCoordinate - characterLocation != Coordinate(0, 0)) {
                 val allNodes = () => level.map.keys.toList
-                val neighboursRelaxed  = (c: Coordinate) => SnowmanAction.ACTIONS.map(f => c + f.shift).filter(f => {val l = level.map.get(f); l.isDefined && Object.isPlayableArea(l.get.o)})
+                val neighboursRelaxed  = (c: Coordinate) => SnowmanAction.CHARACTER_ACTIONS.map(f => c + f.shift).filter(f => {val l = level.map.get(f); l.isDefined && Object.isPlayableArea(l.get.o)})
                 val neighbours = (c: Coordinate) => neighboursRelaxed(c).filter(f => !state.balls.exists(b => assignmentsMap(b.x.name).asInstanceOf[ValueInteger].v == f.x && assignmentsMap(b.y.name).asInstanceOf[ValueInteger].v == f.y))
                 val heuristic = (start: Coordinate, goal: Coordinate) => start.euclideanDistance(goal).toFloat
 
                 var path = AStar.aStar(characterLocation, preActionCoordinate, allNodes, neighbours, heuristic)
                 if (path.isEmpty) {
                     path = AStar.aStar(characterLocation, preActionCoordinate, allNodes, neighboursRelaxed, heuristic)
-
-                    println("Omitting occpuied locations for balls")
                 }
 
                 val pathActions = pathToActions(path)
-                pathActions.foreach(f => println("    Path: " + f))
 
                 actions.appendAll(pathActions)
             }
 
             actions.append(actionData.action)
-            actionsBalls.append(BallAction(actionData.action, actionData.ballActionIndex))
-            println("Action: " + actionData.action + "\n")
+            actionData.action match {
+                case f: BallAction => actionsBalls.append(f)
+            }
 
             val existOtherBallUnder = state.balls.patch(actionData.ballActionIndex, Nil, 1).exists(f => coordinateFromCoordinateVariables(f, assignmentsMap) == ballCoordinate)
 
@@ -501,7 +491,7 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
 
     private def pathToActions(path: immutable.Seq[Coordinate]): List[SnowmanAction] = {
         val reverse = path.reverse
-        reverse.zip(reverse.tail).map(f => SnowmanAction.ACTIONS.find(f2 => f2.shift == (f._2 - f._1)).get).toList
+        reverse.zip(reverse.tail).map(f => SnowmanAction.CHARACTER_ACTIONS.find(f2 => f2.shift == (f._2 - f._1)).get).toList
     }
 
     private def encodeLocationsRestriction[T <: StateBase](state: T, encoder: Encoding): Unit = {

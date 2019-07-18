@@ -3,15 +3,18 @@ package gmt.snowman.action
 object BallAction {
 
     def apply(snowmanAction: SnowmanAction, ball: Int): BallAction = snowmanAction match {
-        case Up =>
+        case CharacterUp =>
             BallUp(ball)
-        case Down =>
+        case CharacterDown =>
             BallDown(ball)
-        case Right =>
+        case CharacterRight =>
             BallRight(ball)
-        case Left =>
+        case CharacterLeft =>
             BallLeft(ball)
     }
 }
 
-abstract class BallAction (val ball: Int)
+abstract class BallAction (val ball: Int) extends SnowmanAction {
+
+    def toStringRef: String = toString + "(" + ball + ")"
+}

@@ -1,76 +1,18 @@
 package gmt.snowman.pddl
 
+import java.io.File
+
 import gmt.snowman.action.SnowmanAction
-import gmt.snowman.game.Game
 import gmt.snowman.game.`object`.{Object, _}
 import gmt.snowman.level.{Coordinate, Level}
+import gmt.util.Files
 
 object EncoderPDDL {
 
     case class TooManyBallsNotSupported() extends Exception()
 
-    def encodeAdl(level: Level): String = {
-        var encoding = ""
-
-        val directions = List("dir_right", "dir_left", "dir_up", "dir_down")
-
-        val levelName = level.name match {
-            case Some(s) =>
-                s
-            case None =>
-                "snowman_problem"
-        }
-
-        encoding += "(define (problem " + levelName + ")\n"
-        encoding += "    (:domain snowman_adl)\n"
-        encoding += "    (:objects\n"
-        for (d <- directions) {
-            encoding += "        " + d + " - direction\n"
-        }
-
-        encoding += encodeObjectsBalls(level)
-        encoding += encodeObjectsLocations(level)
-
-        encoding += "    )\n"
-        encoding += "    (:init\n"
-        encoding += "        (= (total_cost) 0)\n"
-
-
-        for (l <- level.map.values.filter(f => Object.isPlayableArea(f.o)); (o, d) <- SnowmanAction.ACTIONS.map(f => f.shift).zip(directions) ) {
-            level.map.get(l.c + o) match {
-                case Some(l2) =>
-                    if (Object.isPlayableArea(l2.o)) {
-                        encoding += "        (next loc_" + l.c.x + "_" + l.c.y + " loc_" + l2.c.x + "_" + l2.c.y + " " + d + ")\n"
-                    }
-                case None =>
-            }
-        }
-
-        encoding += "        (character_at loc_" + level.character.c.x + "_" + level.character.c.y + ")\n"
-
-        for ((l, i) <- level.balls.zipWithIndex) {
-            encoding += "        (ball_at ball_" + i + " loc_" + l.c.x + "_" + l.c.y + ")\n"
-            encoding += encodeBallSize(l.o, i)
-        }
-
-        encoding += encodeInitSnow(level)
-        encoding += encodeInitOccupancy(level)
-
-        encoding += "    )\n"
-
-        encoding += encodeGoal(level)
-
-        encoding += "\n"
-
-        encoding += "    (:metric minimize (total_cost))\n"
-
-        encoding += ")"
-
-        encoding
-    }
-
-    def encodeObjectFluents(level: Level): String = {
-        var encoding = ""
+    def encodeObjectFluents(level: Level): (String, String) = {
+        val problem = StringBuilder.newBuilder
 
         val directions = List("right", "left", "up", "down")
 
@@ -81,47 +23,50 @@ object EncoderPDDL {
                 "snowman_problem"
         }
 
-        encoding += "(define (problem " + levelName + ")\n"
-        encoding += "    (:domain snowman_object_fluents)\n"
-        encoding += "    (:objects\n"
+        problem.append("(define (problem " + levelName + ")\n")
+        problem.append("    (:domain snowman_object_fluents)\n")
+        problem.append("    (:objects\n")
 
-        encoding += encodeObjectsBalls(level)
-        encoding += encodeObjectsLocations(level)
+        problem.append(encodeObjectsBalls(level))
+        problem.append(encodeObjectsLocations(level))
 
-        encoding += "    )\n"
-        encoding += "    (:init\n"
+        problem.append("    )\n")
+        problem.append("    (:init\n")
 
-        for (l <- level.map.values.filter(f => Object.isPlayableArea(f.o)); (o, d) <- SnowmanAction.ACTIONS.map(f => f.shift).zip(directions) ) {
+        for (l <- level.map.values.filter(f => Object.isPlayableArea(f.o)); (o, d) <- SnowmanAction.CHARACTER_ACTIONS.map(f => f.shift).zip(directions) ) {
             level.map.get(l.c + o) match {
                 case Some(l2) =>
                     if (Object.isPlayableArea(l2.o)) {
-                        encoding += "        (= (next_" + d + " loc_" + l.c.x + "_" + l.c.y + ") loc_" + l2.c.x + "_" + l2.c.y + ")\n"
+                        problem.append("        (= (next_" + d + " loc_" + l.c.x + "_" + l.c.y + ") loc_" + l2.c.x + "_" + l2.c.y + ")\n")
                     }
                 case None =>
             }
         }
 
-        encoding += "        (= (character_at) loc_" + level.character.c.x + "_" + level.character.c.y + ")\n"
+        problem.append("        (= (character_at) loc_" + level.character.c.x + "_" + level.character.c.y + ")\n")
 
         for ((l, i) <- level.balls.zipWithIndex) {
-            encoding += "        (= (ball_at) ball_" + i + " loc_" + l.c.x + "_" + l.c.y + ")\n"
-            encoding += encodeBallSize(l.o, i)
+            problem.append("        (= (ball_at) ball_" + i + " loc_" + l.c.x + "_" + l.c.y + ")\n")
+            problem.append(encodeBallSize(l.o, i))
         }
 
-        encoding += encodeInitSnow(level)
-        encoding += encodeInitOccupancy(level)
+        problem.append(encodeInitSnow(level))
+        problem.append(encodeInitOccupancy(level))
 
-        encoding += "    )\n"
+        problem.append("    )\n")
+        problem.append("\n")
+        problem.append("    (:goal\n")
+        problem.append("        (and\n")
+        problem.append("            (goal)\n")
+        problem.append("        )\n")
+        problem.append("    )\n")
+        problem.append("\n")
+        problem.append("    (:metric minimize (total_cost))\n")
+        problem.append(")")
 
-        encoding += encodeGoal(level)
+        val domain = Files.openTextFile(new File(getClass.getResource("/pddl/object-fluents/domain.pddl").toExternalForm))
 
-        encoding += "\n"
-
-        encoding += "    (:metric minimize (total_cost))\n"
-
-        encoding += ")"
-
-        encoding
+        (domain, problem.toString())
     }
 
     def encodeAdlGrounded(level: Level): (String, String)= {
@@ -159,14 +104,20 @@ object EncoderPDDL {
         domain.append("        (ball_size_small ?b - ball)\n")
         domain.append("        (ball_size_medium ?b - ball)\n")
         domain.append("        (ball_size_large ?b - ball)\n")
-        domain.append("        (goal)\n")
+        if (level.snowmen == 1) {
+            domain.append("        (goal)\n")
+        } else {
+            for (s <- 0 until level.snowmen) {
+                domain.append("        (goal_" + s + ")\n")
+            }
+        }
         domain.append("    )\n")
         domain.append("\n")
         domain.append("    (:functions\n")
         domain.append("        (total_cost) - number\n")
         domain.append("    )\n")
 
-        for (l <- level.map.values.filter(f => Object.isPlayableArea(f.o)); o <- SnowmanAction.ACTIONS.map(f => f.shift)) {
+        for (l <- level.map.values.filter(f => Object.isPlayableArea(f.o)); o <- SnowmanAction.CHARACTER_ACTIONS.map(f => f.shift)) {
             level.map.get(l.c + o) match {
                 case Some(l2) =>
                     if (Object.isPlayableArea(l2.o)) {
@@ -194,7 +145,7 @@ object EncoderPDDL {
             }
         }
 
-        for (l0 <- level.map.values.filter(f => Object.isPlayableArea(f.o)); shift <- SnowmanAction.ACTIONS.map(f => f.shift)) {
+        for (l0 <- level.map.values.filter(f => Object.isPlayableArea(f.o)); shift <- SnowmanAction.CHARACTER_ACTIONS.map(f => f.shift)) {
             (level.map.get(l0.c + shift), level.map.get(l0.c + shift + shift)) match {
                 case (Some(l1), Some(l2)) =>
                     if (Object.isPlayableArea(l1.o) && Object.isPlayableArea(l2.o)) {
@@ -279,7 +230,7 @@ object EncoderPDDL {
                             domain.append("\n")
                             domain.append("     :effect\n")
                             domain.append("        (and\n")
-                            domain.append(encodeEffectGoal("            ", level, bI, l2.c))
+                            domain.append(encodeEffectGoal("            ", level, bI, coordinateToLocation(l2.c)))
                             domain.append("            (occupancy " + to + ")\n")
                             domain.append("            (not (ball_at " + b + " " + from + "))\n")
                             domain.append("            (ball_at " + b + " " + to + ")\n")
@@ -347,11 +298,7 @@ object EncoderPDDL {
         problem.append(encodeInitOccupancy(level))
         problem.append("    )\n")
         problem.append("\n")
-        problem.append("    (:goal\n")
-        problem.append("        (and\n")
-        problem.append("            (goal))\n")
-        problem.append("    )\n")
-        problem.append("\n")
+        problem.append(encodeGoal(level))
         problem.append("    (:metric minimize (total_cost))\n")
 
         problem.append(")")
@@ -360,154 +307,116 @@ object EncoderPDDL {
     }
 
     private def encodeObjectsBalls(level: Level): String = {
-        var encoding = ""
+        val encoding = StringBuilder.newBuilder
 
         for (i <- level.balls.indices) {
-            encoding += "        ball_" + i + " - ball\n"
+            encoding.append("        ball_" + i + " - ball\n")
         }
 
-        encoding
+        encoding.toString()
     }
 
     private def encodeObjectsLocations(level: Level): String = {
-        var encoding = ""
+        val encoding = StringBuilder.newBuilder
 
         for (l <- level.map.values.filter(f => Object.isPlayableArea(f.o))) {
-            encoding += "        loc_" + l.c.x + "_" + l.c.y + " - location\n"
+            encoding.append("        loc_" + l.c.x + "_" + l.c.y + " - location\n")
         }
 
-        encoding
+        encoding.toString()
     }
 
     private def encodeInitOccupancy(level: Level): String = {
-        var encoding = ""
+        val encoding = StringBuilder.newBuilder
 
         for (l <- level.map.values.filter(f => Object.isBall(f.o))) {
-            encoding += "        (occupancy loc_" + l.c.x + "_" + l.c.y + ")\n"
+            encoding.append("        (occupancy loc_" + l.c.x + "_" + l.c.y + ")\n")
         }
 
-        encoding
+        encoding.toString()
     }
 
     private def encodeInitSnow(level: Level): String = {
-        var encoding = ""
+        val encoding = StringBuilder.newBuilder
 
         for (l <- level.map.values.filter(f => Object.isSnow(f.o))) {
-            encoding += "        (snow loc_" + l.c.x + "_" + l.c.y + ")\n"
+            encoding.append("        (snow loc_" + l.c.x + "_" + l.c.y + ")\n")
         }
 
-        encoding
+        encoding.toString()
     }
 
     private def encodeBallSize(o: Object, index: Int): String = {
         "        (ball_size_" + getBallSize(o) + " ball_" + index + ")\n"
     }
 
-    private def encodeSnowman(snowman: Seq[Int]): Int = 0x0000 | 0x0001 << snowman(0) | 0x0001 << snowman(1) | 0x0001 << snowman(2)
-
-    private def decodeSnowman(snowman: Int): Seq[Int] = inmersiveDecodeSnowman(snowman, 0)
-
-    private def inmersiveDecodeSnowman(snowman: Int, bit: Int): Seq[Int] = {
-        if (snowman == 0x0000) {
-            Nil
-        } else {
-            if ((snowman & 0x0001) == 0x0001) {
-                bit +: inmersiveDecodeSnowman(snowman >>> 1, bit + 1)
-            } else {
-                inmersiveDecodeSnowman(snowman >>> 1, bit + 1)
-            }
-        }
-    }
-
     private def encodeGoal(level: Level): String = {
-        val goal = new StringBuilder
-        goal.append("    (:goal\n")
-        if (level.snowmen == 1) {
-            goal.append("        (or\n")
-            goal.append(level.map.values.filter(f => Object.isPlayableArea(f.o)).map(f => "            " + equalBallPositions(f.c, level.balls.indices.toList)).mkString("\n") + "\n")
-            goal.append("        )\n")
-        } else {
-            goal.append("        (or\n")
-            for (snowmenBalls <- setPartitionBalls(level)) {
-                goal.append("            (or \n")
-                for (c <- level.map.values.filter(f => Object.isPlayableArea(f.o)).toSeq.combinations(level.snowmen)) {
-                    for ((location, iSnowman) <- c.zipWithIndex) {
-                        goal.append("                (and ")
-                        goal.append(snowmenBalls(iSnowman).map(ballIndex => "(ball_at ball_" + ballIndex + " " + coordinateToLocation(location.c) + ")").mkString(" "))
-                        goal.append(")\n")
-                    }
-                }
-                goal.append("            )\n")
-            }
-            goal.append("        )\n")
-        }
-        goal.append("    )\n")
+        val encoding = StringBuilder.newBuilder
 
-        goal.mkString
+        encoding.append("    (:goal\n")
+        encoding.append("        (and\n")
+
+        if (level.snowmen == 1) {
+            encoding.append("            (goal)\n")
+        } else {
+            for (s <- 0 until level.snowmen) {
+                encoding.append("            (goal_" + s + ")\n")
+            }
+        }
+        encoding.append("        )\n")
+        encoding.append("    )\n")
+        encoding.append("\n")
+
+        encoding.toString()
     }
 
-    private def encodeEffectGoal(padding: String, level: Level, actionBall: Int, toCoordinate: Coordinate): String = {
+    private def encodeEffectGoal(padding: String, level: Level, actionBall: Int, toLocation: String): String = {
         val goal = new StringBuilder
-        goal.append(padding + "(when\n")
+
         if (level.snowmen == 1) {
+            goal.append(padding + "(when\n")
             goal.append(padding + "    (and\n")
-            goal.append(padding + "        " + level.balls.indices.patch(actionBall, Nil, 1).map(f => "(ball_at ball_" + f + " " + coordinateToLocation(toCoordinate) + ")").mkString(" ") + ")\n")
+            goal.append(padding + "        " + level.balls.indices.patch(actionBall, Nil, 1).map(f => "(ball_at ball_" + f + " " + toLocation + ")").mkString(" ") + ")\n")
+            goal.append(padding + "    (and\n")
+            goal.append(padding + "        (goal)))\n")
         } else {
-            goal.append(padding + "    (or\n")
-            for (snowmenBalls <- setPartitionBalls(level)) {
-                goal.append(padding + "            (or \n")
-                for (c <- level.map.values.filter(f => Object.isPlayableArea(f.o)).toSeq.combinations(level.snowmen)) {
-                    for ((location, iSnowman) <- c.zipWithIndex) {
-                        goal.append(padding + "                (and ")
-                        goal.append(snowmenBalls(iSnowman).filter(f => f != actionBall).map(ballIndex => {"(ball_at ball_" + ballIndex + " " + coordinateToLocation(location.c) + ")"}).mkString(" "))
-                        goal.append(")\n")
-                    }
-                }
-                goal.append(padding + "            )\n")
-            }
-            goal.append(padding + "        )\n")
-        }
+            for (s <- 0 until level.snowmen) {
+                goal.append(padding + "(when\n")
 
-        goal.append(padding + "    (and\n")
-        goal.append(padding + "        (goal)))\n")
+                val padding2 = if (s != 0) {
+                    "    "
+                } else {
+                    ""
+                }
+
+                if (s != 0) {
+                    goal.append(padding + "    (and\n")
+                    goal.append(padding + "        (goal_" + (s - 1) + ")\n")
+                }
+
+                goal.append(padding + padding2 + "    (or\n")
+                for (snowmenBalls <- level.balls.indices.patch(actionBall, Nil, 1).combinations(2)) {
+                    goal.append(padding + padding2 + "        (and " + snowmenBalls.map(f => "(ball_at ball_" + f + " " + toLocation + ")").mkString(" ") + ")\n")
+                }
+                goal.append(padding + padding2 + "    )\n")
+
+                if (s != 0) {
+                    goal.append(padding + "    )\n")
+                }
+
+                goal.append(padding + "    (and\n")
+                goal.append(padding + "        (goal_" + s + ")))\n")
+            }
+        }
 
         goal.mkString
     }
-
-    private def setPartitionBalls(level: Level): Seq[Seq[Seq[Int]]] = {
-        if (level.balls.size > 32) {
-            throw TooManyBallsNotSupported()
-        }
-
-        inmersiveSetPartitionBalls(level.snowmen, level.balls.indices.combinations(Game.SNOWMAN_BALLS).map(f => encodeSnowman(f)).toSeq, 0, Nil).map(f => f.map(k => decodeSnowman(k)))
-    }
-
-    private def inmersiveSetPartitionBalls(nSnomwen: Int, combinations: Seq[Int], mask: Int, partial: Seq[Int]): Seq[Seq[Int]] = {
-        if (combinations.isEmpty) {
-            Nil
-        } else {
-            inmersiveSetPartitionBalls(nSnomwen, combinations.tail, mask, partial) ++ (if ((combinations.head & mask) != 0) {
-                Nil
-            } else if (partial.size == nSnomwen - 1) {
-                List(combinations.head +: partial)
-            } else {
-                inmersiveSetPartitionBalls(nSnomwen, combinations.tail, combinations.head | mask, combinations.head +: partial)
-            })
-        }
-    }
-
-    private def equalBallPositions(c: Coordinate , balls: List[Int]): String = "(and (ball_at ball_" + balls(0) + " " + coordinateToLocation(c) + ")" +
-        " (ball_at ball_" + balls(1) + " " + coordinateToLocation(c) + ")" +
-        " (ball_at ball_" + balls(2) + " " + coordinateToLocation(c) + "))"
 
     private def coordinateToLocation(c: Coordinate) = "loc_" + c.x + "_" + c.y
 
     def getBallSize(o: gmt.snowman.game.`object`.Object): String = o match {
-        case SmallBall =>
-            "small"
-        case MediumBall =>
-            "medium"
-        case LargeBall =>
-            "large"
+        case SmallBall => "small"
+        case MediumBall => "medium"
+        case LargeBall => "large"
     }
 }

@@ -281,14 +281,6 @@ class GUI(private val settingsFile: File) {
                     })
                 }
                 contents += new Separator
-                contents += new MenuItem(Action("Generate PDDL adl") {
-                    try {
-                        savePickAndTextFile(EncoderPDDL.encodeAdl(uiLevel.mutableLevel.toLevel), CURRENT_DIRECTORY + "/problem_adl.pddl")
-                    } catch {
-                        case e: LevelParserValidateException =>
-                            showErrorValidateLevel(e)
-                    }
-                })
                 contents += new MenuItem(Action("Generate PDDL adl Grounded") {
                     try {
                         val (domain, problem) = EncoderPDDL.encodeAdlGrounded(uiLevel.mutableLevel.toLevel)
@@ -308,9 +300,20 @@ class GUI(private val settingsFile: File) {
                             showErrorValidateLevel(e)
                     }
                 })
-                contents += new MenuItem(Action("Generate PDDL object-fluents") {
+                contents += new MenuItem(Action("Generate PDDL object-fluents (experimental)") {
                     try {
-                        savePickAndTextFile(EncoderPDDL.encodeObjectFluents(uiLevel.mutableLevel.toLevel), CURRENT_DIRECTORY + "/problem_object-fluents.pddl")
+                        val (domain, problem) = EncoderPDDL.encodeObjectFluents(uiLevel.mutableLevel.toLevel)
+
+                        val directoryChooser = new FileChooser
+                        directoryChooser.fileSelectionMode_=(FileChooser.SelectionMode.DirectoriesOnly)
+                        directoryChooser.peer.setCurrentDirectory(new File(CURRENT_DIRECTORY))
+
+                        val result = directoryChooser.showDialog(null, "Select")
+
+                        if (result == FileChooser.Result.Approve) {
+                            Files.saveTextFile(new File(directoryChooser.selectedFile.getAbsolutePath + "/domain.pddl"), domain)
+                            Files.saveTextFile(new File(directoryChooser.selectedFile.getAbsolutePath + "/problem.pddl"), problem)
+                        }
                     } catch {
                         case e: LevelParserValidateException =>
                             showErrorValidateLevel(e)

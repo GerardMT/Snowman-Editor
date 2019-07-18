@@ -170,11 +170,24 @@ object Operations {
     }
 
     def simplify(c: Clause): Clause = {
-        c match {
-            case And(c1) => c1
-            case c @ And(_,_ @ _*) => c
-            case Or(c1) => c1
-            case c @ Or(_,_ @ _*) => c
+        var (clause, iterate) = simplifyRecursive(c)
+
+        while (iterate) {
+            val r = simplifyRecursive(c)
+            clause = r._1
+            iterate = r._2
         }
+
+        clause
+    }
+
+    private def simplifyRecursive(c: Clause): (Clause, Boolean) = c match {
+        case And(c1) =>
+            val (s, _) = simplifyRecursive(c1)
+            (s, true)
+        case Or(c1) =>
+            val (s, _) = simplifyRecursive(c1)
+            (s, true)
+        case f => (f, false)
     }
 }
