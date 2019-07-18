@@ -39,21 +39,14 @@ protected case class EncoderReachability(override val level: Level, override val
 
             if (neighbours.size == 1) {
                 encoding.add(ClauseDeclaration(Implies(And(sourceOrTarget, sourceDifferentTarget), And(node, state.reachabilityNodes(neighbours.head)))))
-            } else if (neighbours.size == 2) {
-                val n1 = state.reachabilityNodes(neighbours(0))
-                val n2 = state.reachabilityNodes(neighbours(1))
-
-                encoding.add(ClauseDeclaration(Implies(And(sourceOrTarget, sourceDifferentTarget), And(node, Or(And(n1, Not(n2)), And(Not(n1), n2))))))
-                encoding.add(ClauseDeclaration(Implies(And(Not(sourceOrTarget), node), Or(And(n1, n2), And(Not(n1), Not(n2))))))
             } else {
                 val neighboursVars = neighbours.map(f => state.reachabilityNodes(f))
-                val (c, e) = Operations.getEOLog(neighboursVars)
-                encoding.addAll(e)
 
                 val none = And(neighboursVars.map(f => Not(f)): _*)
+                val one = neighboursVars.map(f => { val others = neighboursVars.filter(o => o != f); And(List(f) ++ others.map(n => Not(n)): _*)})
                 val two = neighboursVars.combinations(2).map(f => { val others = neighboursVars.diff(f); And(List(f(0), f(1)) ++ others.map(n => Not(n)): _*) }).toSeq
 
-                encoding.add(ClauseDeclaration(Implies(And(sourceOrTarget, sourceDifferentTarget), c)))
+                encoding.add(ClauseDeclaration(Implies(And(sourceOrTarget, sourceDifferentTarget), Or(one: _*))))
                 encoding.add(ClauseDeclaration(Implies(And(Not(sourceOrTarget), node), Or(two :+ none: _*))))
             }
         }
@@ -73,12 +66,16 @@ protected case class EncoderReachability(override val level: Level, override val
         val (updateBallSizeClause, updateBallSizeExpressions) = updateBallSize(actionName, state, stateActionBall, stateNextActionBall, shift)
         expressions.appendAll(updateBallSizeExpressions)
 
-        val pre = And(noOtherBallsOver(state, stateActionBall),
+        val constantPre = ListBuffer(noOtherBallsOver(state, stateActionBall),
             Not(And(otherBallInFront(state, stateActionBall, shift), otherBallUnderVar)),
             otherBallsInFrontLarger(state, stateActionBall, shift),
             reachability(state, stateActionBall, shift))
 
-      val constantEff = ListBuffer(moveBall(stateActionBall, stateNextActionBall, shift),
+        if (level.snowmen > 1) {
+            constantPre.append(noOtherTwoBallsUnder(state, stateActionBall))
+        }
+
+        val constantEff = ListBuffer(moveBall(stateActionBall, stateNextActionBall, shift),
             Implies(Not(otherBallUnderVar), teleportCharacterBall(stateActionBall, stateNext)),
             Implies(otherBallUnderVar, teleportCharacter(stateActionBall, stateNext, shift)),
             equalOtherBallsVariables(state, stateActionBall, stateNext, stateNextActionBall),
@@ -88,6 +85,7 @@ protected case class EncoderReachability(override val level: Level, override val
             constantEff.append(updateSnowVariables(state, stateActionBall, stateNext, shift))
         }
 
+        val pre = And(constantPre.toList: _*)
         val eff = And(constantEff.toList: _*)
 
         (pre, eff, expressions)

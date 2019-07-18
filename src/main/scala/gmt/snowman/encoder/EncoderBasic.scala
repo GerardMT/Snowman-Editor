@@ -27,10 +27,14 @@ protected case class EncoderBasic(override val level: Level, override val encode
         val (updateBallSizeClause, updateBallSizeExpressions) = updateBallSize(actionName, state, stateActionBall, stateNextActionBall, shift)
         expressions.appendAll(updateBallSizeExpressions)
 
-        val pre = And(characterNextToBall(state, stateActionBall, shift),
+        val constantPre = ListBuffer(characterNextToBall(state, stateActionBall, shift),
             noOtherBallsOver(state, stateActionBall),
             Not(And(otherBallInFront(state, stateActionBall, shift), otherBallUnderVar)),
             otherBallsInFrontLarger(state, stateActionBall, shift))
+
+        if (level.snowmen > 1) {
+            constantPre.append(noOtherTwoBallsUnder(state, stateActionBall))
+        }
 
         val constantEff = ListBuffer(moveBall(stateActionBall, stateNextActionBall, shift),
             Implies(Not(otherBallUnderVar), moveCharacter(state, stateNext, shift)),
@@ -42,7 +46,8 @@ protected case class EncoderBasic(override val level: Level, override val encode
             constantEff.append(updateSnowVariables(state, stateActionBall, stateNext, shift))
         }
 
-        val eff = And(constantEff.toList: _*)
+        val pre = And(constantPre: _*)
+        val eff = And(constantEff: _*)
 
         (pre, eff, expressions)
     }

@@ -11,7 +11,6 @@ object Validator {
 
         var action = 0
 
-
         try { // TODO Remove try. use only option inside playablelevel
             while (playableLevel.isDefined && actionsIterator.hasNext) {
                 playableLevel = playableLevel.get.apply(actionsIterator.next())

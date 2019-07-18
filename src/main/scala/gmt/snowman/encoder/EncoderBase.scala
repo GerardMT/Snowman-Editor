@@ -16,7 +16,7 @@ import scala.collection.mutable.ListBuffer
 import scala.collection.{immutable, mutable}
 
 
-object EncoderBase { // TODO Add rule: Can not unmount a snowman once done
+object EncoderBase {
 
     case class InvalidCoordinateFixedDimensionException() extends Exception
 
@@ -145,7 +145,9 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
             }
         }
 
-        encoding.addAll(Operations.getEOExpression(actionsVariables, "EO_A" + stateNext.timeStep))
+        val (c, e) = Operations.getEOLog(actionsVariables)
+        encoding.addAll(e)
+        encoding.add(ClauseDeclaration(c))
 
         encodingData.statesData.append(StateData(stateNext, actionsData.toList))
 
@@ -173,6 +175,12 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
     protected def encodeCharacterState[T <: StateBase](state: T, encoding: Encoding): Unit = {
         encoding.add(ClauseDeclaration(Equals(state.character.x, IntegerConstant(level.character.c.x))))
         encoding.add(ClauseDeclaration(Equals(state.character.y, IntegerConstant(level.character.c.y))))
+    }
+
+    protected def noOtherTwoBallsUnder(state: StateBase, stateActionBall: StateBase.Ball): Clause = {
+        And((for (b <- state.balls.filter(f => f != stateActionBall).combinations(2)) yield {
+            Not(And(Equals(stateActionBall.x, b(0).x), Equals(stateActionBall.y, b(0).y), And(Equals(stateActionBall.x, b(1).x), Equals(stateActionBall.y, b(1).y))))
+        }).toSeq: _*)
     }
 
     protected def noOtherBallsOver(state: StateBase, stateActionBall: StateBase.Ball): Clause = {

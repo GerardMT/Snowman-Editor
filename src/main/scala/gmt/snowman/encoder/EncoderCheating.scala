@@ -21,9 +21,13 @@ protected case class EncoderCheating(override val level: Level, override val enc
         val (updateBallSizeClause, updateBallSizeExpressions) = updateBallSize(actionName, state, stateActionBall, stateNextActionBall, shift)
         expressions.appendAll(updateBallSizeExpressions)
 
-        val pre = And(noOtherBallsOver(state, stateActionBall),
+        val constantPre = ListBuffer(noOtherBallsOver(state, stateActionBall),
             Not(And(otherBallInFront(state, stateActionBall, shift), otherBallUnder(state, stateActionBall))),
             otherBallsInFrontLarger(state, stateActionBall, shift))
+
+        if (level.snowmen > 1) {
+            constantPre.append(noOtherTwoBallsUnder(state, stateActionBall))
+        }
 
         val constantEff = ListBuffer(moveBall(stateActionBall, stateNextActionBall, shift),
             equalOtherBallsVariables(state, stateActionBall, stateNext, stateNextActionBall),
@@ -33,6 +37,7 @@ protected case class EncoderCheating(override val level: Level, override val enc
             constantEff.append(updateSnowVariables(state, stateActionBall, stateNext, shift))
         }
 
+        val pre = And(constantPre.toList: _*)
         val eff = And(constantEff.toList: _*)
 
         (pre, eff, expressions)

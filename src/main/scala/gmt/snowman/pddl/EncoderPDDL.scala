@@ -61,7 +61,7 @@ object EncoderPDDL {
         problem.append("        )\n")
         problem.append("    )\n")
         problem.append("\n")
-        problem.append("    (:metric minimize (total_cost))\n")
+        problem.append("    (:metric minimize (total-cost))\n")
         problem.append(")")
 
         val domain = Files.openTextFile(new File(getClass.getResource("/pddl/object-fluents/domain.pddl").toExternalForm))
@@ -114,7 +114,7 @@ object EncoderPDDL {
         domain.append("    )\n")
         domain.append("\n")
         domain.append("    (:functions\n")
-        domain.append("        (total_cost) - number\n")
+        domain.append("        (total-cost) - number\n")
         domain.append("    )\n")
 
         for (l <- level.map.values.filter(f => Object.isPlayableArea(f.o)); o <- SnowmanAction.CHARACTER_ACTIONS.map(f => f.shift)) {
@@ -170,6 +170,9 @@ object EncoderPDDL {
                             domain.append("\n")
                             domain.append("     :precondition\n")
                             domain.append("        (and\n")
+                            for (ob <- otherBalls.combinations(2)) {
+                                domain.append("            (not (and (ball_at " + ob(0)  + " " + from + ") (ball_at " + ob(1) + " " + from + ")))")
+                            }
                             domain.append("            (ball_at " + b + " " + from + ")\n")
                             domain.append("            (character_at " + ppos + ")\n")
                             domain.append("            (and")
@@ -262,7 +265,7 @@ object EncoderPDDL {
                             domain.append("                (and")
                             domain.append("                    (not (ball_size_medium " + b + "))\n")
                             domain.append("                    (ball_size_large " + b + ")))\n")
-                            domain.append("            (increase (total_cost) 1))\n")
+                            domain.append("            (increase (total-cost) 1))\n")
                             domain.append("    )\n")
                         }
                     }
@@ -286,7 +289,7 @@ object EncoderPDDL {
         problem.append("    (:domain snowman_adl_grounded)\n")
         problem.append("\n")
         problem.append("    (:init\n")
-        problem.append("        (= (total_cost) 0)\n")
+        problem.append("        (= (total-cost) 0)\n")
         problem.append("        (character_at loc_" + level.character.c.x + "_" + level.character.c.y + ")\n")
 
         for ((l, i) <- level.balls.zipWithIndex) {
@@ -299,7 +302,7 @@ object EncoderPDDL {
         problem.append("    )\n")
         problem.append("\n")
         problem.append(encodeGoal(level))
-        problem.append("    (:metric minimize (total_cost))\n")
+        problem.append("    (:metric minimize (total-cost))\n")
 
         problem.append(")")
 

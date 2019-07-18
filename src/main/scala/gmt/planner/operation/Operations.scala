@@ -32,10 +32,6 @@ object Operations {
         (And(cAMO :+ cALO: _*), eAMO)
     }
 
-    @deprecated
-    def getEOExpression(v: Seq[BooleanVariable], newVariablesPrefix: String): Seq[Expression] = {
-        getAMOLogExpression(v, newVariablesPrefix) :+ getALOExpression(v)
-    }
 
     def getAMOLog(v: Seq[BooleanVariable]): (Seq[Clause], Seq[Expression]) = {
         val ands = ListBuffer.empty[Clause]
@@ -65,44 +61,8 @@ object Operations {
         (ands, newVariables.map(f => VariableDeclaration(f)))
     }
 
-    @deprecated
-    def getAMOLogExpression(v: Seq[BooleanVariable], newVariablesPrefix: String): Seq[Expression]= {
-        val expressions = ListBuffer.empty[Expression]
-
-        val nBits = (Math.log(v.length) / Math.log(2)).ceil.toInt
-
-        var newVariables = List.empty[BooleanVariable]
-
-        for(i <- 0 until nBits) {
-            val newVariable = BooleanVariable(newVariablesPrefix + i)
-            expressions.append(VariableDeclaration(newVariable))
-            newVariables = newVariable :: newVariables
-        }
-
-        for (i <- v.indices) {
-            val binaryString = toBinary(i, nBits)
-
-            for (j <- 0 until binaryString.length) {
-                var c: Clause = newVariables(j)
-
-                if (binaryString(j) == '0') {
-                    c = Not(c)
-                }
-
-                expressions.append(ClauseDeclaration(Or(Not(v(i)), c)))
-            }
-        }
-
-        expressions
-    }
-
     def getALO(v: Seq[BooleanVariable]): Clause = {
         Or(v.map(f => f): _*)
-    }
-
-    @deprecated
-    def getALOExpression(v: Seq[BooleanVariable]): Expression = {
-        ClauseDeclaration(Or(v.map(f => f): _*))
     }
 
     def getALKTotalizer(input: Seq[Clause], k: Int): Seq[Expression] = {
