@@ -18,6 +18,11 @@ protected case class EncoderReachability(override val level: Level, override val
     override protected def encodeCharacterState0(state0: StateReachability, encoding: Encoding): Unit = encodeCharacterState(state0, encoding)
 
     override protected def encodeReachability(state: StateReachability, encoding: Encoding): Unit = {
+        for (v <- state.reachabilityWeights.map(f => f._2)) {
+            encoding.add(ClauseDeclaration(GreaterEqual(v, IntegerConstant(0))))
+            encoding.add(ClauseDeclaration(SmallerEqual(v, IntegerConstant(level.map.count(f => Object.isPlayableArea(f._2.o))))))
+        }
+
         encoding.add(Comment("Reachability"))
         for (p <- level.map.values.filter(f => Object.isPlayableArea(f.o))) {
             val or = Or((for (b <- level.balls.indices) yield {
