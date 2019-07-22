@@ -18,9 +18,6 @@ protected case class EncoderCheating(override val level: Level, override val enc
     override def createBallAction(actionName: String, state: StateCheating, stateActionBall: StateBase.Ball, stateNext: StateCheating, stateNextActionBall: StateBase.Ball, shift: Coordinate): (Clause, Clause, Seq[Expression]) = {
         val expressions = ListBuffer.empty[Expression]
 
-        val (updateBallSizeClause, updateBallSizeExpressions) = updateBallSize(actionName, state, stateActionBall, stateNextActionBall, shift)
-        expressions.appendAll(updateBallSizeExpressions)
-
         val constantPre = ListBuffer(noOtherBallsOver(state, stateActionBall),
             Not(And(otherBallInFront(state, stateActionBall, shift), otherBallUnder(state, stateActionBall))),
             otherBallsInFrontLarger(state, stateActionBall, shift))
@@ -30,8 +27,7 @@ protected case class EncoderCheating(override val level: Level, override val enc
         }
 
         val constantEff = ListBuffer(moveBall(stateActionBall, stateNextActionBall, shift),
-            equalOtherBallsVariables(state, stateActionBall, stateNext, stateNextActionBall),
-            updateBallSizeClause)
+            equalOtherBallsPositions(state, stateActionBall, stateNext, stateNextActionBall))
 
         val pre = And(constantPre.toList: _*)
         val eff = And(constantEff.toList: _*)

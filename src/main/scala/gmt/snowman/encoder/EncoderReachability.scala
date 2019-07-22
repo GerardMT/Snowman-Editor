@@ -59,9 +59,6 @@ protected case class EncoderReachability(override val level: Level, override val
         expressions.append(VariableDeclaration(otherBallUnderVar))
         expressions.append(ClauseDeclaration(Equivalent(otherBallUnderVar, otherBallUnder(state, stateActionBall))))
 
-        val (updateBallSizeClause, updateBallSizeExpressions) = updateBallSize(actionName, state, stateActionBall, stateNextActionBall, shift)
-        expressions.appendAll(updateBallSizeExpressions)
-
         val constantPre = ListBuffer(noOtherBallsOver(state, stateActionBall),
             Not(And(otherBallInFront(state, stateActionBall, shift), otherBallUnderVar)),
             otherBallsInFrontLarger(state, stateActionBall, shift),
@@ -74,8 +71,7 @@ protected case class EncoderReachability(override val level: Level, override val
         val constantEff = ListBuffer(moveBall(stateActionBall, stateNextActionBall, shift),
             Implies(Not(otherBallUnderVar), teleportCharacterBall(stateActionBall, stateNext)),
             Implies(otherBallUnderVar, teleportCharacter(stateActionBall, stateNext, shift)),
-            equalOtherBallsVariables(state, stateActionBall, stateNext, stateNextActionBall),
-            updateBallSizeClause)
+            equalOtherBallsPositions(state, stateActionBall, stateNext, stateNextActionBall))
 
         val pre = And(constantPre.toList: _*)
         val eff = And(constantEff.toList: _*)

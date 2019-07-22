@@ -24,9 +24,6 @@ protected case class EncoderBasic(override val level: Level, override val encode
         expressions.append(VariableDeclaration(otherBallUnderVar))
         expressions.append(ClauseDeclaration(Equivalent(otherBallUnderVar, otherBallUnder(state, stateActionBall))))
 
-        val (updateBallSizeClause, updateBallSizeExpressions) = updateBallSize(actionName, state, stateActionBall, stateNextActionBall, shift)
-        expressions.appendAll(updateBallSizeExpressions)
-
         val constantPre = ListBuffer(characterNextToBall(state, stateActionBall, shift),
             noOtherBallsOver(state, stateActionBall),
             Not(And(otherBallInFront(state, stateActionBall, shift), otherBallUnderVar)),
@@ -39,8 +36,7 @@ protected case class EncoderBasic(override val level: Level, override val encode
         val constantEff = ListBuffer(moveBall(stateActionBall, stateNextActionBall, shift),
             Implies(Not(otherBallUnderVar), moveCharacter(state, stateNext, shift)),
             Implies(otherBallUnderVar, equalCharacterVariables(state, stateNext)),
-            equalOtherBallsVariables(state, stateActionBall, stateNext, stateNextActionBall),
-            updateBallSizeClause)
+            equalOtherBallsPositions(state, stateActionBall, stateNext, stateNextActionBall))
 
         val pre = And(constantPre: _*)
         val eff = And(constantEff: _*)
@@ -107,7 +103,7 @@ protected case class EncoderBasic(override val level: Level, override val encode
 
     private def equalBallsVariables(state: StateBase, stateNext: StateBase): Clause = {
         And((for ((b, bNext) <- state.balls.zip(stateNext.balls)) yield {
-            And(Equals(b.x, bNext.x), Equals(b.y, bNext.y), encodeBallEquals(b, bNext))
+            And(Equals(b.x, bNext.x), Equals(b.y, bNext.y), encodeBallSizeEquals(b, bNext))
         }): _*)
     }
 }

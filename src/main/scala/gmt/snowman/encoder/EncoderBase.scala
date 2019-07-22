@@ -87,7 +87,7 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
         for ((b, levelBall) <- level.balls.indices.map(f => (state.balls(f), level.balls(f)))) {
             encoding.add(ClauseDeclaration(Equals(b.x, IntegerConstant(levelBall.c.x))))
             encoding.add(ClauseDeclaration(Equals(b.y, IntegerConstant(levelBall.c.y))))
-            encoding.add(ClauseDeclaration(encodeBallEquals(b, levelBall.o)))
+            encoding.add(ClauseDeclaration(encodeBallSizeEquals(b, levelBall.o)))
         }
 
         encoding.add(Comment("S0 Snow"))
@@ -158,6 +158,8 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
         if (level.hasSnow) {
             encoding.add(ClauseDeclaration(updateSnowVariables(state, stateNext)))
         }
+
+        encoding.add(ClauseDeclaration(updateBallSize(state, stateNext)))
     }
 
     override def createState(index: Int, encoding: Encoding, encodingData: EncodingDataSnowman): A
@@ -185,13 +187,13 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
 
     protected def noOtherBallsOver(state: StateBase, stateActionBall: StateBase.Ball): Clause = {
         And((for (b <- state.balls.filter(f => f != stateActionBall)) yield {
-            Or(Not(Equals(stateActionBall.x, b.x)), Not(Equals(stateActionBall.y, b.y)), encodeBallSmaller(stateActionBall, b))
+            Or(Not(Equals(stateActionBall.x, b.x)), Not(Equals(stateActionBall.y, b.y)), encodeBallSizeSmaller(stateActionBall, b))
         }): _*)
     }
 
     protected def otherBallUnder(state: StateBase, stateActionBall: StateBase.Ball): Clause = {
         Or((for (b <- state.balls.filter(f => f != stateActionBall)) yield {
-            And(Equals(stateActionBall.x, b.x), Equals(stateActionBall.y, b.y), encodeBallSmaller(stateActionBall, b))
+            And(Equals(stateActionBall.x, b.x), Equals(stateActionBall.y, b.y), encodeBallSizeSmaller(stateActionBall, b))
         }): _*)
     }
 
@@ -203,7 +205,7 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
 
     protected def otherBallsInFrontLarger(state: StateBase, stateActionBall: StateBase.Ball, shift: Coordinate): Clause = {
         And((for (b <- state.balls.filter(f => f != stateActionBall)) yield {
-            Or(applyShiftClause(stateActionBall, b, shift, OR), encodeBallSmaller(stateActionBall, b))
+            Or(applyShiftClause(stateActionBall, b, shift, OR), encodeBallSizeSmaller(stateActionBall, b))
         }): _*)
     }
 
@@ -215,9 +217,9 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
         And(Equals(state.character.x, stateNext.character.x), Equals(state.character.y, stateNext.character.y))
     }
 
-    protected def equalOtherBallsVariables(state: StateBase, stateActionBall: StateBase.Ball, stateNext: StateBase, stateNextActionBall: StateBase.Ball): Clause = {
+    protected def equalOtherBallsPositions(state: StateBase, stateActionBall: StateBase.Ball, stateNext: StateBase, stateNextActionBall: StateBase.Ball): Clause = {
         And((for ((b, bNext) <- state.balls.filter(f => f != stateActionBall).zip(stateNext.balls.filter(f => f != stateNextActionBall))) yield {
-            And(Equals(b.x, bNext.x), Equals(b.y, bNext.y), encodeBallEquals(b, bNext))
+            And(Equals(b.x, bNext.x), Equals(b.y, bNext.y))
         }): _*)
     }
 
@@ -233,26 +235,35 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
         Operations.simplify(And(ands: _*))
     }
 
-    protected def updateBallSize(actionName: String, state: StateBase, stateActionBall: StateBase.Ball, stateNextActionBall: StateBase.Ball, shift: Coordinate): (Clause, Seq[Expression]) = {
+    protected def updateBallSize(state: StateBase, stateNext: StateBase): Clause = {
+        val ands = ListBuffer.empty[Clause]
+
         if (level.hasSnow) {
-            val expressions = ListBuffer.empty[Expression]
-
-            val theresSnow = Operations.simplify(Or((for ((c, s) <- flattenTuple(level.map.keys.map(f => (f, state.snow.get(f + shift))))) yield {
-                    And(Equals(stateActionBall.x, IntegerConstant(c.x)), Equals(stateActionBall.y, IntegerConstant(c.y)), s)
-            }).toSeq: _*))
-
-            val theresSnowVar = BooleanVariable(actionName + "_TS")
-            expressions.append(VariableDeclaration(theresSnowVar))
-            expressions.append(ClauseDeclaration(Equivalent(theresSnow, theresSnowVar)))
-
-            val clause = And(Implies(And(theresSnowVar, encodeBallEquals(stateActionBall, SmallBall)), encodeBallEquals(stateNextActionBall, MediumBall)),
-                Implies(And(theresSnowVar, encodeBallEquals(stateActionBall, MediumBall)), encodeBallEquals(stateNextActionBall, LargeBall)),
-                Implies(Or(Not(theresSnowVar), encodeBallEquals(stateActionBall, LargeBall)), encodeBallEquals(stateNextActionBall, stateActionBall)))
-
-            (clause, expressions)
+            for (b <-level.balls.indices) {
+                for (l <- level.map.values.filter(f => Object.isPlayableArea(f.o))) {
+                    if (Object.isSnow(l.o)) {
+                        ands.append(Implies(And(state.snow(l.c), Equals(stateNext.balls(b).x, IntegerConstant(l.c.x)), Equals(stateNext.balls(b).y, IntegerConstant(l.c.y)), Not(state.balls(b).sizeA), Not(state.balls(b).sizeB)),
+                            And(stateNext.balls(b).sizeA, Not(stateNext.balls(b).sizeB))))
+                        ands.append(Implies(And(state.snow(l.c), Equals(stateNext.balls(b).x, IntegerConstant(l.c.x)), Equals(stateNext.balls(b).y, IntegerConstant(l.c.y)), state.balls(b).sizeA, Not(state.balls(b).sizeB)),
+                            stateNext.balls(b).sizeB))
+                        ands.append(Implies(And(Not(state.snow(l.c)), Equals(stateNext.balls(b).x, IntegerConstant(l.c.x)), Equals(stateNext.balls(b).y, IntegerConstant(l.c.y))),
+                            And(Equivalent(state.balls(b).sizeA, stateNext.balls(b).sizeA), Equivalent(state.balls(b).sizeB, stateNext.balls(b).sizeB))))
+                        ands.append(Implies(state.balls(b).sizeB,
+                            stateNext.balls(b).sizeB))
+                    } else {
+                        ands.append(Implies(And(Equals(stateNext.balls(b).x, IntegerConstant(l.c.x)), Equals(stateNext.balls(b).y, IntegerConstant(l.c.y))),
+                            And(Equivalent(state.balls(b).sizeA, stateNext.balls(b).sizeA), Equivalent(state.balls(b).sizeB, stateNext.balls(b).sizeB))))
+                    }
+                }
+            }
         } else {
-            (encodeBallEquals(stateNextActionBall, stateActionBall), Seq.empty)
+            for (b <- level.balls.indices) {
+                ands.append(Equivalent(state.balls(b).sizeA, stateNext.balls(b).sizeA))
+                ands.append(Equivalent(state.balls(b).sizeB, stateNext.balls(b).sizeB))
+            }
         }
+
+        And(ands: _*)
     }
 
     private  def invariantBallSizes(state: StateBase, encoding: Encoding): Unit = {
@@ -299,21 +310,21 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
                         And(
                             Equals(ball.x, IntegerConstant(c.x)),
                             Equals(ball.y, IntegerConstant(c.y)),
-                            encodeBallEquals(ball, SmallBall)),
+                            encodeBallSizeEquals(ball, SmallBall)),
                         Or(otherBalls.map(f => And(
                             Equals(f.x, IntegerConstant(c.x)),
                             Equals(f.y, IntegerConstant(c.y)),
-                            encodeBallEquals(f, MediumBall))): _*))))
+                            encodeBallSizeEquals(f, MediumBall))): _*))))
                 encoding.add(ClauseDeclaration(
                     Implies(
                         And(
                             Equals(ball.x, IntegerConstant(c.x)),
                             Equals(ball.y, IntegerConstant(c.y)),
-                            encodeBallEquals(ball, MediumBall)),
+                            encodeBallSizeEquals(ball, MediumBall)),
                         Or(otherBalls.map(f => And(
                             Equals(f.x, IntegerConstant(c.x)),
                             Equals(f.y, IntegerConstant(c.y)),
-                            encodeBallEquals(f, LargeBall))): _*))))
+                            encodeBallSizeEquals(f, LargeBall))): _*))))
             }
         }
     }
@@ -524,7 +535,7 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
 
     protected def flattenTuple[T,U](l: Iterator[(T, Option[U])]): Iterator[(T, U)] = l.filter(f => f._2.isDefined).map(f => (f._1, f._2.get))
 
-    protected def encodeBallEquals(ball: Ball, o: Object): Clause = o match {
+    protected def encodeBallSizeEquals(ball: Ball, o: Object): Clause = o match {
         case SmallBall =>
             And(Not(ball.sizeA), Not(ball.sizeB))
         case MediumBall =>
@@ -533,11 +544,11 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
             And(ball.sizeA, ball.sizeB)
     }
 
-    protected def encodeBallSmaller(a: Ball, b: Ball): Clause = {
+    protected def encodeBallSizeSmaller(a: Ball, b: Ball): Clause = {
         And(Not(a.sizeB), b.sizeA, Implies(a.sizeA, b.sizeB))
     }
 
-    protected def encodeBallEquals(a: Ball, b: Ball): Clause = {
+    protected def encodeBallSizeEquals(a: Ball, b: Ball): Clause = {
         And(Equivalent(a.sizeA, b.sizeA), Equivalent(a.sizeB, b.sizeB))
     }
 }

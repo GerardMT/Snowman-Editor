@@ -28,7 +28,7 @@ object StateBase {
         }
 
         for(i <- level.balls.indices) {
-            balls.append(Ball(IntegerVariable("B" + i + "_X_S" + timeStep), IntegerVariable("B" + i + "Y_S" + timeStep), BooleanVariable("B" + i + "T_S" + timeStep), BooleanVariable("B" + i + "T_M" + timeStep)))
+            balls.append(Ball(IntegerVariable("B" + i + "_X_S" + timeStep), IntegerVariable("B" + i + "_Y_S" + timeStep), BooleanVariable("B" + i + "T_S" + timeStep), BooleanVariable("B" + i + "T_M" + timeStep)))
         }
 
         new StateBase(timeStep, Character(IntegerVariable("C_X_S" + timeStep), IntegerVariable("C_Y_S" + timeStep)), balls.toList, snow)

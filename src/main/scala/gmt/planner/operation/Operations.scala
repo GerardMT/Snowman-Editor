@@ -133,7 +133,7 @@ object Operations {
         var (clause, iterate) = simplifyRecursive(c)
 
         while (iterate) {
-            val r = simplifyRecursive(c)
+            val r = simplifyRecursive(clause)
             clause = r._1
             iterate = r._2
         }
