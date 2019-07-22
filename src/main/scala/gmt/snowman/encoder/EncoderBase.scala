@@ -155,6 +155,10 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
             invariantWallU(state, stateNext, encoding)
         }
 
+        if (level.hasSnow) {
+            encoding.add(ClauseDeclaration(updateSnowVariables(state, stateNext)))
+        }
+
         if (encoderOptions.snowMonotonicity) {
             for ((c, s) <- state.snow) {
                 encoding.add(ClauseDeclaration(Implies(Not(s), Not(stateNext.snow(c)))))
@@ -171,6 +175,8 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
     protected def encodeCharacterAction(actionName: String, state: A, stateNext: A, action: SnowmanAction, encoding: Encoding, actionVariables: mutable.Buffer[BooleanVariable], actionsData: mutable.Buffer[EncodingDataSnowman.ActionData])
 
     protected def createBallAction(actionName: String, state: A, stateActionBall: StateBase.Ball, stateNext: A, stateNextActionBall: StateBase.Ball, shift: Coordinate): (Clause, Clause, Seq[Expression])
+
+    protected def actions(state: A, stateNext: A, encoding: Encoding): Unit = {}
 
     protected def encodeCharacterState[T <: StateBase](state: T, encoding: Encoding): Unit = {
         encoding.add(ClauseDeclaration(Equals(state.character.x, IntegerConstant(level.character.c.x))))
@@ -221,10 +227,16 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
         }): _*)
     }
 
-    protected def updateSnowVariables(state: StateBase, stateActionBall: StateBase.Ball, stateNext: StateBase, shift: Coordinate): Clause = {
-        Operations.simplify(And((for ((c, s) <- flattenTuple(level.map.keys.map(f => (f, state.snow.get(f + shift))))) yield {
-            Equivalent(And(s, Or(Not(Equals(stateActionBall.x, IntegerConstant(c.x))), Not(Equals(stateActionBall.y, IntegerConstant(c.y))))), stateNext.snow.get(c + shift).get)
-        }).toSeq: _*))
+    protected def updateSnowVariables(state: StateBase, stateNext: StateBase): Clause = {
+        val ands = ListBuffer.empty[Clause]
+
+        for (c <- level.map.values.filter(f => Object.isSnow(f.o)).map(f => f.c)) {
+            val noBall = And(stateNext.balls.map(f => Or(Not(Equals(f.x, IntegerConstant(c.x))), Not(Equals(f.y, IntegerConstant(c.y))))): _*)
+
+            ands.append(Equivalent(stateNext.snow(c), And(state.snow(c), noBall)))
+        }
+
+        Operations.simplify(And(ands: _*))
     }
 
     protected def updateBallSize(actionName: String, state: StateBase, stateActionBall: StateBase.Ball, stateNextActionBall: StateBase.Ball, shift: Coordinate): (Clause, Seq[Expression]) = {

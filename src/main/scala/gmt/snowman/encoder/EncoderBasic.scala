@@ -42,10 +42,6 @@ protected case class EncoderBasic(override val level: Level, override val encode
             equalOtherBallsVariables(state, stateActionBall, stateNext, stateNextActionBall),
             updateBallSizeClause)
 
-        if (level.hasSnow) {
-            constantEff.append(updateSnowVariables(state, stateActionBall, stateNext, shift))
-        }
-
         val pre = And(constantPre: _*)
         val eff = And(constantEff: _*)
 

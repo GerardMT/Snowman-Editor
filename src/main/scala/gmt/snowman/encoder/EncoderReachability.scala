@@ -81,9 +81,7 @@ protected case class EncoderReachability(override val level: Level, override val
             equalOtherBallsVariables(state, stateActionBall, stateNext, stateNextActionBall),
             updateBallSizeClause)
 
-        if (level.hasSnow) {
-            constantEff.append(updateSnowVariables(state, stateActionBall, stateNext, shift))
-        }
+
 
         val pre = And(constantPre.toList: _*)
         val eff = And(constantEff.toList: _*)

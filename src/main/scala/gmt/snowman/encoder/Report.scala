@@ -2,7 +2,7 @@ package gmt.snowman.encoder
 
 import gmt.planner.solver.Assignment
 import gmt.planner.solver.value.{ValueBoolean, ValueInteger}
-import gmt.snowman.game.`object`.Wall
+import gmt.snowman.game.`object`.{CharacterSnow, Grass, Snow, Wall}
 import gmt.snowman.level.Level
 
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
@@ -105,9 +105,9 @@ object Report {
         for (p <- level.map.values) {
             p.o match {
                 case Wall =>
-                    mapLines(p.c.y)(p.c.x) = '#'
+                    mapLines(p.c.y)(p.c.x) = Wall.char
                 case _ =>
-                    mapLines(p.c.y)(p.c.x) = '\''
+                    mapLines(p.c.y)(p.c.x) = Grass.char
             }
         }
 
@@ -121,9 +121,9 @@ object Report {
                             CHAR_UNKNOWN
                     }
                     val cMap = if (c == '1') {
-                        '.'
+                        Snow.char
                     } else if (c == '0') {
-                        '\''
+                        Grass.char
                     } else {
                         c
                     }
@@ -140,10 +140,10 @@ object Report {
             val pX = pXA.get match { case Assignment(_, ValueInteger(v)) => v }
             val pY = pYA.get match { case Assignment(_, ValueInteger(v)) => v }
 
-            if (mapLines(pY)(pX) == '.') {
-                mapLines(pY)(pX) = 'q'
+            if (mapLines(pY)(pX) == Snow.char) {
+                mapLines(pY)(pX) = CharacterSnow.char
             } else {
-                mapLines(pY)(pX) = 'p'
+                mapLines(pY)(pX) = gmt.snowman.game.`object`.Character.char
             }
         }
 
