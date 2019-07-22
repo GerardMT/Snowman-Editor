@@ -98,14 +98,14 @@ class Terminal {
                     case List("gui") =>
                         new gmt.gui.GUI(settingsFile)
 
-                    case List("smt-basic", levelPath, resultsPath, startTimeStepsStr, maxTimeSteps, invaraintBallSizes, invariantBallLocations, invariantWallU, invariantSnowMonotonicity) =>
-                        openLevelSolveSMT(levelPath, resultsPath, startTimeStepsStr, maxTimeSteps, invaraintBallSizes, invariantBallLocations, invariantWallU, invariantSnowMonotonicity, EncoderEnum.BASIC)
+                    case List("smt-basic", levelPath, resultsPath, startTimeStepsStr, maxTimeSteps, invaraintBallSizes, invariantBallLocations, invariantWallU) =>
+                        openLevelSolveSMT(levelPath, resultsPath, startTimeStepsStr, maxTimeSteps, invaraintBallSizes, invariantBallLocations, invariantWallU, EncoderEnum.BASIC)
 
-                    case List("smt-cheating", levelPath, resultsPath, startTimeStepsStr, maxTimeSteps, invaraintBallSizes, invariantBallLocations, invariantWallU, invariantSnowMonotonicity) =>
-                        openLevelSolveSMT(levelPath, resultsPath, startTimeStepsStr, maxTimeSteps, invaraintBallSizes, invariantBallLocations, invariantWallU, invariantSnowMonotonicity, EncoderEnum.CHEATING)
+                    case List("smt-cheating", levelPath, resultsPath, startTimeStepsStr, maxTimeSteps, invaraintBallSizes, invariantBallLocations, invariantWallU) =>
+                        openLevelSolveSMT(levelPath, resultsPath, startTimeStepsStr, maxTimeSteps, invaraintBallSizes, invariantBallLocations, invariantWallU, EncoderEnum.CHEATING)
 
-                    case List("smt-reachability", levelPath, resultsPath, startTimeStepsStr, maxTimeSteps, invaraintBallSizes, invariantBallLocations, invariantWallU, invariantSnowMonotonicity) =>
-                        openLevelSolveSMT(levelPath, resultsPath, startTimeStepsStr, maxTimeSteps, invaraintBallSizes, invariantBallLocations, invariantWallU, invariantSnowMonotonicity, EncoderEnum.REACHABILITY)
+                    case List("smt-reachability", levelPath, resultsPath, startTimeStepsStr, maxTimeSteps, invaraintBallSizes, invariantBallLocations, invariantWallU) =>
+                        openLevelSolveSMT(levelPath, resultsPath, startTimeStepsStr, maxTimeSteps, invaraintBallSizes, invariantBallLocations, invariantWallU, EncoderEnum.REACHABILITY)
 
                     case List("adl-grounded", levelPath, directoryPath) =>
                         openLevelGeneratePDDL(levelPath, directoryPath, EncoderPDDL.encodeAdlGrounded)
@@ -127,7 +127,7 @@ class Terminal {
             }
         }
 
-        private def openLevelSolveSMT(levelPath: String, resultsPath: String, startTimeStepsStr: String, maxTimeSteps: String, invaraintBallSizes: String, invariantBallLocations: String, invariantWallU: String, invariantSnowMonotonicity: String, encoderEnum: EncoderEnum.Value): Unit = {
+        private def openLevelSolveSMT(levelPath: String, resultsPath: String, startTimeStepsStr: String, maxTimeSteps: String, invaraintBallSizes: String, invariantBallLocations: String, invariantWallU: String, encoderEnum: EncoderEnum.Value): Unit = {
             val startTimeSteps = startTimeStepsStr match {
                 case "auto" =>
                     None
@@ -138,7 +138,7 @@ class Terminal {
             val level = MutableLevel.load(Files.openTextFile(new File(levelPath))).toLevel
 
             val plannerOptions = PlannerOptions(startTimeSteps, maxTimeSteps.toInt)
-            val encoderOptions = EncoderOptions(invaraintBallSizes.toBoolean, invariantBallLocations.toBoolean, invariantWallU.toBoolean, invariantSnowMonotonicity.toBoolean)
+            val encoderOptions = EncoderOptions(invaraintBallSizes.toBoolean, invariantBallLocations.toBoolean, invariantWallU.toBoolean)
             val result = SnowmanSolver.solveSMTYics2(settings.solverPath.get, level, encoderEnum, encoderOptions, plannerOptions, Terminal.showSolverUpdate)
 
             Terminal.showResult(result)

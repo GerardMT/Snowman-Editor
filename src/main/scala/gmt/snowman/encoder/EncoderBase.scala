@@ -37,7 +37,7 @@ object EncoderBase {
         }
     }
 
-    case class EncoderOptions(invariantBallSizes: Boolean, invariantBallLocations: Boolean, invariantWallsU: Boolean, snowMonotonicity: Boolean)
+    case class EncoderOptions(invariantBallSizes: Boolean, invariantBallLocations: Boolean, invariantWallsU: Boolean)
 }
 
 abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions: EncoderOptions) extends Encoder[A, EncodingDataSnowman, DecodingData] {
@@ -157,12 +157,6 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
 
         if (level.hasSnow) {
             encoding.add(ClauseDeclaration(updateSnowVariables(state, stateNext)))
-        }
-
-        if (encoderOptions.snowMonotonicity) {
-            for ((c, s) <- state.snow) {
-                encoding.add(ClauseDeclaration(Implies(Not(s), Not(stateNext.snow(c)))))
-            }
         }
     }
 
