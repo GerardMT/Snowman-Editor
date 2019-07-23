@@ -51,18 +51,16 @@ class Terminal {
                                    |    gui
                                    |
                                    |    smt-basic <level_path> <results_path> <start_time_steps (<int> | auto)>
-                                   |        <max_time_steps> <threads> <invariant_ball_sizes (true | false)>
+                                   |        <max_time_steps> <invariant_ball_sizes (true | false)>
                                    |        <invariant_ball_locations (true | false)> <invariant_wall_u (true | false)>
                                    |
                                    |    smt-cheating <level_path> <results_path> <start_time_steps (<int> | auto)>
-                                   |        <max_time_steps> <threads> <invariant_ball_sizes (true | false)>
+                                   |        <max_time_steps> <invariant_ball_sizes (true | false)>
                                    |        <invariant_ball_locations (true | false)> <invariant_wall_u (true | false)>
                                    |
                                    |    smt-reachability <level_path> <results_path> <start_time_steps (<int> | auto)>
-                                   |        <max_time_steps> <threads> <invariant_ball_sizes (true | false)>
+                                   |        <max_time_steps> <invariant_ball_sizes (true | false)>
                                    |        <invariant_ball_locations (true | false)> <invariant_wall_u (true | false)>
-                                   |
-                                   |    adl <level_path> <save_directory>
                                    |
                                    |    adl-grounded <level_path> <save_directory>
                                    |
