@@ -80,7 +80,7 @@ protected case class EncoderBasic(override val level: Level, override val encode
             actions.append(actionData.action)
 
             if (actionData.ballActionIndex != ActionData.NO_BALL) {
-                actionsBalls.append(BallAction(actionData.action, actionData.ballActionIndex))
+                actionsBalls.append(actionData.action.asInstanceOf[BallAction])
             }
         }
 
