@@ -119,8 +119,8 @@ class Terminal {
                 case SettingsParseException(message) =>
                     System.out.println("Settings error: " + message)
                     System.exit(0)
-                case _: FileNotFoundException =>
-                    System.out.println()
+                case e: FileNotFoundException =>
+                    System.out.println(e.getMessage)
                     System.exit(0)
             }
         }
