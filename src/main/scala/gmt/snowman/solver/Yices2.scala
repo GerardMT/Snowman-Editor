@@ -17,27 +17,26 @@ class Yices2(solverBinaryPath: String) {
 
     private val processBuilder = new ProcessBuilder(solverBinaryPath, "--incremental")
     processBuilder.redirectErrorStream(true)
-    private val process = processBuilder.start()
 
-    private val output = new BufferedWriter(new OutputStreamWriter(process.getOutputStream, CHARSET))
-    private val inputStream = process.getInputStream
-    private val input =  new BufferedReader(new InputStreamReader(inputStream, CHARSET))
+    def solve(input: String): SolverResult = {
+        val process = processBuilder.start()
 
-    def write(input: String): Unit = {
+        val processOutput = new BufferedWriter(new OutputStreamWriter(process.getOutputStream, CHARSET))
+        val inputStream = process.getInputStream
+        val processInput =  new BufferedReader(new InputStreamReader(inputStream, CHARSET))
+
         try {
-            output.write(input)
-            output.flush()
+            processOutput.write(input)
+            processOutput.flush()
         } catch {
             case _: Throwable =>
                 val lines = input.lines().collect(Collectors.toList()).asScala
                 lines.foreach(f => System.err.println(f))
         }
-    }
 
-    def solve(): SolverResult = {
         val assignments = ListBuffer.empty[Assignment]
 
-        val sat = input.readLine() match {
+        val sat = processInput.readLine() match {
             case "sat" =>
                 true
             case "unsat" =>
@@ -53,14 +52,14 @@ class Yices2(solverBinaryPath: String) {
         if (sat) {
             val linesModel = ListBuffer.empty[String]
 
-            output.write("(get-model)\n")
-            output.write("(exit)\n")
-            output.flush()
+            processOutput.write("(get-model)\n")
+            processOutput.write("(exit)\n")
+            processOutput.flush()
 
-            var line = input.readLine()
+            var line = processInput.readLine()
             while (line != null) {
                 linesModel.append(line)
-                line = input.readLine()
+                line = processInput.readLine()
             }
 
             for (l <- linesModel) {
