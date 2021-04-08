@@ -29,7 +29,9 @@ class Yices2(solverBinaryPath: String) {
             processOutput.write(input)
             processOutput.flush()
         } catch {
-            case _: Throwable =>
+            case e : Exception =>
+                System.err.print(e.getMessage)
+
                 val lines = input.lines().collect(Collectors.toList()).asScala
                 lines.foreach(f => System.err.println(f))
         }
