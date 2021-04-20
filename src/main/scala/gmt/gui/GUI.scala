@@ -53,6 +53,14 @@ class GUI(private val settingsFile: File) {
 
     private val fileChooser = new FileChooser()
 
+    private var lastLocationOpen = new LastLocation(new File(CURRENT_DIRECTORY))
+
+    private var lastLocationSave = new LastLocation(new File(CURRENT_DIRECTORY))
+
+    private var lastLocationSMT = new LastLocation(new File(CURRENT_DIRECTORY))
+
+    private var lastLocationPDDL = new LastLocation(new File(CURRENT_DIRECTORY))
+
     val top: MainFrame = new MainFrame {
         title = GUI.TITLE
 
@@ -91,11 +99,13 @@ class GUI(private val settingsFile: File) {
                 })
                 contents += new Separator
                 contents += new MenuItem(Action("Open") {
-                    fileChooser.peer.setCurrentDirectory(new File(CURRENT_DIRECTORY))
+                    fileChooser.peer.setCurrentDirectory(lastLocationOpen.location)
                     val response = fileChooser.showOpenDialog(null)
 
                     if (response == FileChooser.Result.Approve) {
                         try {
+                            lastLocationOpen.location = fileChooser.selectedFile
+
                             setTitle(fileChooser.selectedFile.getName)
                             uiLevel.reload(MutableLevel.load(Files.openTextFile(fileChooser.selectedFile)))
                             resize()
@@ -105,11 +115,11 @@ class GUI(private val settingsFile: File) {
                         }
                     }
                 })
-                contents += new MenuItem(Action("Save"){
-                    savePickAndTextFile(uiLevel.mutableLevel.save, CURRENT_DIRECTORY + "/level.lvl")
+                contents += new MenuItem(Action("Save") {
+                    savePickAndTextFile(uiLevel.mutableLevel.save, "level.lvl",  lastLocationSave)
                 })
                 contents += new Separator
-                contents += new Menu("Load") {
+                contents += new Menu("Load from Game") {
                     if (settings.gamePath.isDefined) {
                         val levelsNames: List[String] = game.levelsNames.sorted
 
@@ -200,7 +210,7 @@ class GUI(private val settingsFile: File) {
                         try {
                             showGenerateOptionsDialog() match {
                                 case Some((g, e)) =>
-                                    savePickAndTextFile(SnowmanSolver.generateSMTLIB2(uiLevel.mutableLevel.toLevel, EncoderEnum.BASIC, e, g), CURRENT_DIRECTORY + "/in_basic-encoding.smtlib2")
+                                    savePickAndTextFile(SnowmanSolver.generateSMTLIB2(uiLevel.mutableLevel.toLevel, EncoderEnum.BASIC, e, g), "in_basic-encoding.smtlib2", lastLocationSMT)
                                 case None =>
                             }
                         } catch {
@@ -228,7 +238,7 @@ class GUI(private val settingsFile: File) {
                         try {
                             showGenerateOptionsDialog() match {
                                 case Some((g, e)) =>
-                                    savePickAndTextFile(SnowmanSolver.generateSMTLIB2(uiLevel.mutableLevel.toLevel, EncoderEnum.CHEATING, e, g), CURRENT_DIRECTORY + "/in_cheating-encoding.smtlib2")
+                                    savePickAndTextFile(SnowmanSolver.generateSMTLIB2(uiLevel.mutableLevel.toLevel, EncoderEnum.CHEATING, e, g), "in_cheating-encoding.smtlib2", lastLocationSMT)
                                 case None =>
                             }
                         } catch {
@@ -257,7 +267,7 @@ class GUI(private val settingsFile: File) {
                         try {
                             showGenerateOptionsDialog() match {
                                 case Some((g, e)) =>
-                                    savePickAndTextFile(SnowmanSolver.generateSMTLIB2(uiLevel.mutableLevel.toLevel, EncoderEnum.REACHABILITY, e, g), CURRENT_DIRECTORY + "/in_reachability-encoding.smtlib2")
+                                    savePickAndTextFile(SnowmanSolver.generateSMTLIB2(uiLevel.mutableLevel.toLevel, EncoderEnum.REACHABILITY, e, g), "in_reachability-encoding.smtlib2", lastLocationSMT)
                                 case None =>
                             }
                         } catch {
@@ -281,43 +291,14 @@ class GUI(private val settingsFile: File) {
                     })
                 }
                 contents += new Separator
-                contents += new MenuItem(Action("Generate PDDL adl Grounded") {
-                    try {
-                        val (domain, problem) = EncoderPDDL.encodeAdlGrounded(uiLevel.mutableLevel.toLevel)
-
-                        val directoryChooser = new FileChooser
-                        directoryChooser.fileSelectionMode_=(FileChooser.SelectionMode.DirectoriesOnly)
-                        directoryChooser.peer.setCurrentDirectory(new File(CURRENT_DIRECTORY))
-
-                        val result = directoryChooser.showDialog(null, "Select")
-
-                        if (result == FileChooser.Result.Approve) {
-                            Files.saveTextFile(new File(directoryChooser.selectedFile.getAbsolutePath + "/domain.pddl"), domain)
-                            Files.saveTextFile(new File(directoryChooser.selectedFile.getAbsolutePath + "/problem.pddl"), problem)
-                        }
-                    } catch {
-                        case e: LevelParserValidateException =>
-                            showErrorValidateLevel(e)
-                    }
+                contents += new MenuItem(Action("Generate PDDL adl") {
+                    generatePDDLShowDirectoryChooser(EncoderPDDL.encodeAdl(uiLevel.mutableLevel.toLevel))
                 })
-                contents += new MenuItem(Action("Generate PDDL object-fluents (experimental)") {
-                    try {
-                        val (domain, problem) = EncoderPDDL.encodeObjectFluents(uiLevel.mutableLevel.toLevel)
-
-                        val directoryChooser = new FileChooser
-                        directoryChooser.fileSelectionMode_=(FileChooser.SelectionMode.DirectoriesOnly)
-                        directoryChooser.peer.setCurrentDirectory(new File(CURRENT_DIRECTORY))
-
-                        val result = directoryChooser.showDialog(null, "Select")
-
-                        if (result == FileChooser.Result.Approve) {
-                            Files.saveTextFile(new File(directoryChooser.selectedFile.getAbsolutePath + "/domain.pddl"), domain)
-                            Files.saveTextFile(new File(directoryChooser.selectedFile.getAbsolutePath + "/problem.pddl"), problem)
-                        }
-                    } catch {
-                        case e: LevelParserValidateException =>
-                            showErrorValidateLevel(e)
-                    }
+                contents += new MenuItem(Action("Generate PDDL adl (Grounded)") {
+                    generatePDDLShowDirectoryChooser(EncoderPDDL.encodeAdlGrounded(uiLevel.mutableLevel.toLevel))
+                })
+                contents += new MenuItem(Action("Generate PDDL object-fluents (Experimental)") {
+                    generatePDDLShowDirectoryChooser(EncoderPDDL.encodeObjectFluents(uiLevel.mutableLevel.toLevel))
                 })
             }
             contents += new Menu("Editor") {
@@ -394,23 +375,61 @@ class GUI(private val settingsFile: File) {
 
     top.visible = true
 
+    private def generatePDDLShowDirectoryChooser(domainProblem: => (String, String)) : Unit = {
+        try {
+            val (domain, problem) = domainProblem
 
-    private def savePickAndTextFile(string: String, fileName: String): Unit = {
-        fileChooser.selectedFile_=(new File(fileName))
+            val directoryChooser = new FileChooser
+            directoryChooser.fileSelectionMode_=(FileChooser.SelectionMode.DirectoriesOnly)
+            directoryChooser.peer.setCurrentDirectory(lastLocationPDDL.location)
+
+            val result = directoryChooser.showDialog(null, "Select")
+
+            if (result == FileChooser.Result.Approve) {
+                val domainFile = new File(directoryChooser.selectedFile.getAbsolutePath + "/domain.pddl")
+                val problemFile = new File(directoryChooser.selectedFile.getAbsolutePath + "/problem.pddl")
+
+                if (domainFile.exists() || problemFile.exists()) {
+                    val result = JOptionPane.showConfirmDialog(null, "Text already exists. Overwrite?", "Overwrite", JOptionPane.YES_NO_OPTION)
+
+                    if (result == JOptionPane.YES_OPTION) {
+                        domainFile.delete()
+                        problemFile.delete()
+
+                        Files.saveTextFile(domainFile, domain)
+                        Files.saveTextFile(problemFile, problem)
+                        lastLocationPDDL.location = directoryChooser.selectedFile
+                    }
+                } else {
+                    Files.saveTextFile(domainFile, domain)
+                    Files.saveTextFile(problemFile, problem)
+                    lastLocationPDDL.location = directoryChooser.selectedFile
+                }
+            }
+        } catch {
+            case e: LevelParserValidateException =>
+                showErrorValidateLevel(e)
+        }
+    }
+
+    private def savePickAndTextFile(string: String, fileName: String, lastLocation: LastLocation): Unit = {
+        fileChooser.selectedFile_=(new File(lastLocation.location + "/" + fileName))
         val response = fileChooser.showSaveDialog(null)
 
         if (response == FileChooser.Result.Approve) {
             try {
                 if (fileChooser.selectedFile.exists()) {
-                    val result = JOptionPane.showConfirmDialog(null, "Text already exists. Overwrite?", "Overwrite", JOptionPane.YES_NO_OPTION)
+                    val result = JOptionPane.showConfirmDialog(null, "File already exists. Overwrite?", "Overwrite", JOptionPane.YES_NO_OPTION)
 
                     if (result == JOptionPane.YES_OPTION) {
                         fileChooser.selectedFile.delete()
 
                         Files.saveTextFile(fileChooser.selectedFile, string)
+                        lastLocation.location = fileChooser.selectedFile.getParentFile
                     }
                 } else {
                     Files.saveTextFile(fileChooser.selectedFile, string)
+                    lastLocation.location = fileChooser.selectedFile.getParentFile
                 }
             } catch {
                 case _: FileNotFoundException =>
@@ -458,6 +477,7 @@ class GUI(private val settingsFile: File) {
         showErroDialog("Game path and/or solver path not defined in settings")
     }
 
+    private class LastLocation(var location: File)
 
     private class InvariantsLayout {
 

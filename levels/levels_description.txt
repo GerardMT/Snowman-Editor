@@ -9,7 +9,7 @@
 6	large and medium ball
 7	large, medium and small ball
 x	nothing
-p	character with snow
+p P	character with snow
 q	character
 
 Combinations:

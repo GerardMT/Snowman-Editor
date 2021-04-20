@@ -11,10 +11,10 @@ object EncoderPDDL {
 
     case class TooManyBallsNotSupported() extends Exception()
 
+    val directions = List("right", "left", "up", "down")
+
     def encodeObjectFluents(level: Level): (String, String) = {
         val problem = StringBuilder.newBuilder
-
-        val directions = List("right", "left", "up", "down")
 
         val levelName = level.name match {
             case Some(s) =>
@@ -60,7 +60,6 @@ object EncoderPDDL {
         problem.append("            (goal)\n")
         problem.append("        )\n")
         problem.append("    )\n")
-        problem.append("\n")
         problem.append("    (:metric minimize (total-cost))\n")
         problem.append(")")
 
@@ -68,6 +67,227 @@ object EncoderPDDL {
 
         (domain, problem.toString())
     }
+
+    def encodeAdl(level: Level): (String, String) = {
+        val domain = StringBuilder.newBuilder
+
+        domain.append("""(define (domain snowman_adl)
+          |
+          |    (:requirements
+          |        :typing
+          |        :negative-preconditions
+          |        :equality
+          |        :disjunctive-preconditions
+          |        :conditional-effects
+          |        :action-costs
+          |    )
+          |
+          |    (:types
+          |        location direction ball size - object
+          |    )
+          |
+          |    (:predicates
+          |        (snow ?l - location)
+          |        (next ?from ?to - location ?dir - direction)
+          |        (occupancy ?l - location)
+          |        (character_at ?l - location)
+          |        (ball_at ?b - ball ?l - location)
+          |        (ball_size_small ?b - ball)
+          |        (ball_size_medium ?b - ball)
+          |        (ball_size_large ?b - ball)
+          |    )
+          |
+          |    (:functions
+          |        (total-cost) - number
+          |    )
+          |
+          |    (:action move_character
+          |
+          |     :parameters
+          |       (?from ?to - location ?dir - direction)
+          |
+          |     :precondition
+          |        (and
+          |            (next ?from ?to ?dir)
+          |            (character_at ?from)
+          |            (not (occupancy ?to)))
+          |
+          |     :effect
+          |        (and
+          |            (not (character_at ?from))
+          |            (character_at ?to))
+          |    )
+          |
+          |    (:action move_ball
+          |
+          |     :parameters
+          |""".stripMargin)
+
+        if (level.snowmen == 1) {
+            domain.append("       (?b - ball ?ppos ?from ?to - location ?dir - direction)\n")
+        } else {
+            domain.append("       (?b - ball ?b2 - ball ?b3 - ball ?ppos ?from ?to - location ?dir - direction)\n")
+        }
+
+        domain.append("""|
+          |     :precondition
+          |        (and
+          |""".stripMargin)
+
+        if (level.snowmen > 1) {
+            domain.append("            (not (= ?b ?b2)\n")
+            domain.append("            (not (= ?b ?b3)\n")
+            domain.append("            (not (= ?b2 ?b3)\n")
+        }
+
+        domain.append("""            (next ?ppos ?from ?dir)
+          |            (next ?from ?to ?dir)
+          |            (ball_at ?b ?from)
+          |            (character_at ?ppos)
+          |            (forall (?o - ball)
+          |                (or
+          |                    (= ?o ?b)
+          |                    (or
+          |                        (not (ball_at ?o ?from))
+          |                        (or
+          |                            (and
+          |                                (ball_size_small ?b)
+          |                                (ball_size_medium ?o))
+          |                            (and
+          |                                (ball_size_small ?b)
+          |                                (ball_size_large ?o))
+          |                            (and
+          |                                (ball_size_medium ?b)
+          |                                (ball_size_large ?o))))))
+          |            (or
+          |                (forall (?o - ball)
+          |                    (or
+          |                        (= ?o ?b)
+          |                        (not (ball_at ?o ?from))))
+          |                (forall (?o - ball)
+          |                        (not (ball_at ?o ?to))))
+          |            (forall (?o - ball)
+          |                    (or
+          |                        (not (ball_at ?o ?to))
+          |                        (or
+          |                            (and
+          |                                (ball_size_small ?b)
+          |                                (ball_size_medium ?o))
+          |                            (and
+          |                                (ball_size_small ?b)
+          |                                (ball_size_large ?o))
+          |                            (and
+          |                                (ball_size_medium ?b)
+          |                                (ball_size_large ?o))))))
+          |     :effect
+          |        (and
+          | """.stripMargin)
+
+        if (level.snowmen == 1) {
+            domain.append("            (when\n")
+            domain.append("                (and\n")
+            domain.append("                    (ball_at ?b ?to)\n")
+            domain.append("                    (ball_at ?b2 ?to)\n")
+            domain.append("                    (ball_at ?b3 ?to))\n")
+            domain.append("                (and\n")
+            domain.append("                    (goal)))\n")
+        } else {
+            for (s <- 0 until level.snowmen) {
+                domain.append("           (when\n")
+                domain.append("                (and\n")
+                if (s != 0) {
+                    domain.append("                    (goal_" + (s - 1) + ")\n")
+                }
+                domain.append("                    (ball_at ?b ?to)\n")
+                domain.append("                    (ball_at ?b2 ?to)\n")
+                domain.append("                    (ball_at ?b3 ?to))\n")
+                domain.append("                (and\n")
+                domain.append("                    (goal_" + s + ")))\n")
+            }
+        }
+
+        domain.append("""|            (occupancy ?to)
+          |            (not (ball_at ?b ?from))
+          |            (ball_at ?b ?to)
+          |            (when
+          |                (forall (?o - ball)
+          |                    (or
+          |                        (= ?o ?b)
+          |                        (not (ball_at ?o ?from))))
+          |                (and
+          |                    (not (character_at ?ppos))
+          |                    (character_at ?from)
+          |                    (not (occupancy ?from))))
+          |            (not (snow ?to))
+          |            (when
+          |                (and
+          |                    (snow ?to)
+          |                    (ball_size_small ?b))
+          |                (and
+          |                    (not (ball_size_small ?b))
+          |                    (ball_size_medium ?b)))
+          |            (when
+          |                (and
+          |                    (snow ?to)
+          |                    (ball_size_medium ?b))
+          |                (and
+          |                    (not (ball_size_medium ?b))
+          |                    (ball_size_large ?b)))
+          |            (increase (total-cost) 1))
+          |    )
+          |)""".stripMargin)
+
+        val problem = StringBuilder.newBuilder
+
+        val levelName = level.name match {
+            case Some(s) =>
+                s
+            case None =>
+                "snowman_problem"
+        }
+
+        problem.append("(define (problem " + levelName + ")\n")
+        problem.append("    (:domain snowman_adl)\n")
+        problem.append("    (:objects\n")
+        for (d <- directions) {
+            problem.append("        " + d + " - direction\n")
+        }
+
+        problem.append(encodeObjectsBalls(level))
+        problem.append(encodeObjectsLocations(level))
+
+        problem.append("    )\n")
+        problem.append("    (:init\n")
+        problem.append("        (= (total-cost) 0)\n")
+
+
+        for (l <- level.map.values.filter(f => Object.isPlayableArea(f.o)); (o, d) <- SnowmanAction.CHARACTER_ACTIONS.map(f => f.shift).zip(directions) ) {
+            level.map.get(l.c + o) match {
+                case Some(l2) =>
+                    if (Object.isPlayableArea(l2.o)) {
+                        problem.append("        (next loc_" + l.c.x + "_" + l.c.y + " loc_" + l2.c.x + "_" + l2.c.y + " " + d + ")\n")
+                    }
+                case None =>
+            }
+        }
+
+        problem.append("        (character_at loc_" + level.character.c.x + "_" + level.character.c.y + ")\n")
+
+        for ((l, i) <- level.balls.zipWithIndex) {
+            problem.append("        (ball_at ball_" + i + " loc_" + l.c.x + "_" + l.c.y + ")\n")
+            problem.append(encodeBallSize(l.o, i))
+        }
+
+        problem.append(encodeInitSnow(level))
+        problem.append(encodeInitOccupancy(level))
+        problem.append("    )\n")
+        problem.append(encodeGoal(level))
+        problem.append("    (:metric minimize (total-cost))\n")
+        problem.append(")")
+
+        (domain.toString(), problem.toString())
+    }
+
 
     def encodeAdlGrounded(level: Level): (String, String)= {
         val domain = StringBuilder.newBuilder
@@ -171,7 +391,7 @@ object EncoderPDDL {
                             domain.append("     :precondition\n")
                             domain.append("        (and\n")
                             for (ob <- otherBalls.combinations(2)) {
-                                domain.append("            (not (and (ball_at " + ob(0)  + " " + from + ") (ball_at " + ob(1) + " " + from + ")))")
+                                domain.append("            (not (and (ball_at " + ob(0)  + " " + from + ") (ball_at " + ob(1) + " " + from + ")))\n")
                             }
                             domain.append("            (ball_at " + b + " " + from + ")\n")
                             domain.append("            (character_at " + ppos + ")\n")
@@ -233,7 +453,41 @@ object EncoderPDDL {
                             domain.append("\n")
                             domain.append("     :effect\n")
                             domain.append("        (and\n")
-                            domain.append(encodeEffectGoal("            ", level, bI, coordinateToLocation(l2.c)))
+                            if (level.snowmen == 1) {
+                                domain.append("            (when\n")
+                                domain.append("                (and\n")
+                                domain.append("                    " + level.balls.indices.patch(bI, Nil, 1).map(f => "(ball_at ball_" + f + " " + coordinateToLocation(l2.c) + ")").mkString(" ") + ")\n")
+                                domain.append("                (and\n")
+                                domain.append("                    (goal)))\n")
+                            } else {
+                                for (s <- 0 until level.snowmen) {
+                                    domain.append("            (when\n")
+
+                                    val padding = if (s != 0) {
+                                        "    "
+                                    } else {
+                                        ""
+                                    }
+
+                                    if (s != 0) {
+                                        domain.append("                (and\n")
+                                        domain.append("                    (goal_" + (s - 1) + ")\n")
+                                    }
+
+                                    domain.append(padding + padding + "    (or\n")
+                                    for (snowmenBalls <- level.balls.indices.patch(bI, Nil, 1).combinations(2)) {
+                                        domain.append("            " + padding + "        (and " + snowmenBalls.map(f => "(ball_at ball_" + f + " " + coordinateToLocation(l2.c) + ")").mkString(" ") + ")\n")
+                                    }
+                                    domain.append(padding + padding + "    )\n")
+
+                                    if (s != 0) {
+                                        domain.append("                )\n")
+                                    }
+
+                                    domain.append("                (and\n")
+                                    domain.append("                    (goal_" + s + ")))\n")
+                                }
+                            }
                             domain.append("            (occupancy " + to + ")\n")
                             domain.append("            (not (ball_at " + b + " " + from + "))\n")
                             domain.append("            (ball_at " + b + " " + to + ")\n")
@@ -262,7 +516,7 @@ object EncoderPDDL {
                             domain.append("                (and\n")
                             domain.append("                    (snow " + to + ")\n")
                             domain.append("                    (ball_size_medium " + b + "))\n")
-                            domain.append("                (and")
+                            domain.append("                (and\n")
                             domain.append("                    (not (ball_size_medium " + b + "))\n")
                             domain.append("                    (ball_size_large " + b + ")))\n")
                             domain.append("            (increase (total-cost) 1))\n")
@@ -368,51 +622,8 @@ object EncoderPDDL {
         }
         encoding.append("        )\n")
         encoding.append("    )\n")
-        encoding.append("\n")
 
         encoding.toString()
-    }
-
-    private def encodeEffectGoal(padding: String, level: Level, actionBall: Int, toLocation: String): String = {
-        val goal = new StringBuilder
-
-        if (level.snowmen == 1) {
-            goal.append(padding + "(when\n")
-            goal.append(padding + "    (and\n")
-            goal.append(padding + "        " + level.balls.indices.patch(actionBall, Nil, 1).map(f => "(ball_at ball_" + f + " " + toLocation + ")").mkString(" ") + ")\n")
-            goal.append(padding + "    (and\n")
-            goal.append(padding + "        (goal)))\n")
-        } else {
-            for (s <- 0 until level.snowmen) {
-                goal.append(padding + "(when\n")
-
-                val padding2 = if (s != 0) {
-                    "    "
-                } else {
-                    ""
-                }
-
-                if (s != 0) {
-                    goal.append(padding + "    (and\n")
-                    goal.append(padding + "        (goal_" + (s - 1) + ")\n")
-                }
-
-                goal.append(padding + padding2 + "    (or\n")
-                for (snowmenBalls <- level.balls.indices.patch(actionBall, Nil, 1).combinations(2)) {
-                    goal.append(padding + padding2 + "        (and " + snowmenBalls.map(f => "(ball_at ball_" + f + " " + toLocation + ")").mkString(" ") + ")\n")
-                }
-                goal.append(padding + padding2 + "    )\n")
-
-                if (s != 0) {
-                    goal.append(padding + "    )\n")
-                }
-
-                goal.append(padding + "    (and\n")
-                goal.append(padding + "        (goal_" + s + ")))\n")
-            }
-        }
-
-        goal.mkString
     }
 
     private def coordinateToLocation(c: Coordinate) = "loc_" + c.x + "_" + c.y

@@ -62,6 +62,8 @@ class Terminal {
                                    |        <max_time_steps> <invariant_ball_sizes (true | false)>
                                    |        <invariant_ball_locations (true | false)> <invariant_wall_u (true | false)>
                                    |
+                                   |    adl <level_path> <save_directory>
+                                   |
                                    |    adl-grounded <level_path> <save_directory>
                                    |
                                    |    object-fluents <level_path> <save_directory>""".stripMargin)
@@ -104,6 +106,9 @@ class Terminal {
 
                     case List("smt-reachability", levelPath, resultsPath, startTimeStepsStr, maxTimeSteps, invaraintBallSizes, invariantBallLocations, invariantWallU) =>
                         openLevelSolveSMT(levelPath, resultsPath, startTimeStepsStr, maxTimeSteps, invaraintBallSizes, invariantBallLocations, invariantWallU, EncoderEnum.REACHABILITY)
+
+                    case List("adl", levelPath, directoryPath) =>
+                        openLevelGeneratePDDL(levelPath, directoryPath, EncoderPDDL.encodeAdl)
 
                     case List("adl-grounded", levelPath, directoryPath) =>
                         openLevelGeneratePDDL(levelPath, directoryPath, EncoderPDDL.encodeAdlGrounded)
