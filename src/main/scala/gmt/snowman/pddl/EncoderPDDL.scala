@@ -414,6 +414,7 @@ object EncoderPDDL {
                             }
 
                             domain.append(")\n")
+                            // Once snowmen is build the top ball can not be pop
                             domain.append("            (or\n")
                             domain.append("                (not (or")
 
@@ -423,12 +424,13 @@ object EncoderPDDL {
                             }
 
                             domain.append("))\n")
-                            domain.append("                (and\n")
+                            domain.append("                (and")
 
                             for (o <- otherBalls) {
                                 domain.append("\n")
                                 domain.append("                    (not (ball_at " + o + " " + to + "))")
                             }
+                            // ----
 
                             domain.append("))\n")
                             domain.append("            (and")
