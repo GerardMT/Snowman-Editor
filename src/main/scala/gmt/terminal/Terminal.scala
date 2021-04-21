@@ -1,6 +1,6 @@
 package gmt.terminal
 
-import java.io.{File, FileNotFoundException}
+import java.io.{File, FileNotFoundException, PrintWriter}
 
 import gmt.main.Settings
 import gmt.main.Settings.SettingsParseException
@@ -45,28 +45,85 @@ class Terminal {
     def parseArguments(arguments: List[String]): Unit = {
         arguments match {
             case List("--help") | List("-h") =>
-                System.out.print("""<snowman_editor> <settings_path> <option>
+                System.out.print("""Usage: java -jar snowman_editor.jar -h | --help
                                    |
-                                   |<option>:
+                                   |              Show this message.
+                                   |
+                                   |Usage: java -jar snowman_editor.jar init
+                                   |
+                                   |               First run. Generate a new settings file.
+                                   |
+                                   |Usage: java -jar snowman_editor.jar SETTINGS_PATH MODE
+                                   |
+                                   |SETTINGS_PATH:
+                                   |
+                                   |                Path to the generated settings file
+                                   |MODE:
+                                   |
                                    |    gui
+                                   |
+                                   |                Open the user graphical user interface
                                    |
                                    |    smt-basic <level_path> <results_path> <start_time_steps (<int> | auto)>
                                    |        <max_time_steps> <invariant_ball_sizes (true | false)>
                                    |        <invariant_ball_locations (true | false)> <invariant_wall_u (true | false)>
                                    |
+                                   |                Solve a given level. Minimizes the character + ball movements.
+                                   |
                                    |    smt-cheating <level_path> <results_path> <start_time_steps (<int> | auto)>
                                    |        <max_time_steps> <invariant_ball_sizes (true | false)>
                                    |        <invariant_ball_locations (true | false)> <invariant_wall_u (true | false)>
+                                   |
+                                   |                Solve a given level without taking into consideration the character
+                                   |                movements. It can return invalid plans due to character
+                                   |                teletransportation.
                                    |
                                    |    smt-reachability <level_path> <results_path> <start_time_steps (<int> | auto)>
                                    |        <max_time_steps> <invariant_ball_sizes (true | false)>
                                    |        <invariant_ball_locations (true | false)> <invariant_wall_u (true | false)>
                                    |
+                                   |               Solve a given level. Minimizes the ball movements guaranteeing the
+                                   |               character movements to be valid.
+                                   |
                                    |    adl <level_path> <save_directory>
+                                   |
+                                   |               Generate a PDDL domain and problem files using the adl PDDL subset.
+                                   |               PDDL requirements:
+                                   |               - typing
+                                   |               - negative-preconditions
+                                   |               - equality
+                                   |               - disjunctive-preconditions
+                                   |               - conditional-effects
+                                   |               - action-costs
                                    |
                                    |    adl-grounded <level_path> <save_directory>
                                    |
-                                   |    object-fluents <level_path> <save_directory>""".stripMargin)
+                                   |               Generate a PDDL domain and problem files using the adl PDDL subset.
+                                   |               The forall predicates have been grounded.
+                                   |               PDDL requirments:
+                                   |               - typing
+                                   |               - negative-preconditions
+                                   |               - equality
+                                   |               - disjunctive-preconditions
+                                   |               - conditional-effects
+                                   |               - action-costs
+                                   |
+                                   |    object-fluents <level_path> <save_directory>
+                                   |
+                                   |               Experimental. Not tested.""".stripMargin)
+            case List("init") =>
+                val settingsFile = new File("")
+                if (settingsFile.exists()) {
+                    System.out.println("Settings file already exists.")
+                } else {
+                    val p = new PrintWriter(settingsFile)
+                    p.write("game_path=\n")
+                    p.write("save_path=\n")
+                    p.write("solver_path=\n")
+                    p.close()
+
+                    System.out.println("Settings file created.")
+                }
             case List(settingsPath, _*) =>
                 new TerminalSettings(new File(settingsPath)).parseArguments(arguments.tail)
 
@@ -88,7 +145,7 @@ class Terminal {
                 System.out.println("Settings error: " + message)
                 sys.exit()
             case _: FileNotFoundException =>
-                System.out.println("Settings file not found. File created at: " + settingsFile)
+                System.out.println("Settings file not found.")
                 sys.exit()
         }
 

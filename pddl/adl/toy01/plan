@@ -1,1 +1,1 @@
-(move_ball ball_0 loc_1_1 loc_1_2 loc_1_3 dir_up)
+(move_ball ball_0 ball_1 ball_2 loc_1_1 loc_1_2 loc_1_3 up)

@@ -123,12 +123,17 @@ class GUI(private val settingsFile: File) {
                     if (settings.gamePath.isDefined) {
                         val levelsNames: List[String] = game.levelsNames.sorted
 
-                        for (n <- levelsNames) {
-                            contents += new MenuItem(Action(n) {
-                                setTitle(n)
-                                uiLevel.reload(MutableLevel.load(game.getLevel(n)))
-                                resize()
-                            })
+                        if (levelsNames.isEmpty) {
+                            contents += new MenuItem("Game does not have original files. Backup not found")
+                        } else {
+                            for (n <- levelsNames) {
+                                contents += new MenuItem(Action(n) {
+                                    setTitle(n)
+                                    uiLevel.reload(MutableLevel.load(game.getLevel(n)))
+                                    resize()
+                                })
+                            }
+
                         }
                     } else {
                         contents += new MenuItem("Game path not defined")

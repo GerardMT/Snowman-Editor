@@ -19,8 +19,8 @@ object Game {
 
 class Game(settings: Settings) {
 
-    private val HASH_LAYOUT = "93685a29f53bb8f32fb03eee8a6a38d1d430cc9b46e888d82e1c9d34cc95e96"
-    private val HASH_LEVELS = "634634d9186803b507887f94b6a81b1d95336daed331d84f62463d5bb4464b79"
+    private val HASH_LAYOUT = "3db05d9de8db78533a56c539f4a496337a162432d316f53d2dd58aac8541ebd3"
+    private val HASH_LEVELS = "5b61815ed7383044b3f45e3b8c62f877ddd11108e742d0ffc0bcff1b376d42cc"
 
     private val BACKUP_DIRECTORY = "./game_backup/"
 
@@ -38,7 +38,7 @@ class Game(settings: Settings) {
     def levelsNames: List[String] =  {
         val names = ListBuffer.empty[String]
 
-        val backupLevelsFile = new File(BACKUP_DIRECTORY  + LEVELS_FILENAME)
+        val backupLevelsFile = new File(BACKUP_DIRECTORY + LEVELS_FILENAME)
 
         val levelsFile = if (backupLevelsFile.exists()) {
             backupLevelsFile

@@ -95,7 +95,17 @@ object EncoderPDDL {
           |        (ball_size_small ?b - ball)
           |        (ball_size_medium ?b - ball)
           |        (ball_size_large ?b - ball)
-          |    )
+          |""".stripMargin)
+
+        if (level.snowmen == 1) {
+            domain.append("        (goal)\n")
+        } else {
+            for (s <- 0 until level.snowmen) {
+                domain.append("        (goal_" + s + ")\n")
+            }
+        }
+
+        domain.append("""    )
           |
           |    (:functions
           |        (total-cost) - number
@@ -121,23 +131,16 @@ object EncoderPDDL {
           |    (:action move_ball
           |
           |     :parameters
-          |""".stripMargin)
-
-        if (level.snowmen == 1) {
-            domain.append("       (?b - ball ?ppos ?from ?to - location ?dir - direction)\n")
-        } else {
-            domain.append("       (?b - ball ?b2 - ball ?b3 - ball ?ppos ?from ?to - location ?dir - direction)\n")
-        }
-
-        domain.append("""|
+          |        (?b ?b2 ?b3 - ball ?ppos ?from ?to - location ?dir - direction)
+          |
           |     :precondition
           |        (and
           |""".stripMargin)
 
         if (level.snowmen > 1) {
-            domain.append("            (not (= ?b ?b2)\n")
-            domain.append("            (not (= ?b ?b3)\n")
-            domain.append("            (not (= ?b2 ?b3)\n")
+            domain.append("            (not (= ?b ?b2))\n")
+            domain.append("            (not (= ?b ?b3))\n")
+            domain.append("            (not (= ?b2 ?b3))\n")
         }
 
         domain.append("""            (next ?ppos ?from ?dir)
@@ -181,24 +184,22 @@ object EncoderPDDL {
           |                                (ball_size_large ?o))))))
           |     :effect
           |        (and
-          | """.stripMargin)
+          |""".stripMargin)
 
         if (level.snowmen == 1) {
-            domain.append("            (when\n")
+            domain.append("             (when\n")
             domain.append("                (and\n")
-            domain.append("                    (ball_at ?b ?to)\n")
             domain.append("                    (ball_at ?b2 ?to)\n")
             domain.append("                    (ball_at ?b3 ?to))\n")
             domain.append("                (and\n")
             domain.append("                    (goal)))\n")
         } else {
             for (s <- 0 until level.snowmen) {
-                domain.append("           (when\n")
+                domain.append("            (when\n")
                 domain.append("                (and\n")
                 if (s != 0) {
                     domain.append("                    (goal_" + (s - 1) + ")\n")
                 }
-                domain.append("                    (ball_at ?b ?to)\n")
                 domain.append("                    (ball_at ?b2 ?to)\n")
                 domain.append("                    (ball_at ?b3 ?to))\n")
                 domain.append("                (and\n")
@@ -324,6 +325,7 @@ object EncoderPDDL {
         domain.append("        (ball_size_small ?b - ball)\n")
         domain.append("        (ball_size_medium ?b - ball)\n")
         domain.append("        (ball_size_large ?b - ball)\n")
+
         if (level.snowmen == 1) {
             domain.append("        (goal)\n")
         } else {
@@ -331,6 +333,7 @@ object EncoderPDDL {
                 domain.append("        (goal_" + s + ")\n")
             }
         }
+
         domain.append("    )\n")
         domain.append("\n")
         domain.append("    (:functions\n")
@@ -414,25 +417,26 @@ object EncoderPDDL {
                             }
 
                             domain.append(")\n")
+
                             // Once snowmen is build the top ball can not be pop
-                            domain.append("            (or\n")
-                            domain.append("                (not (or")
-
-                            for (o <- otherBalls) {
-                                domain.append("\n")
-                                domain.append("                    (ball_at " + o + " " + from + ")")
-                            }
-
-                            domain.append("))\n")
-                            domain.append("                (and")
-
-                            for (o <- otherBalls) {
-                                domain.append("\n")
-                                domain.append("                    (not (ball_at " + o + " " + to + "))")
-                            }
+//                            domain.append("            (or\n")
+//                            domain.append("                (not (or")
+//
+//                            for (o <- otherBalls) {
+//                                domain.append("\n")
+//                                domain.append("                    (ball_at " + o + " " + from + ")")
+//                            }
+//
+//                            domain.append("))\n")
+//                            domain.append("                (and")
+//
+//                            for (o <- otherBalls) {
+//                                domain.append("\n")
+//                                domain.append("                    (not (ball_at " + o + " " + to + "))")
+//                            }
+//                            domain.append("))\n")
                             // ----
 
-                            domain.append("))\n")
                             domain.append("            (and")
 
                             for (o <- otherBalls) {
@@ -455,6 +459,7 @@ object EncoderPDDL {
                             domain.append("\n")
                             domain.append("     :effect\n")
                             domain.append("        (and\n")
+
                             if (level.snowmen == 1) {
                                 domain.append("            (when\n")
                                 domain.append("                (and\n")
@@ -476,11 +481,11 @@ object EncoderPDDL {
                                         domain.append("                    (goal_" + (s - 1) + ")\n")
                                     }
 
-                                    domain.append(padding + padding + "    (or\n")
+                                    domain.append(padding + padding + "                        (or\n")
                                     for (snowmenBalls <- level.balls.indices.patch(bI, Nil, 1).combinations(2)) {
                                         domain.append("            " + padding + "        (and " + snowmenBalls.map(f => "(ball_at ball_" + f + " " + coordinateToLocation(l2.c) + ")").mkString(" ") + ")\n")
                                     }
-                                    domain.append(padding + padding + "    )\n")
+                                    domain.append(padding + padding + "                        )\n")
 
                                     if (s != 0) {
                                         domain.append("                )\n")
@@ -490,6 +495,7 @@ object EncoderPDDL {
                                     domain.append("                    (goal_" + s + ")))\n")
                                 }
                             }
+
                             domain.append("            (occupancy " + to + ")\n")
                             domain.append("            (not (ball_at " + b + " " + from + "))\n")
                             domain.append("            (ball_at " + b + " " + to + ")\n")
