@@ -1,7 +1,7 @@
 # Snowman Editor
 
 The Snowman Editor is an enhanced level editor for the the video game A Good Snowman Is Hard To Build. This project is 
-an extension of my Computer Science final degree project ([report](https://github.com/GerardMT/Snowman-Editor/blob/master/docs/v1.0/TFG-Report.pdf) and [source code](https://github.com/GerardMT/Snowman-Editor/releases/tag/v1.0)).
+an extension of my Computer Science final degree project (Tag v1.0: [report](https://github.com/GerardMT/Snowman-Editor/blob/f0d80f820344c1d6b621d0c329613f4f683d2037/docs/TFG-Report.pdf) and [source code](https://github.com/GerardMT/Snowman-Editor/tree/f0d80f820344c1d6b621d0c329613f4f683d2037)).
 
 ## Main features
 - Modify and create new levels.
@@ -15,7 +15,7 @@ an extension of my Computer Science final degree project ([report](https://githu
 - The tool currently does not support the "dream world".
 
 ## Installation
-Download the project from the [release page](https://github.com/GerardMT/Snowman-Editor/releases) or [build](https://github.com/GerardMT/Snowman-Editor##build) the project.
+Download the latest version from the [release page](https://github.com/GerardMT/Snowman-Editor/releases) or [build](https://github.com/GerardMT/Snowman-Editor##build) the project.
 
 The editor requires at least Java SE 11. 
     
@@ -60,7 +60,7 @@ The project uses the SBT build tool. To compile the project run:
 I personally use IntelliJ IDEA which eases the Scala/Java environment setup.
 
 ## Screenshots
-![Editor Andy](docs/screenshots/snowman_editor_andy.png?raw=true) ![Game Andy](docs/screenshots/game_andy.png?raw=true) ![Game Levels](docs/screenshots/snowman_editor_game_levels.png?raw=true) ![Solver options](docs/screenshots/snowman_editor_solver.png?raw=true) ![Andy SMT Reachability 1](docs/screenshots/snowman_editor_terminal_smt_reachability_andy_1.png?raw=true) ![Andy SMT Reachability 2](docs/screenshots/snowman_editor_terminal_smt_reachability_andy_2.png?raw=true)
+![Editor Andy](docs/screenshots/snowman_editor_andy.png?raw=true) ![Game Levels](docs/screenshots/snowman_editor_game_levels.png?raw=true) ![Solver options](docs/screenshots/snowman_editor_solver.png?raw=true) ![Andy SMT Reachability 1](docs/screenshots/snowman_editor_terminal_smt_reachability_andy_1.png?raw=true) ![Andy SMT Reachability 2](docs/screenshots/snowman_editor_terminal_smt_reachability_andy_2.png?raw=true) ![Game Andy](docs/screenshots/game_andy.png?raw=true)
 
 ## Other
 A simpler version for the Sokoban game can be found in [Sokoban-Editor](https://github.com/GerardMT/Sokoban-Editor).    
