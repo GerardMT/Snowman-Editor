@@ -60,7 +60,7 @@ The project uses the SBT build tool. To compile the project run:
 I personally use IntelliJ IDEA which eases the Scala/Java environment setup.
 
 ## Screenshots
-![Editor Andy](docs/screenshots/snowman_editor_andy.png?raw=true) ![Game Levels](docs/screenshots/snowman_editor_game_levels.png?raw=true) ![Solver options](docs/screenshots/snowman_editor_solver.png?raw=true) ![Andy SMT Reachability 1](docs/screenshots/snowman_editor_terminal_smt_reachability_andy_1.png?raw=true) ![Andy SMT Reachability 2](docs/screenshots/snowman_editor_terminal_smt_reachability_andy_2.png?raw=true) ![Game Andy](docs/screenshots/game_andy.png?raw=true)
+![Editor Andy](docs/screenshots/snowman_editor_andy.png?raw=true) ![Game Levels](docs/screenshots/snowman_editor_game_levels.png?raw=true) ![Game Andy](docs/screenshots/game_andy.png?raw=true) ![Solver options](docs/screenshots/snowman_editor_solver.png?raw=true) ![Andy SMT Reachability 1](docs/screenshots/snowman_editor_terminal_smt_reachability_andy_1.png?raw=true) ![Andy SMT Reachability 2](docs/screenshots/snowman_editor_terminal_smt_reachability_andy_2.png?raw=true)
 
 ## Other
 A simpler version for the Sokoban game can be found in [Sokoban-Editor](https://github.com/GerardMT/Sokoban-Editor).    
