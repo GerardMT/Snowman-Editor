@@ -60,7 +60,7 @@ Download the source code:
 The project uses the SBT build tool. To compile the project run: 
     
     sbt compile
-    sbt package
+    sbt assembly
     
 The package output can be found at ``./out/snowman_editor.jar``.
 
