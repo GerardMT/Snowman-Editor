@@ -45,7 +45,13 @@ class Terminal {
     def parseArguments(arguments: List[String]): Unit = {
         arguments match {
             case List("--help") | List("-h") =>
-                System.out.print("""Usage: java -jar snowman_editor.jar -h | --help
+                System.out.print("""Solve, edit and play A Good Snowman Is Hard To Build levels.
+                                   |
+                                   |The editor uses Yices 2 as a SMT solver. To play the levels the tool modifies the
+                                   |original game files. Both, the Yices 2 and game path, can be set in the
+                                   |snowman_editor.config file.
+                                   |
+                                   |Usage: java -jar snowman_editor.jar -h | --help
                                    |
                                    |              Show this message.
                                    |
@@ -53,12 +59,12 @@ class Terminal {
                                    |
                                    |               First run. Generate a new settings file.
                                    |
-                                   |Usage: java -jar snowman_editor.jar SETTINGS_PATH MODE
+                                   |Usage: java -jar snowman_editor.jar <settings_path> <mode>
                                    |
-                                   |SETTINGS_PATH:
+                                   |<settings_path>:
                                    |
                                    |                Path to the generated settings file
-                                   |MODE:
+                                   |<mode>:
                                    |
                                    |    gui
                                    |
@@ -119,7 +125,7 @@ class Terminal {
                     val p = new PrintWriter(settingsFile)
                     p.write("game_path=\n")
                     p.write("save_path=\n")
-                    p.write("solver_path=\n")
+                    p.write("solver_path=")
                     p.close()
 
                     System.out.println("Settings file created.")

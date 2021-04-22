@@ -7,7 +7,7 @@ an extension of my Computer Science final degree project (Tag v1.0: [report](htt
 - Modify and create new levels.
 - Extract the the official game levels.
 - Upload new levels to the game and try them.
-- Solve a given level (optimally!) using planning as satisfiability (Yices SMT).
+- Solve a given level ***optimally*** using planning as satisfiability (SMT).
 - Generate PDDL files to solve with external planners.
 
 ## Know issues / missing features
@@ -15,7 +15,7 @@ an extension of my Computer Science final degree project (Tag v1.0: [report](htt
 - The tool currently does not support the "dream world".
 
 ## Installation
-Download the latest version from the [release page](https://github.com/GerardMT/Snowman-Editor/releases) or [build](https://github.com/GerardMT/Snowman-Editor##build) the project.
+Download the latest version from the [release page](https://github.com/GerardMT/Snowman-Editor/releases) or [build](https://github.com/GerardMT/Snowman-Editor#build) the project.
 
 The editor requires at least Java SE 11. 
     
@@ -25,7 +25,7 @@ First execution to generate the config file:
 java -jar snowman_editor.jar init
 ```
 
-Once the config file has been generated, modify it. The editor can run without the game and/or the Yices SMT solver installed.
+Once the config file has been generated, modify it. The editor can run without the game and/or the Yices 2 solver installed.
 
 Example of configuration file (game downloaded from Steam):
 
@@ -42,7 +42,7 @@ Finally:
 
 2. Or use the terminal mode. Example of solving a level (minimizing ball movements):
        
-       java -jar snowman_editor.jar snowman_editor.config smt-reachability ../levels/toy/toy05.lvl ./out auto 1000 true true true
+       java -jar snowman_editor.jar snowman_editor.config smt-reachability ./levels/toy/toy05.lvl ./out auto 1000 true true true
 
     To see all available options:
 
@@ -52,6 +52,11 @@ Finally:
 A more detailed (but not up to date) manual can be found in [docs/v1.0](https://github.com/GerardMT/Snowman-Editor/tree/master/docs/v1.0).
 
 ## Build
+Download the source code:
+
+    git clone https://github.com/GerardMT/Snowman-Editor
+    cd Snowman-Editor
+
 The project uses the SBT build tool. To compile the project run: 
     
     sbt compile

@@ -1,6 +1,6 @@
 name := "Snowman Editor"
 
-version := "0.1"
+version := "1.1"
 
 scalaVersion := "2.10.7"
 
