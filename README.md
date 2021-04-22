@@ -61,6 +61,8 @@ The project uses the SBT build tool. To compile the project run:
     
     sbt compile
     sbt package
+    
+The package output can be found at ``./out/snowman_editor.jar``.
 
 I personally use IntelliJ IDEA which eases the Scala/Java environment setup.
 
