@@ -1,7 +1,7 @@
 # Snowman Editor
 
 The Snowman Editor is an enhanced level editor for the the video game A Good Snowman Is Hard To Build. This project is 
-an extension of my Computer Science final degree project (Tag v1.0: [documents](https://github.com/GerardMT/Snowman-Editor/docs/v1.0) and [source code](https://github.com/GerardMT/Snowman-Editor/tree/f0d80f820344c1d6b621d0c329613f4f683d2037)).
+an extension of my Computer Science final degree project (Tag v1.0: [documents](https://github.com/GerardMT/Snowman-Editor/tree/master/docs/v1.0) and [source code](https://github.com/GerardMT/Snowman-Editor/tree/f0d80f820344c1d6b621d0c329613f4f683d2037)).
 
 ## Main features
 - Modify and create new levels.
@@ -49,7 +49,7 @@ Finally:
        java -jar snowman_editor.jar -h
 
 
-A more detailed (but not up to date) manual can be found in [docs/v1.0/report](https://github.com/GerardMT/Snowman-Editor/tree/master/docs/v1.0/report).
+A more detailed (but not up to date) manual can be found [here](https://github.com/GerardMT/Snowman-Editor/blob/master/docs/v1.0/report/TFG-Report.pdf).
 
 ## Build
 Download the source code:
