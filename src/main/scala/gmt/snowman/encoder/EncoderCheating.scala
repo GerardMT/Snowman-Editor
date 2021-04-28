@@ -22,9 +22,9 @@ protected case class EncoderCheating(override val level: Level, override val enc
             Not(And(otherBallInFront(state, stateActionBall, shift), otherBallUnder(state, stateActionBall))),
             otherBallsInFrontLarger(state, stateActionBall, shift))
 
-        if (level.snowmen > 1) {
-            constantPre.append(noOtherTwoBallsUnder(state, stateActionBall))
-        }
+//        if (level.snowmen > 1) {
+//            constantPre.append(noOtherTwoBallsUnder(state, stateActionBall))
+//        }
 
         val constantEff = ListBuffer(moveBall(stateActionBall, stateNextActionBall, shift),
             equalOtherBallsPositions(state, stateActionBall, stateNext, stateNextActionBall))

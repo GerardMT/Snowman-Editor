@@ -179,11 +179,11 @@ abstract class EncoderBase[A <: StateBase](val level: Level, val encoderOptions:
         encoding.add(ClauseDeclaration(Equals(state.character.y, IntegerConstant(level.character.c.y))))
     }
 
-    protected def noOtherTwoBallsUnder(state: StateBase, stateActionBall: StateBase.Ball): Clause = {
-        And((for (b <- state.balls.filter(f => f != stateActionBall).combinations(2)) yield {
-            Not(And(Equals(stateActionBall.x, b(0).x), Equals(stateActionBall.y, b(0).y), And(Equals(stateActionBall.x, b(1).x), Equals(stateActionBall.y, b(1).y))))
-        }).toSeq: _*)
-    }
+//    protected def noOtherTwoBallsUnder(state: StateBase, stateActionBall: StateBase.Ball): Clause = {
+//        And((for (b <- state.balls.filter(f => f != stateActionBall).combinations(2)) yield {
+//            Not(And(Equals(stateActionBall.x, b(0).x), Equals(stateActionBall.y, b(0).y), And(Equals(stateActionBall.x, b(1).x), Equals(stateActionBall.y, b(1).y))))
+//        }).toSeq: _*)
+//    }
 
     protected def noOtherBallsOver(state: StateBase, stateActionBall: StateBase.Ball): Clause = {
         And((for (b <- state.balls.filter(f => f != stateActionBall)) yield {

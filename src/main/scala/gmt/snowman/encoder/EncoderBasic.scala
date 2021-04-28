@@ -29,9 +29,9 @@ protected case class EncoderBasic(override val level: Level, override val encode
             Not(And(otherBallInFront(state, stateActionBall, shift), otherBallUnderVar)),
             otherBallsInFrontLarger(state, stateActionBall, shift))
 
-        if (level.snowmen > 1) {
-            constantPre.append(noOtherTwoBallsUnder(state, stateActionBall))
-        }
+//        if (level.snowmen > 1) {
+//            constantPre.append(noOtherTwoBallsUnder(state, stateActionBall))
+//        }
 
         val constantEff = ListBuffer(moveBall(stateActionBall, stateNextActionBall, shift),
             Implies(Not(otherBallUnderVar), moveCharacter(state, stateNext, shift)),

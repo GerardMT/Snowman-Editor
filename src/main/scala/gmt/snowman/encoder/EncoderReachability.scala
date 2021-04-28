@@ -64,9 +64,9 @@ protected case class EncoderReachability(override val level: Level, override val
             otherBallsInFrontLarger(state, stateActionBall, shift),
             reachability(state, stateActionBall, shift))
 
-        if (level.snowmen > 1) {
-            constantPre.append(noOtherTwoBallsUnder(state, stateActionBall))
-        }
+//        if (level.snowmen > 1) {
+//            constantPre.append(noOtherTwoBallsUnder(state, stateActionBall))
+//        }
 
         val constantEff = ListBuffer(moveBall(stateActionBall, stateNextActionBall, shift),
             Implies(Not(otherBallUnderVar), teleportCharacterBall(stateActionBall, stateNext)),
