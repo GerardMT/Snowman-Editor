@@ -106,8 +106,11 @@ class GUI(private val settingsFile: File) {
                         try {
                             lastLocationOpen.location = fileChooser.selectedFile
 
-                            setTitle(fileChooser.selectedFile.getName)
-                            uiLevel.reload(MutableLevel.load(Files.openTextFile(fileChooser.selectedFile)))
+                            var name = fileChooser.selectedFile.getName
+                            name = name.substring(0, name.lastIndexOf('.'))
+
+                            setTitle(name)
+                            uiLevel.reload(MutableLevel.load(Files.openTextFile(fileChooser.selectedFile), Some(name)))
                             resize()
                         } catch {
                             case _: FileNotFoundException =>
@@ -129,7 +132,7 @@ class GUI(private val settingsFile: File) {
                             for (n <- levelsNames) {
                                 contents += new MenuItem(Action(n) {
                                     setTitle(n)
-                                    uiLevel.reload(MutableLevel.load(game.getLevel(n)))
+                                    uiLevel.reload(MutableLevel.load(game.getLevel(n), Some(n)))
                                     resize()
                                 })
                             }

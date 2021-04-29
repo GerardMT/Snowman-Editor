@@ -225,7 +225,12 @@ class Terminal {
         }
 
         private def openLevelGeneratePDDL(levelPath: String, directoryPath: String, generator: Level => (String, String)): Unit = {
-            val (domain, problem) = generator(MutableLevel.load(Files.openTextFile(new File(levelPath))).toLevel)
+            val file = new File(levelPath)
+
+            var name = file.getName
+            name = name.substring(0, name.lastIndexOf('.'))
+
+            val (domain, problem) = generator(MutableLevel.load(Files.openTextFile(file), Some(name)).toLevel)
 
             val modifiedDirectory = Files.removeSlash(directoryPath)
 

@@ -16,12 +16,7 @@ object EncoderPDDL {
     def encodeObjectFluents(level: Level): (String, String) = {
         val problem = StringBuilder.newBuilder
 
-        val levelName = level.name match {
-            case Some(s) =>
-                s
-            case None =>
-                "snowman_problem"
-        }
+        val levelName = extractName(level.name)
 
         problem.append("(define (problem " + levelName + ")\n")
         problem.append("    (:domain snowman_object_fluents)\n")
@@ -69,10 +64,13 @@ object EncoderPDDL {
     }
 
     def encodeAdl(level: Level): (String, String) = {
+        val levelName = extractName(level.name)
+
         val domain = StringBuilder.newBuilder
 
-        domain.append("""(define (domain snowman_adl)
-          |
+        domain.append("    (define (domain snowman_adl__" + levelName + ")\n")
+
+        domain.append("""
           |    (:requirements
           |        :typing
           |        :negative-preconditions
@@ -95,17 +93,8 @@ object EncoderPDDL {
           |        (ball_size_small ?b - ball)
           |        (ball_size_medium ?b - ball)
           |        (ball_size_large ?b - ball)
-          |""".stripMargin)
-
-        if (level.snowmen == 1) {
-            domain.append("        (goal)\n")
-        } else {
-            for (s <- 0 until level.snowmen) {
-                domain.append("        (goal_" + s + ")\n")
-            }
-        }
-
-        domain.append("""    )
+          |        (goal)
+          |   )
           |
           |    (:functions
           |        (total-cost) - number
@@ -131,19 +120,11 @@ object EncoderPDDL {
           |    (:action move_ball
           |
           |     :parameters
-          |        (?b ?b2 ?b3 - ball ?ppos ?from ?to - location ?dir - direction)
+          |        (?b - ball ?ppos ?from ?to - location ?dir - direction)
           |
           |     :precondition
           |        (and
-          |""".stripMargin)
-
-        if (level.snowmen > 1) {
-            domain.append("            (not (= ?b ?b2))\n")
-            domain.append("            (not (= ?b ?b3))\n")
-            domain.append("            (not (= ?b2 ?b3))\n")
-        }
-
-        domain.append("""            (next ?ppos ?from ?dir)
+          |            (next ?ppos ?from ?dir)
           |            (next ?from ?to ?dir)
           |            (ball_at ?b ?from)
           |            (character_at ?ppos)
@@ -184,30 +165,7 @@ object EncoderPDDL {
           |                                (ball_size_large ?o))))))
           |     :effect
           |        (and
-          |""".stripMargin)
-
-        if (level.snowmen == 1) {
-            domain.append("             (when\n")
-            domain.append("                (and\n")
-            domain.append("                    (ball_at ?b2 ?to)\n")
-            domain.append("                    (ball_at ?b3 ?to))\n")
-            domain.append("                (and\n")
-            domain.append("                    (goal)))\n")
-        } else {
-            for (s <- 0 until level.snowmen) {
-                domain.append("            (when\n")
-                domain.append("                (and\n")
-                if (s != 0) {
-                    domain.append("                    (goal_" + (s - 1) + ")\n")
-                }
-                domain.append("                    (ball_at ?b2 ?to)\n")
-                domain.append("                    (ball_at ?b3 ?to))\n")
-                domain.append("                (and\n")
-                domain.append("                    (goal_" + s + ")))\n")
-            }
-        }
-
-        domain.append("""|            (occupancy ?to)
+          |            (occupancy ?to)
           |            (not (ball_at ?b ?from))
           |            (ball_at ?b ?to)
           |            (when
@@ -236,19 +194,44 @@ object EncoderPDDL {
           |                    (ball_size_large ?b)))
           |            (increase (total-cost) 1))
           |    )
+          |
+          |    (:action goal
+          |
+          |     :parameters
+          |""".stripMargin)
+
+        domain.append("        (" + (0 until level.snowmen).map(f => "?b" + (f * 3) + " ?b" + (f * 3 + 1) + " ?b" + (f * 3 + 2) + " - ball ?p" + f + " - location").mkString(" ") + ")\n")
+
+        domain.append("""
+          |     :precondition
+          |        (and
+          |""".stripMargin)
+
+        for (i <- 0 until level.snowmen * 3) {
+            for (j <- i + 1 until level.snowmen * 3) {
+                domain.append("            (not (= ?b" + i + " ?b" + j + "))\n")
+            }
+        }
+
+        for (i <- 0 until level.snowmen) {
+            domain.append("            (ball_at ?b" + (3 * i + 0) + " ?p" + i + ")\n")
+            domain.append("            (ball_at ?b" + (3 * i + 1) + " ?p" + i + ")\n")
+            domain.append("            (ball_at ?b" + (3 * i + 2) + " ?p" + i + ")\n")
+        }
+
+        domain.append("""        )
+          |
+          |     :effect
+          |         (and (goal))
+          |    )
           |)""".stripMargin)
 
         val problem = StringBuilder.newBuilder
 
-        val levelName = level.name match {
-            case Some(s) =>
-                s
-            case None =>
-                "snowman_problem"
-        }
-
         problem.append("(define (problem " + levelName + ")\n")
-        problem.append("    (:domain snowman_adl)\n")
+        problem.append("\n")
+        problem.append("    (:domain snowman_adl__" + levelName + ")\n")
+        problem.append("\n")
         problem.append("    (:objects\n")
         for (d <- directions) {
             problem.append("        " + d + " - direction\n")
@@ -258,9 +241,9 @@ object EncoderPDDL {
         problem.append(encodeObjectsLocations(level))
 
         problem.append("    )\n")
+        problem.append("\n")
         problem.append("    (:init\n")
         problem.append("        (= (total-cost) 0)\n")
-
 
         for (l <- level.map.values.filter(f => Object.isPlayableArea(f.o)); (o, d) <- SnowmanAction.CHARACTER_ACTIONS.map(f => f.shift).zip(directions) ) {
             level.map.get(l.c + o) match {
@@ -282,7 +265,11 @@ object EncoderPDDL {
         problem.append(encodeInitSnow(level))
         problem.append(encodeInitOccupancy(level))
         problem.append("    )\n")
-        problem.append(encodeGoal(level))
+        problem.append("\n")
+        problem.append("    (:goal\n")
+        problem.append("        (and (goal))\n")
+        problem.append("    )\n")
+        problem.append("\n")
         problem.append("    (:metric minimize (total-cost))\n")
         problem.append(")")
 
@@ -291,9 +278,10 @@ object EncoderPDDL {
 
 
     def encodeAdlGrounded(level: Level): (String, String)= {
+        val levelName = extractName(level.name)
         val domain = StringBuilder.newBuilder
 
-        domain.append("(define (domain snowman_adl_grounded)\n")
+        domain.append("(define (domain snowman_adl_grounded__" + levelName + ")\n")
         domain.append("\n")
         domain.append("    (:requirements\n")
         domain.append("        :typing\n")
@@ -325,15 +313,7 @@ object EncoderPDDL {
         domain.append("        (ball_size_small ?b - ball)\n")
         domain.append("        (ball_size_medium ?b - ball)\n")
         domain.append("        (ball_size_large ?b - ball)\n")
-
-        if (level.snowmen == 1) {
-            domain.append("        (goal)\n")
-        } else {
-            for (s <- 0 until level.snowmen) {
-                domain.append("        (goal_" + s + ")\n")
-            }
-        }
-
+        domain.append("        (goal)\n")
         domain.append("    )\n")
         domain.append("\n")
         domain.append("    (:functions\n")
@@ -539,16 +519,9 @@ object EncoderPDDL {
 
         val problem = StringBuilder.newBuilder
 
-        val levelName = level.name match {
-            case Some(s) =>
-                s
-            case None =>
-                "snowman_problem"
-        }
-
         problem.append("(define (problem " + levelName + ")\n")
         problem.append("\n")
-        problem.append("    (:domain snowman_adl_grounded)\n")
+        problem.append("    (:domain snowman_adl_grounded__" + levelName + ")\n")
         problem.append("\n")
         problem.append("    (:init\n")
         problem.append("        (= (total-cost) 0)\n")
@@ -563,7 +536,19 @@ object EncoderPDDL {
         problem.append(encodeInitOccupancy(level))
         problem.append("    )\n")
         problem.append("\n")
-        problem.append(encodeGoal(level))
+        problem.append("    (:goal\n")
+        problem.append("        (and\n")
+
+        if (level.snowmen == 1) {
+            problem.append("            (goal)\n")
+        } else {
+            for (s <- 0 until level.snowmen) {
+                problem.append("            (goal_" + s + ")\n")
+            }
+        }
+        problem.append("        )\n")
+        problem.append("    )\n")
+        problem.append("\n")
         problem.append("    (:metric minimize (total-cost))\n")
 
         problem.append(")")
@@ -615,30 +600,18 @@ object EncoderPDDL {
         "        (ball_size_" + getBallSize(o) + " ball_" + index + ")\n"
     }
 
-    private def encodeGoal(level: Level): String = {
-        val encoding = StringBuilder.newBuilder
-
-        encoding.append("    (:goal\n")
-        encoding.append("        (and\n")
-
-        if (level.snowmen == 1) {
-            encoding.append("            (goal)\n")
-        } else {
-            for (s <- 0 until level.snowmen) {
-                encoding.append("            (goal_" + s + ")\n")
-            }
-        }
-        encoding.append("        )\n")
-        encoding.append("    )\n")
-
-        encoding.toString()
-    }
-
     private def coordinateToLocation(c: Coordinate) = "loc_" + c.x + "_" + c.y
 
     def getBallSize(o: gmt.snowman.game.`object`.Object): String = o match {
         case SmallBall => "small"
         case MediumBall => "medium"
         case LargeBall => "large"
+    }
+
+    def extractName(name: Option[String]) = name match {
+        case Some(s) =>
+            s
+        case None =>
+            "no_name"
     }
 }
