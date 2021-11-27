@@ -126,7 +126,8 @@ class Terminal {
                                    |               - equality
                                    |               - disjunctive-preconditions
                                    |               - conditional-effects
-                                   |               - action-costs""".stripMargin)
+                                   |               - action-costs
+                                   |""".stripMargin)
             case List("init") =>
                 val settingsFile = new File("")
                 if (settingsFile.exists()) {
