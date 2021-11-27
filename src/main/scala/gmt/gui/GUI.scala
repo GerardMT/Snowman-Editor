@@ -299,15 +299,19 @@ class GUI(private val settingsFile: File) {
                     })
                 }
                 contents += new Separator
-                contents += new MenuItem(Action("Generate PDDL adl") {
-                    generatePDDLShowDirectoryChooser(EncoderPDDL.encodeAdl(uiLevel.mutableLevel.toLevel))
-                })
-                contents += new MenuItem(Action("Generate PDDL adl (Grounded)") {
-                    generatePDDLShowDirectoryChooser(EncoderPDDL.encodeAdlGrounded(uiLevel.mutableLevel.toLevel))
-                })
-                contents += new MenuItem(Action("Generate PDDL object-fluents (Experimental)") {
-                    generatePDDLShowDirectoryChooser(EncoderPDDL.encodeObjectFluents(uiLevel.mutableLevel.toLevel))
-                })
+                contents += new Menu("PDDL Baisc")  {
+                    contents += new MenuItem(Action("Generate adl") {
+                        generatePDDLShowDirectoryChooser(EncoderPDDL.encodeBasicAdl(uiLevel.mutableLevel.toLevel))
+                    })
+                    contents += new MenuItem(Action("Generate adl (Grounded)") {
+                        generatePDDLShowDirectoryChooser(EncoderPDDL.encodeBasicAdlGrounded(uiLevel.mutableLevel.toLevel))
+                    })
+                }
+                contents += new Menu("PDDL Cheating") {
+                    contents += new MenuItem(Action("Generate adl") {
+                        generatePDDLShowDirectoryChooser(EncoderPDDL.encodeCheatingAdl(uiLevel.mutableLevel.toLevel))
+                    })
+                }
             }
             contents += new Menu("Editor") {
                 val coordinatesCheckBox = new JCheckBoxMenuItem("Coordinates")

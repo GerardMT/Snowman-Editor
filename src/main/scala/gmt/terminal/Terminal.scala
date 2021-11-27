@@ -91,9 +91,10 @@ class Terminal {
                                    |               Solve a given level. Minimizes the ball movements guaranteeing the
                                    |               character movements to be valid.
                                    |
-                                   |    adl <level_path> <save_directory>
+                                   |    basic-adl <level_path> <save_directory>
                                    |
                                    |               Generate a PDDL domain and problem files using the adl PDDL subset.
+                                   |               Using basic encoding.
                                    |               PDDL requirements:
                                    |               - typing
                                    |               - negative-preconditions
@@ -102,9 +103,10 @@ class Terminal {
                                    |               - conditional-effects
                                    |               - action-costs
                                    |
-                                   |    adl-grounded <level_path> <save_directory>
+                                   |    basic-adl-grounded <level_path> <save_directory>
                                    |
                                    |               Generate a PDDL domain and problem files using the adl PDDL subset.
+                                   |               Using basic encoding.
                                    |               The forall predicates have been grounded.
                                    |               PDDL requirments:
                                    |               - typing
@@ -114,9 +116,17 @@ class Terminal {
                                    |               - conditional-effects
                                    |               - action-costs
                                    |
-                                   |    object-fluents <level_path> <save_directory>
+                                   |    cheating-adl <level_path> <save_directory>
                                    |
-                                   |               Experimental. Not tested.""".stripMargin)
+                                   |               Generate a PDDL domain and problem files using the adl PDDL subset.
+                                   |               Using cheating encoding.
+                                   |               PDDL requirements:
+                                   |               - typing
+                                   |               - negative-preconditions
+                                   |               - equality
+                                   |               - disjunctive-preconditions
+                                   |               - conditional-effects
+                                   |               - action-costs""".stripMargin)
             case List("init") =>
                 val settingsFile = new File("")
                 if (settingsFile.exists()) {
@@ -170,15 +180,14 @@ class Terminal {
                     case List("smt-reachability", levelPath, resultsPath, startTimeStepsStr, maxTimeSteps, invaraintBallSizes, invariantBallLocations, invariantWallU) =>
                         openLevelSolveSMT(levelPath, resultsPath, startTimeStepsStr, maxTimeSteps, invaraintBallSizes, invariantBallLocations, invariantWallU, EncoderEnum.REACHABILITY)
 
-                    case List("adl", levelPath, directoryPath) =>
-                        openLevelGeneratePDDL(levelPath, directoryPath, EncoderPDDL.encodeAdl)
+                    case List("basic-adl", levelPath, directoryPath) =>
+                        openLevelGeneratePDDL(levelPath, directoryPath, EncoderPDDL.encodeBasicAdl)
 
-                    case List("adl-grounded", levelPath, directoryPath) =>
-                        openLevelGeneratePDDL(levelPath, directoryPath, EncoderPDDL.encodeAdlGrounded)
+                    case List("basic-adl-grounded", levelPath, directoryPath) =>
+                        openLevelGeneratePDDL(levelPath, directoryPath, EncoderPDDL.encodeBasicAdlGrounded)
 
-                    case List("object-fluents", levelPath, directoryPath) =>
-                        System.out.println("Warning: Experimental")
-                        openLevelGeneratePDDL(levelPath, directoryPath, EncoderPDDL.encodeObjectFluents)
+                    case List("cheating-adl", levelPath, directoryPath) =>
+                        openLevelGeneratePDDL(levelPath, directoryPath, EncoderPDDL.encodeCheatingAdl)
 
                     case List(_*) =>
                         wrongArgumentsError()
