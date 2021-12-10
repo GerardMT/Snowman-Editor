@@ -4,12 +4,12 @@ import java.io._
 import java.nio.charset.StandardCharsets
 import java.security.InvalidParameterException
 import java.util.stream.Collectors
-
 import gmt.planner.solver.value.{ValueBoolean, ValueInteger}
 import gmt.planner.solver.{Assignment, SolverResult}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ListBuffer
+import scala.sys.process.Process
 
 class Yices2(solverBinaryPath: String) {
 
@@ -23,10 +23,14 @@ class Yices2(solverBinaryPath: String) {
     private val inputStream = process.getInputStream
     private val input =  new BufferedReader(new InputStreamReader(inputStream, CHARSET))
 
+    private var startTime : Long = -1
+
     def write(input: String): Unit = {
         try {
             output.write(input)
             output.flush()
+
+            startTime = System.nanoTime()
         } catch {
             case _: Throwable =>
                 val lines = input.lines().collect(Collectors.toList()).asScala
@@ -49,6 +53,9 @@ class Yices2(solverBinaryPath: String) {
                 System.err.print("\n")
                 throw new InvalidParameterException
         }
+
+        val cpuUsage = Process("ps -p " + process.pid() + " -o %cpu").!!.split("\n")(1).toFloat / 100.0f
+        val cpuTime = ((System.nanoTime() - startTime) * cpuUsage).toLong
 
         if (sat) {
             val linesModel = ListBuffer.empty[String]
@@ -83,6 +90,6 @@ class Yices2(solverBinaryPath: String) {
             }
         }
 
-        SolverResult(sat, assignments)
+        SolverResult(sat, assignments, cpuTime)
     }
 }

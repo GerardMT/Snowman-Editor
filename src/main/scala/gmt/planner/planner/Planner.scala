@@ -7,6 +7,7 @@ import gmt.snowman.encoder.VariableAdder
 import gmt.snowman.solver.Yices2
 import gmt.snowman.translator.SMTLib2
 
+import java.lang.management.ManagementFactory
 import scala.collection.immutable
 import scala.collection.mutable.ListBuffer
 
@@ -14,15 +15,17 @@ object Planner {
 
     case class Assuming(booleanVariable: BooleanVariable, value: Boolean)
 
-    case class PlannerUpdate(sat: Boolean, timeSteps: Int, milliseconds: Long, totalMilliseconds: Long)
+    case class PlannerUpdate(sat: Boolean, timeSteps: Int, nanoseconds: Long, totalNanoseconds: Long)
 
     case class PlannerOptions(startTimeSteps: Option[Int], maxTimeSteps: Int)
 
-    case class PlannerResult[A](sat: Boolean, timeSteps: Int, milliseconds: Long, result: Option[A])
+    case class PlannerResult[A](sat: Boolean, timeSteps: Int, nanoseconds: Long, result: Option[A])
 
     def solve[A <: VariableAdder, B, C](plannerOptions: PlannerOptions, encoder: Encoder[A, B, C], solver: Yices2, updateFunction: PlannerUpdate => Unit): PlannerResult[C] = {
-        val startTime = System.currentTimeMillis()
-        var totalTime = 0l
+        val ThreadMXBean = ManagementFactory.getThreadMXBean
+        val startTime = ThreadMXBean.getThreadCpuTime(Thread.currentThread.getId)
+        var totalTimeSolver = 0L
+        var totalTime = 0L
 
         var solved = false
 
@@ -42,7 +45,7 @@ object Planner {
         val goalsVariables = ListBuffer.empty[Assuming]
 
         while (!solved && iState < plannerOptions.maxTimeSteps) {
-            val startStepTime = System.currentTimeMillis()
+            val startStepTime = ThreadMXBean.getThreadCpuTime(Thread.currentThread.getId)
 
             if (iState - 1 != 0) {
                 val (goalClause, variables) = encoder.goal(state, encodingData)
@@ -71,9 +74,11 @@ object Planner {
             solverResult = solver.solve()
             solved = solverResult.sat
 
-            val time = System.currentTimeMillis()
-            val stepsTime = time - startStepTime
-            totalTime = time - startTime
+            val time = ThreadMXBean.getThreadCpuTime(Thread.currentThread.getId)
+            val stepsTime = time - startStepTime + solverResult.cpuTime
+
+            totalTimeSolver += solverResult.cpuTime
+            totalTime = time - startTime + totalTimeSolver
 
             updateFunction(PlannerUpdate(solverResult.sat, iState, stepsTime, totalTime))
 
@@ -85,7 +90,6 @@ object Planner {
                 state = stateNext
             }
         }
-
 
         if (solved) {
             PlannerResult(sat = true, iState, totalTime, Some(encoder.decode(solverResult.assignments, encodingData)))

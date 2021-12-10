@@ -23,9 +23,9 @@ object SnowmanSolver {
         result.result match {
             case Some(r) =>
                 val (valid, _ ) = Validator.validate(level, r.actions)
-                SnowmanSolverResult(result.sat, valid, result.milliseconds, Some(r))
+                SnowmanSolverResult(result.sat, valid, result.nanoseconds, Some(r))
             case None =>
-                SnowmanSolverResult(result.sat, valid = false, result.milliseconds, None)
+                SnowmanSolverResult(result.sat, valid = false, result.nanoseconds, None)
         }
     }
 }
