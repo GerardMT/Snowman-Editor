@@ -15,7 +15,7 @@ class Yices2(solverBinaryPath: String) {
 
     private val CHARSET = StandardCharsets.UTF_8.name
 
-    private val processBuilder = new ProcessBuilder(solverBinaryPath, "--incremental")
+    private val processBuilder = new ProcessBuilder("/usr/bin/time", "-p", solverBinaryPath, "--incremental")
     processBuilder.redirectErrorStream(true)
     private val process = processBuilder.start()
 
@@ -23,14 +23,12 @@ class Yices2(solverBinaryPath: String) {
     private val inputStream = process.getInputStream
     private val input =  new BufferedReader(new InputStreamReader(inputStream, CHARSET))
 
-    private var startTime : Long = -1
+    var cpuSeconds: Float = -1f
 
     def write(input: String): Unit = {
         try {
             output.write(input)
             output.flush()
-
-            startTime = System.nanoTime()
         } catch {
             case _: Throwable =>
                 val lines = input.lines().collect(Collectors.toList()).asScala
@@ -54,9 +52,6 @@ class Yices2(solverBinaryPath: String) {
                 throw new InvalidParameterException
         }
 
-        val cpuUsage = Process("ps -p " + process.pid() + " -o %cpu").!!.split("\n")(1).toFloat / 100.0f
-        val cpuTime = ((System.nanoTime() - startTime) * cpuUsage).toLong
-
         if (sat) {
             val linesModel = ListBuffer.empty[String]
 
@@ -69,6 +64,12 @@ class Yices2(solverBinaryPath: String) {
                 linesModel.append(line)
                 line = input.readLine()
             }
+
+            val kernelTime = linesModel.last.substring(4).toFloat
+            val userTime = linesModel(linesModel.length - 2).substring(5).toFloat
+            cpuSeconds = userTime + kernelTime
+
+            linesModel.remove(linesModel.length - 3, 3)
 
             for (l <- linesModel) {
                 if (l.startsWith("(=")) {
@@ -90,6 +91,33 @@ class Yices2(solverBinaryPath: String) {
             }
         }
 
-        SolverResult(sat, assignments, cpuTime)
+        SolverResult(sat, assignments)
+    }
+
+    def finish() : Float = {
+        if (process.isAlive) {
+            val lines = ListBuffer.empty[String]
+
+            output.write("(get-model)\n")
+            output.write("(exit)\n")
+            output.flush()
+
+            var line = input.readLine()
+            while (line != null) {
+                lines.append(line)
+                line = input.readLine()
+            }
+
+            readTime(lines)
+        } else {
+            cpuSeconds
+        }
+    }
+
+    private def readTime(lines: ListBuffer[String]) : Float = {
+        val kernelTime = lines.last.substring(4).toFloat
+        val userTime = lines(lines.length - 2).substring(5).toFloat
+
+        userTime + kernelTime
     }
 }
