@@ -23,7 +23,7 @@ class Yices2(solverBinaryPath: String) {
     private val inputStream = process.getInputStream
     private val input =  new BufferedReader(new InputStreamReader(inputStream, CHARSET))
 
-    var cpuSeconds: Float = -1f
+    private var cpuSeconds: Float = -1f
 
     def write(input: String): Unit = {
         try {
