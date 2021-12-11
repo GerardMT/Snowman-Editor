@@ -18,12 +18,12 @@ object Terminal {
     }
 
     def showSolverUpdate(plannerUpdate: PlannerUpdate): Unit = {
-        println("Timesteps: " + plannerUpdate.timeSteps + " sat: " + plannerUpdate.sat + " Time: " + plannerUpdate.nanoseconds / 1e9 + " TotalTime: " + plannerUpdate.totalNanoseconds / 1e9 + " (s)")
+        println("Timesteps: " + plannerUpdate.timeSteps + " sat: " + plannerUpdate.sat + " Time: " + plannerUpdate.nanoseconds / 1e9 + " TotalTime: " + plannerUpdate.totalNanoseconds / 1e9 + " (REAL s)")
     }
 
     def showResult(snowmanSolverResult: SnowmanSolverResult): Unit = {
         println("Solved: " + snowmanSolverResult.solved)
-        println("Time (s): " + snowmanSolverResult.nanoseconds / 1e9)
+        println("Time (CPU s): " + snowmanSolverResult.cpuSeconds)
 
         snowmanSolverResult.result match {
             case Some(r) =>
@@ -145,7 +145,7 @@ class Terminal {
                 case Some(r) =>
                     val resultString = StringBuilder.newBuilder
                     resultString.append("solved=" + result.solved + "\n")
-                    resultString.append("solvingTime=" + result.nanoseconds + "\n")
+                    resultString.append("solvingTime=" + result.cpuSeconds + "\n")
                     resultString.append("actions=" + r.actions.head.toString + r.actions.tail.map(f => "|" + f).mkString  + "\n")
                     resultString.append("nActions=" + r.actions.length  + "\n")
                     resultString.append("ballActions=" + r.actionsBall.head.toString + r.actionsBall.tail.map(f => "|" + f).mkString + "\n")

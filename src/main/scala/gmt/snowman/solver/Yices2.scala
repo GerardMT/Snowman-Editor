@@ -15,7 +15,7 @@ class Yices2(solverBinaryPath: String) {
 
     private val CHARSET = StandardCharsets.UTF_8.name
 
-    private val processBuilder = new ProcessBuilder(solverBinaryPath, "--incremental")
+    private val processBuilder = new ProcessBuilder("/usr/bin/time", "-p", solverBinaryPath, "--incremental")
     processBuilder.redirectErrorStream(true)
 
     def solve(input: String): SolverResult = {
@@ -25,13 +25,9 @@ class Yices2(solverBinaryPath: String) {
         val inputStream = process.getInputStream
         val processInput =  new BufferedReader(new InputStreamReader(inputStream, CHARSET))
 
-        var startTime = 0L
-
         try {
             processOutput.write(input)
             processOutput.flush()
-
-            startTime = System.nanoTime()
         } catch {
             case e : Exception =>
                 System.err.print(e.getMessage)
@@ -55,9 +51,6 @@ class Yices2(solverBinaryPath: String) {
                 throw new InvalidParameterException
         }
 
-        val cpuUsage = Process("ps -p " + process.pid() + " -o %cpu").!!.split("\n")(1).toFloat / 100.0f
-        val cpuTime = ((System.nanoTime() - startTime) * cpuUsage).toLong
-
         if (sat) {
             val linesModel = ListBuffer.empty[String]
 
@@ -70,6 +63,9 @@ class Yices2(solverBinaryPath: String) {
                 linesModel.append(line)
                 line = processInput.readLine()
             }
+
+            val cpuSeconds = readTime(linesModel.takeRight(3))
+            linesModel.remove(linesModel.length - 3, 3)
 
             for (l <- linesModel) {
                 if (l.startsWith("(=")) {
@@ -89,8 +85,29 @@ class Yices2(solverBinaryPath: String) {
                     assignments.append(Assignment(s(0), v))
                 }
             }
-        }
 
-        SolverResult(sat, assignments, cpuTime)
+            SolverResult(sat, assignments, cpuSeconds)
+        } else {
+            val lines = ListBuffer.empty[String]
+
+            processOutput.write("(exit)\n")
+            processOutput.flush()
+
+            var line = processInput.readLine()
+            while (line != null) {
+                lines.append(line)
+                line = processInput.readLine()
+            }
+
+            val cpuSeconds = readTime(lines)
+            SolverResult(sat, assignments, cpuSeconds)
+        }
+    }
+
+    private def readTime(lines: ListBuffer[String]) : Float = {
+        val kernelTime = lines.last.substring(4).toFloat
+        val userTime = lines(lines.length - 2).substring(5).toFloat
+
+        userTime + kernelTime
     }
 }

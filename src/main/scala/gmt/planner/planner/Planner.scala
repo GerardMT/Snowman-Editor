@@ -19,24 +19,26 @@ object Planner {
 
     case class PlannerOptions(startTimeSteps: Option[Int], maxTimeSteps: Int)
 
-    case class PlannerResult[A](sat: Boolean, timeSteps: Int, nanoseconds: Long, result: Option[A])
+    case class PlannerResult[A](sat: Boolean, timeSteps: Int, cpuSeconds: Float, result: Option[A])
 
     def solve[A <: VariableAdder, B, C](plannerOptions: PlannerOptions, encoder: Encoder[A, B, C], solver: Yices2, updateFunction: PlannerUpdate => Unit): PlannerResult[C] = {
         val ThreadMXBean = ManagementFactory.getThreadMXBean
-        val startTime = ThreadMXBean.getThreadCpuTime(Thread.currentThread.getId)
-        var totalTimeSolver = 0L
-        var totalTime = 0L
+        val plannerCpuStartTime = ThreadMXBean.getThreadCpuTime(Thread.currentThread.getId)
+
+        val startTime = System.nanoTime()
+
+        var solverTotalCpuSeconds = 0f
 
         var solved = false
 
-        var startTimeSteps = Math.max(1, plannerOptions.startTimeSteps.getOrElse(encoder.startTimeStep()))
+        val startTimeSteps = Math.max(1, plannerOptions.startTimeSteps.getOrElse(encoder.startTimeStep()))
         var iState = startTimeSteps
 
         var solverResult: SolverResult = null
         var encodingData: B = null.asInstanceOf[B]
 
         while (!solved && iState < plannerOptions.maxTimeSteps) {
-            val startStepTime = ThreadMXBean.getThreadCpuTime(Thread.currentThread.getId)
+            val startStepTime = System.nanoTime()
 
             val encoding = new Encoding
             encodingData = encoder.createEncodingData()
@@ -71,11 +73,11 @@ object Planner {
             solverResult = solver.solve(SMTLib2.translate(encoding))
             solved = solverResult.sat
 
-            val time = ThreadMXBean.getThreadCpuTime(Thread.currentThread.getId)
-            val stepsTime = time - startStepTime + solverResult.cpuTime
+            val time = System.nanoTime()
+            val stepsTime = time - startStepTime
+            val totalTime = time - startTime
 
-            totalTimeSolver += solverResult.cpuTime
-            totalTime = time - startTime + totalTimeSolver
+            solverTotalCpuSeconds += solverResult.cpuSeconds
 
             updateFunction(PlannerUpdate(solverResult.sat, iState, stepsTime, totalTime))
 
@@ -84,10 +86,13 @@ object Planner {
             }
         }
 
+        val plannerCpuSeconds = (ThreadMXBean.getThreadCpuTime(Thread.currentThread.getId) - plannerCpuStartTime) / 1e9f
+        val totalCpuSeconds = solverTotalCpuSeconds + plannerCpuSeconds
+
         if (solved) {
-            PlannerResult(sat = true, iState, totalTime, Some(encoder.decode(solverResult.assignments, encodingData)))
+            PlannerResult(sat = true, iState, totalCpuSeconds, Some(encoder.decode(solverResult.assignments, encodingData)))
         } else {
-            PlannerResult(sat = false, iState, totalTime, None)
+            PlannerResult(sat = false, iState, totalCpuSeconds, None)
         }
     }
 
