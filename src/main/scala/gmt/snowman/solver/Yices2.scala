@@ -65,10 +65,7 @@ class Yices2(solverBinaryPath: String) {
                 line = input.readLine()
             }
 
-            val kernelTime = linesModel.last.substring(4).toFloat
-            val userTime = linesModel(linesModel.length - 2).substring(5).toFloat
-            cpuSeconds = userTime + kernelTime
-
+            cpuSeconds = readTime(linesModel.takeRight(3))
             linesModel.remove(linesModel.length - 3, 3)
 
             for (l <- linesModel) {
