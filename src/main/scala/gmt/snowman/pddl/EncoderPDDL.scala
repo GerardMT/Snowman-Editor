@@ -18,8 +18,8 @@ object EncoderPDDL {
 
         val domain = StringBuilder.newBuilder
 
-        domain.append("""    (define (domain snowman_basic_adl)
-          |
+        domain.append("(define (domain snowman_basic_adl_snowmen_" + level.snowmen + ")\n")
+        domain.append("""
           |    (:requirements
           |        :typing
           |        :negative-preconditions
@@ -30,7 +30,7 @@ object EncoderPDDL {
           |    )
           |
           |    (:types
-          |        location direction ball size - object
+          |        location direction ball - object
           |    )
           |
           |    (:predicates
@@ -179,7 +179,7 @@ object EncoderPDDL {
 
         problem.append("(define (problem " + levelName + ")\n")
         problem.append("\n")
-        problem.append("    (:domain snowman_basic_adl)\n")
+        problem.append("    (:domain snowman_basic_adl_snowmen_" + level.snowmen + ")\n")
         problem.append("\n")
         problem.append("    (:objects\n")
         for (d <- directions) {
@@ -226,196 +226,196 @@ object EncoderPDDL {
     }
 
     def encodeCheatingAdl(level: Level): (String, String) = {
-    val levelName = extractName(level.name)
+        val levelName = extractName(level.name)
 
-    val domain = StringBuilder.newBuilder
+        val domain = StringBuilder.newBuilder
 
-    domain.append("""    (define (domain snowman_cheating_adl)
-                    |
-                    |    (:requirements
-                    |        :typing
-                    |        :negative-preconditions
-                    |        :equality
-                    |        :disjunctive-preconditions
-                    |        :conditional-effects
-                    |        :action-costs
-                    |    )
-                    |
-                    |    (:types
-                    |        location direction ball size - object
-                    |    )
-                    |
-                    |    (:predicates
-                    |        (snow ?l - location)
-                    |        (next ?from ?to - location ?dir - direction)
-                    |        (occupancy ?l - location)
-                    |        (ball_at ?b - ball ?l - location)
-                    |        (ball_size_small ?b - ball)
-                    |        (ball_size_medium ?b - ball)
-                    |        (ball_size_large ?b - ball)
-                    |        (goal)
-                    |   )
-                    |
-                    |    (:functions
-                    |        (total-cost) - number
-                    |    )
-                    |
-                    |    (:action move_ball
-                    |
-                    |     :parameters
-                    |        (?b - ball ?ppos ?from ?to - location ?dir - direction)
-                    |
-                    |     :precondition
-                    |        (and
-                    |            (next ?ppos ?from ?dir)
-                    |            (next ?from ?to ?dir)
-                    |            (ball_at ?b ?from)
-                    |            (not (occupancy ?ppos))
-                    |            (forall (?o - ball)
-                    |                (or
-                    |                    (= ?o ?b)
-                    |                    (or
-                    |                        (not (ball_at ?o ?from))
-                    |                        (or
-                    |                            (and
-                    |                                (ball_size_small ?b)
-                    |                                (ball_size_medium ?o))
-                    |                            (and
-                    |                                (ball_size_small ?b)
-                    |                                (ball_size_large ?o))
-                    |                            (and
-                    |                                (ball_size_medium ?b)
-                    |                                (ball_size_large ?o))))))
-                    |            (or
-                    |                (forall (?o - ball)
-                    |                    (or
-                    |                        (= ?o ?b)
-                    |                        (not (ball_at ?o ?from))))
-                    |                (forall (?o - ball)
-                    |                        (not (ball_at ?o ?to))))
-                    |            (forall (?o - ball)
-                    |                    (or
-                    |                        (not (ball_at ?o ?to))
-                    |                        (or
-                    |                            (and
-                    |                                (ball_size_small ?b)
-                    |                                (ball_size_medium ?o))
-                    |                            (and
-                    |                                (ball_size_small ?b)
-                    |                                (ball_size_large ?o))
-                    |                            (and
-                    |                                (ball_size_medium ?b)
-                    |                                (ball_size_large ?o))))))
-                    |     :effect
-                    |        (and
-                    |            (occupancy ?to)
-                    |            (not (ball_at ?b ?from))
-                    |            (ball_at ?b ?to)
-                    |            (when
-                    |                (forall (?o - ball)
-                    |                    (or
-                    |                        (= ?o ?b)
-                    |                        (not (ball_at ?o ?from))))
-                    |                (and
-                    |                    (not (occupancy ?from))))
-                    |            (not (snow ?to))
-                    |            (when
-                    |                (and
-                    |                    (snow ?to)
-                    |                    (ball_size_small ?b))
-                    |                (and
-                    |                    (not (ball_size_small ?b))
-                    |                    (ball_size_medium ?b)))
-                    |            (when
-                    |                (and
-                    |                    (snow ?to)
-                    |                    (ball_size_medium ?b))
-                    |                (and
-                    |                    (not (ball_size_medium ?b))
-                    |                    (ball_size_large ?b)))
-                    |            (increase (total-cost) 1))
-                    |    )
-                    |
-                    |    (:action goal
-                    |
-                    |     :parameters
-                    |""".stripMargin)
+        domain.append("(define (domain snowman_cheating_adl_snowmen_" + level.snowmen + ")\n")
+        domain.append("""
+                        |    (:requirements
+                        |        :typing
+                        |        :negative-preconditions
+                        |        :equality
+                        |        :disjunctive-preconditions
+                        |        :conditional-effects
+                        |        :action-costs
+                        |    )
+                        |
+                        |    (:types
+                        |        location direction ball - object
+                        |    )
+                        |
+                        |    (:predicates
+                        |        (snow ?l - location)
+                        |        (next ?from ?to - location ?dir - direction)
+                        |        (occupancy ?l - location)
+                        |        (ball_at ?b - ball ?l - location)
+                        |        (ball_size_small ?b - ball)
+                        |        (ball_size_medium ?b - ball)
+                        |        (ball_size_large ?b - ball)
+                        |        (goal)
+                        |   )
+                        |
+                        |    (:functions
+                        |        (total-cost) - number
+                        |    )
+                        |
+                        |    (:action move_ball
+                        |
+                        |     :parameters
+                        |        (?b - ball ?ppos ?from ?to - location ?dir - direction)
+                        |
+                        |     :precondition
+                        |        (and
+                        |            (next ?ppos ?from ?dir)
+                        |            (next ?from ?to ?dir)
+                        |            (ball_at ?b ?from)
+                        |            (not (occupancy ?ppos))
+                        |            (forall (?o - ball)
+                        |                (or
+                        |                    (= ?o ?b)
+                        |                    (or
+                        |                        (not (ball_at ?o ?from))
+                        |                        (or
+                        |                            (and
+                        |                                (ball_size_small ?b)
+                        |                                (ball_size_medium ?o))
+                        |                            (and
+                        |                                (ball_size_small ?b)
+                        |                                (ball_size_large ?o))
+                        |                            (and
+                        |                                (ball_size_medium ?b)
+                        |                                (ball_size_large ?o))))))
+                        |            (or
+                        |                (forall (?o - ball)
+                        |                    (or
+                        |                        (= ?o ?b)
+                        |                        (not (ball_at ?o ?from))))
+                        |                (forall (?o - ball)
+                        |                        (not (ball_at ?o ?to))))
+                        |            (forall (?o - ball)
+                        |                    (or
+                        |                        (not (ball_at ?o ?to))
+                        |                        (or
+                        |                            (and
+                        |                                (ball_size_small ?b)
+                        |                                (ball_size_medium ?o))
+                        |                            (and
+                        |                                (ball_size_small ?b)
+                        |                                (ball_size_large ?o))
+                        |                            (and
+                        |                                (ball_size_medium ?b)
+                        |                                (ball_size_large ?o))))))
+                        |     :effect
+                        |        (and
+                        |            (occupancy ?to)
+                        |            (not (ball_at ?b ?from))
+                        |            (ball_at ?b ?to)
+                        |            (when
+                        |                (forall (?o - ball)
+                        |                    (or
+                        |                        (= ?o ?b)
+                        |                        (not (ball_at ?o ?from))))
+                        |                (and
+                        |                    (not (occupancy ?from))))
+                        |            (not (snow ?to))
+                        |            (when
+                        |                (and
+                        |                    (snow ?to)
+                        |                    (ball_size_small ?b))
+                        |                (and
+                        |                    (not (ball_size_small ?b))
+                        |                    (ball_size_medium ?b)))
+                        |            (when
+                        |                (and
+                        |                    (snow ?to)
+                        |                    (ball_size_medium ?b))
+                        |                (and
+                        |                    (not (ball_size_medium ?b))
+                        |                    (ball_size_large ?b)))
+                        |            (increase (total-cost) 1))
+                        |    )
+                        |
+                        |    (:action goal
+                        |
+                        |     :parameters
+                        |""".stripMargin)
 
-    domain.append("        (" + (0 until level.snowmen).map(f => "?b" + (f * 3) + " ?b" + (f * 3 + 1) + " ?b" + (f * 3 + 2) + " - ball ?p" + f + " - location").mkString(" ") + ")\n")
+        domain.append("        (" + (0 until level.snowmen).map(f => "?b" + (f * 3) + " ?b" + (f * 3 + 1) + " ?b" + (f * 3 + 2) + " - ball ?p" + f + " - location").mkString(" ") + ")\n")
 
-    domain.append("""
-                    |     :precondition
-                    |        (and
-                    |""".stripMargin)
+        domain.append("""
+                        |     :precondition
+                        |        (and
+                        |""".stripMargin)
 
-    for (i <- 0 until level.snowmen * 3) {
-      for (j <- i + 1 until level.snowmen * 3) {
-        domain.append("            (not (= ?b" + i + " ?b" + j + "))\n")
-      }
-    }
-
-    for (i <- 0 until level.snowmen) {
-      domain.append("            (ball_at ?b" + (3 * i + 0) + " ?p" + i + ")\n")
-      domain.append("            (ball_at ?b" + (3 * i + 1) + " ?p" + i + ")\n")
-      domain.append("            (ball_at ?b" + (3 * i + 2) + " ?p" + i + ")\n")
-    }
-
-    domain.append("""        )
-                    |
-                    |     :effect
-                    |         (and (goal))
-                    |    )
-                    |)""".stripMargin)
-
-    val problem = StringBuilder.newBuilder
-
-    problem.append("(define (problem " + levelName + ")\n")
-    problem.append("\n")
-    problem.append("    (:domain snowman_cheating_adl)\n")
-    problem.append("\n")
-    problem.append("    (:objects\n")
-    for (d <- directions) {
-      problem.append("        " + d + " - direction\n")
-    }
-
-    problem.append(encodeObjectsBalls(level))
-    problem.append(encodeObjectsLocations(level))
-
-    problem.append("    )\n")
-    problem.append("\n")
-    problem.append("    (:init\n")
-    problem.append("        (= (total-cost) 0)\n")
-
-    for (l <- level.map.values.filter(f => Object.isPlayableArea(f.o)); (o, d) <- SnowmanAction.CHARACTER_ACTIONS.map(f => f.shift).zip(directions) ) {
-      level.map.get(l.c + o) match {
-        case Some(l2) =>
-          if (Object.isPlayableArea(l2.o)) {
-            problem.append("        (next loc_" + l.c.x + "_" + l.c.y + " loc_" + l2.c.x + "_" + l2.c.y + " " + d + ")\n")
+        for (i <- 0 until level.snowmen * 3) {
+          for (j <- i + 1 until level.snowmen * 3) {
+            domain.append("            (not (= ?b" + i + " ?b" + j + "))\n")
           }
-        case None =>
-      }
+        }
+
+        for (i <- 0 until level.snowmen) {
+          domain.append("            (ball_at ?b" + (3 * i + 0) + " ?p" + i + ")\n")
+          domain.append("            (ball_at ?b" + (3 * i + 1) + " ?p" + i + ")\n")
+          domain.append("            (ball_at ?b" + (3 * i + 2) + " ?p" + i + ")\n")
+        }
+
+        domain.append("""        )
+                        |
+                        |     :effect
+                        |         (and (goal))
+                        |    )
+                        |)""".stripMargin)
+
+        val problem = StringBuilder.newBuilder
+
+        problem.append("(define (problem " + levelName + ")\n")
+        problem.append("\n")
+        problem.append("    (:domain snowman_cheating_adl_snowmen_" + level.snowmen + ")\n")
+        problem.append("\n")
+        problem.append("    (:objects\n")
+        for (d <- directions) {
+          problem.append("        " + d + " - direction\n")
+        }
+
+        problem.append(encodeObjectsBalls(level))
+        problem.append(encodeObjectsLocations(level))
+
+        problem.append("    )\n")
+        problem.append("\n")
+        problem.append("    (:init\n")
+        problem.append("        (= (total-cost) 0)\n")
+
+        for (l <- level.map.values.filter(f => Object.isPlayableArea(f.o)); (o, d) <- SnowmanAction.CHARACTER_ACTIONS.map(f => f.shift).zip(directions) ) {
+          level.map.get(l.c + o) match {
+            case Some(l2) =>
+              if (Object.isPlayableArea(l2.o)) {
+                problem.append("        (next loc_" + l.c.x + "_" + l.c.y + " loc_" + l2.c.x + "_" + l2.c.y + " " + d + ")\n")
+              }
+            case None =>
+          }
+        }
+
+        problem.append("        (character_at loc_" + level.character.c.x + "_" + level.character.c.y + ")\n")
+
+        for ((l, i) <- level.balls.zipWithIndex) {
+          problem.append("        (ball_at ball_" + i + " loc_" + l.c.x + "_" + l.c.y + ")\n")
+          problem.append(encodeBallSize(l.o, i))
+        }
+
+        problem.append(encodeInitSnow(level))
+        problem.append(encodeInitOccupancy(level))
+        problem.append("    )\n")
+        problem.append("\n")
+        problem.append("    (:goal\n")
+        problem.append("        (and (goal))\n")
+        problem.append("    )\n")
+        problem.append("\n")
+        problem.append("    (:metric minimize (total-cost))\n")
+        problem.append(")")
+
+        (domain.toString(), problem.toString())
     }
-
-    problem.append("        (character_at loc_" + level.character.c.x + "_" + level.character.c.y + ")\n")
-
-    for ((l, i) <- level.balls.zipWithIndex) {
-      problem.append("        (ball_at ball_" + i + " loc_" + l.c.x + "_" + l.c.y + ")\n")
-      problem.append(encodeBallSize(l.o, i))
-    }
-
-    problem.append(encodeInitSnow(level))
-    problem.append(encodeInitOccupancy(level))
-    problem.append("    )\n")
-    problem.append("\n")
-    problem.append("    (:goal\n")
-    problem.append("        (and (goal))\n")
-    problem.append("    )\n")
-    problem.append("\n")
-    problem.append("    (:metric minimize (total-cost))\n")
-    problem.append(")")
-
-    (domain.toString(), problem.toString())
-  }
 
     def encodeBasicAdlGrounded(level: Level): (String, String)= {
         val levelName = extractName(level.name)
