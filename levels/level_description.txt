@@ -1,0 +1,18 @@
+#	wall
+.	snow
+'	grass
+1	small ball
+2	medium ball
+4	large ball
+3	medium and small ball
+5	large and small ball
+6	large and medium ball
+7	large, medium and small ball
+p	character with snow
+q	character
+
+Combinations:
+1 + 2 = 3	medium + small
+4 + 1 = 5	large + small
+4 + 2 = 6	large + meidum
+4 + 2 + 1 = 7	large + medium + small
