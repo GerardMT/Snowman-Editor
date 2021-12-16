@@ -396,8 +396,6 @@ object EncoderPDDL {
           }
         }
 
-        problem.append("        (character_at loc_" + level.character.c.x + "_" + level.character.c.y + ")\n")
-
         for ((l, i) <- level.balls.zipWithIndex) {
           problem.append("        (ball_at ball_" + i + " loc_" + l.c.x + "_" + l.c.y + ")\n")
           problem.append(encodeBallSize(l.o, i))

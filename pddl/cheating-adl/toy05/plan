@@ -1,0 +1,7 @@
+(move_ball ball_1 loc_1_4 loc_2_4 loc_3_4 right)
+(move_ball ball_1 loc_2_4 loc_3_4 loc_4_4 right)
+(move_ball ball_0 loc_1_3 loc_2_3 loc_3_3 right)
+(move_ball ball_0 loc_3_2 loc_3_3 loc_3_4 up)
+(move_ball ball_0 loc_2_4 loc_3_4 loc_4_4 right)
+(move_ball ball_2 loc_4_2 loc_4_3 loc_4_4 up)
+(goal ball_0 ball_1 ball_2 loc_4_4)
